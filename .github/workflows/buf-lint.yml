@@ -1,0 +1,25 @@
+name: Buf Lint (Quick Check)
+
+# This is a lightweight lint check that runs on every push
+# For comprehensive checks, see CI.yml
+
+on:
+  push:
+    paths:
+      - 'proto/**/*.proto'
+
+jobs:
+  quick-lint:
+    name: Quick Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Buf
+        uses: bufbuild/buf-setup-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Buf Lint
+        run: buf lint

@@ -1,0 +1,124 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.cost.v1;
+
+import "buf/validate/validate.proto";
+
+// CostType: Enum for the type of cost
+enum CostType {
+  // COST_TYPE_UNSPECIFIED: Unspecified cost type
+  COST_TYPE_UNSPECIFIED = 0;
+  // COST_TYPE_TOKEN_INPUT: Token input cost
+  COST_TYPE_TOKEN_INPUT = 1;
+  // COST_TYPE_TOKEN_OUTPUT: Token output cost
+  COST_TYPE_TOKEN_OUTPUT = 2;
+  // COST_TYPE_API_CALL: API call cost
+  COST_TYPE_API_CALL = 3;
+  // COST_TYPE_STORAGE: Storage cost
+  COST_TYPE_STORAGE = 4;
+  // COST_TYPE_TIME: Time cost
+  COST_TYPE_TIME = 5;
+}
+
+// Cost: Message to represent a cost
+message Cost {
+  // cost: The cost value
+  double cost = 1 [(buf.validate.field).required = true];
+  // mission_id: Mission ID linked to the cost
+  string mission_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:"
+  ];
+  // name: Name of the cost (unique by mission_id)
+  string name = 3 [(buf.validate.field).required = true];
+  // type: Type of the cost
+  CostType type = 4 [(buf.validate.field).required = true];
+  // unit: Unit of the cost
+  string unit = 5 [(buf.validate.field).required = true];
+}
+
+// AddCostRequest: Request to add a cost
+message AddCostRequest {
+  // cost: The cost value
+  double cost = 1 [(buf.validate.field).required = true];
+  // mission_id: Mission ID linked to the cost
+  string mission_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:"
+  ];
+  // name: Name of the cost (unique by mission_id)
+  string name = 3 [(buf.validate.field).required = true];
+  // type: Type of the cost
+  CostType type = 4 [(buf.validate.field).required = true];
+  // unit: Unit of the cost
+  string unit = 5 [(buf.validate.field).required = true];
+}
+
+// AddCostResponse: Response to added cost
+message AddCostResponse {
+  // success: Success of the operation
+  bool success = 1 [(buf.validate.field).required = true];
+}
+
+// GetCostsByMissionRequest: Request to get costs by mission
+message GetCostsByMissionRequest {
+  // mission_id: Mission ID linked to the cost
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:"
+  ];
+}
+
+// GetCostsByMissionResponse: Response to get costs by mission
+message GetCostsByMissionResponse {
+  // costs: Costs
+  repeated Cost costs = 1 [(buf.validate.field).repeated.min_items = 0];
+}
+
+// GetCostsByNameRequest: Request to get costs by name
+message GetCostsByNameRequest {
+  // mission_id: Mission ID linked to the cost
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:"
+  ];
+  // name: Name of the cost (unique by mission_id)
+  string name = 2 [(buf.validate.field).required = true];
+}
+
+// GetCostsByNameResponse: Response to get costs by name
+message GetCostsByNameResponse {
+  // costs: Costs
+  repeated Cost costs = 1 [(buf.validate.field).repeated.min_items = 0];
+}
+
+// GetCostsByTypeRequest: Request to get costs by type
+message GetCostsByTypeRequest {
+  // mission_id: Mission ID linked to the cost
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:"
+  ];
+  // type: Type of the cost
+  CostType type = 2 [(buf.validate.field).required = true];
+}
+
+// GetCostsByTypeResponse: Response to get costs by type
+message GetCostsByTypeResponse {
+  // costs: Costs
+  repeated Cost costs = 1 [(buf.validate.field).repeated.min_items = 0];
+}

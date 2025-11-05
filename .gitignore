@@ -1,0 +1,24 @@
+# IDE and Editor files
+/.idea
+/.vscode
+.DS_Store
+
+# Build outputs
+/out
+
+# Generated code (buf generate output)
+/gen/
+/docs/
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Buf files
+**/buf.lock
+
+# Temporary files
+run.sh
+*.tmp
+*.log

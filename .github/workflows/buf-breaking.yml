@@ -1,0 +1,53 @@
+name: Buf Breaking (Detailed)
+
+# This workflow provides detailed breaking change analysis
+# It runs independently from CI for better visibility
+
+on:
+  pull_request:
+    paths:
+      - 'proto/**/*.proto'
+    types: [opened, synchronize, reopened]
+
+jobs:
+  breaking-analysis:
+    name: Breaking Change Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Buf
+        uses: bufbuild/buf-setup-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check Breaking Changes
+        id: breaking
+        continue-on-error: true
+        run: |
+          buf breaking --against '.git#branch=main' > breaking-output.txt 2>&1 || echo "breaking_detected=true" >> $GITHUB_OUTPUT
+          cat breaking-output.txt
+
+      - name: Comment on PR
+        if: steps.breaking.outputs.breaking_detected == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('breaking-output.txt', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ⚠️ Breaking Changes Detected\n\n\`\`\`\n${output}\n\`\`\`\n\nPlease review these breaking changes carefully. If intentional, document them in the PR description.`
+            });
+
+      - name: Fail if breaking
+        if: steps.breaking.outputs.breaking_detected == 'true'
+        run: exit 1

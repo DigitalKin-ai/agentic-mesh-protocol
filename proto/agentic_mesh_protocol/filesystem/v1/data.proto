@@ -1,0 +1,146 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.filesystem.v1;
+
+import "buf/validate/validate.proto";
+
+// FileType: Enum to file type
+enum FileType {
+  // FILE_TYPE_UNSPECIFIED: Unspecified file type
+  FILE_TYPE_UNSPECIFIED = 0;
+  // FILE_TYPE_DOCUMENT: Document file
+  FILE_TYPE_DOCUMENT = 1;
+  // FILE_TYPE_IMAGE: Image file
+  FILE_TYPE_IMAGE = 2;
+  // FILE_TYPE_VIDEO: Video file
+  FILE_TYPE_VIDEO = 3;
+  // FILE_TYPE_AUDIO: Audio file
+  FILE_TYPE_AUDIO = 4;
+  // FILE_TYPE_OTHER: Other file
+  FILE_TYPE_OTHER = 5;
+}
+
+// File: Message to represent stored files
+message File {
+  // mission_id: Mission ID linked to the file
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:"
+  ];
+  // name: Name of the file (unique by mission_id)
+  string name = 2 [(buf.validate.field).required = true];
+  // type: Type of the file
+  FileType type = 3 [(buf.validate.field).required = true];
+  // url: URL to access the file
+  string url = 4 [(buf.validate.field).required = true];
+}
+
+// UploadFileRequest: Request to upload a file
+message UploadFileRequest {
+  // mission_id: Mission ID linked to the file
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:"
+  ];
+  // name: Name of the file (unique by mission_id)
+  string name = 2 [(buf.validate.field).required = true];
+  // type: Type of the file
+  FileType type = 3 [(buf.validate.field).required = true];
+  // content: Content of the file
+  bytes content = 4 [(buf.validate.field).required = true];
+}
+
+// UploadFileResponse: Response to uploaded file
+message UploadFileResponse {
+  // success: Success of the operation
+  bool success = 1 [(buf.validate.field).required = true];
+  // file: Uploaded file
+  File file = 2 [(buf.validate.field).required = true];
+}
+
+// GetFileRequest: Request to get a file by ID
+message GetFileRequest {
+  // mission_id: Mission ID linked to the file
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:"
+  ];
+  // name: Name of the file (unique by mission_id)
+  string name = 2 [(buf.validate.field).required = true];
+}
+
+// GetFileResponse: Response to get a file by ID
+message GetFileResponse {
+  // file: Retrieved file
+  File file = 1 [(buf.validate.field).required = true];
+  // content: Content of the file
+  bytes content = 2 [(buf.validate.field).required = true];
+}
+
+// GetFilesByMissionRequest: Request to get files by mission
+message GetFilesByMissionRequest {
+  // mission_id: Mission ID linked to the files
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:"
+  ];
+}
+
+// GetFilesByMissionResponse: Response to get files by mission
+message GetFilesByMissionResponse {
+  // files: Retrieved files
+  repeated File files = 1 [(buf.validate.field).repeated.min_items = 0];
+}
+
+// GetFilesByNameRequest: Request to get files by name
+message GetFilesByNameRequest {
+  // mission_id: Mission ID linked to the files
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:"
+  ];
+  // name: Name of the files
+  string name = 2 [(buf.validate.field).required = true];
+}
+
+// GetFilesByNameResponse: Response to get files by name
+message GetFilesByNameResponse {
+  // success: Success of the operation
+  bool success = 1 [(buf.validate.field).required = true];
+  // file: Retrieved file
+  File file = 2 [(buf.validate.field).required = true];
+}
+
+// DeleteFileRequest: Request to delete a file
+message DeleteFileRequest {
+  // mission_id: Mission ID linked to the file
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:"
+  ];
+  // name: Name of the file (unique by mission_id)
+  string name = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// DeleteFileResponse: Response to delete a file
+message DeleteFileResponse {
+  // success: Success of the operation
+  bool success = 1 [(buf.validate.field).required = true];
+}

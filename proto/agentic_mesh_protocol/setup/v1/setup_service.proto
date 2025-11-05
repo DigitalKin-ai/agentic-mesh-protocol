@@ -1,0 +1,43 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.setup.v1;
+
+import "agentic_mesh_protocol/setup/v1/setup.proto";
+
+// SetupService
+// Provides operations for setups and setup versions.
+service SetupService {
+  // CreateSetup creates a new setup.
+  rpc CreateSetup(CreateSetupRequest) returns (CreateSetupResponse);
+  // GetSetup retrieves a setup by its unique identifier.
+  rpc GetSetup(GetSetupRequest) returns (GetSetupResponse);
+  // UpdateSetup updates an existing setup.
+  rpc UpdateSetup(UpdateSetupRequest) returns (UpdateSetupResponse);
+  // DeleteSetup deletes a setup.
+  rpc DeleteSetup(DeleteSetupRequest) returns (DeleteSetupResponse);
+
+  // CreateSetupVersion creates a new setup version.
+  rpc CreateSetupVersion(CreateSetupVersionRequest) returns (CreateSetupVersionResponse);
+  // GetSetupVersion retrieves a setup version by its unique identifier.
+  rpc GetSetupVersion(GetSetupVersionRequest) returns (GetSetupVersionResponse);
+  // SearchSetupVersions searches for setup versions based on provided filters.
+  rpc SearchSetupVersions(SearchSetupVersionsRequest) returns (SearchSetupVersionsResponse);
+  // UpdateSetupVersion updates an existing setup version.
+  rpc UpdateSetupVersion(UpdateSetupVersionRequest) returns (UpdateSetupVersionResponse);
+  // DeleteSetupVersion deletes a setup version.
+  rpc DeleteSetupVersion(DeleteSetupVersionRequest) returns (DeleteSetupVersionResponse);
+}

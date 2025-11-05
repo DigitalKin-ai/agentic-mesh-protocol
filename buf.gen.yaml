@@ -1,0 +1,48 @@
+version: v2
+
+managed:
+  enabled: true
+  disable:
+    - module: buf.build/googleapis/googleapis
+      file_option: go_package_prefix
+  override:
+    - file_option: go_package_prefix
+      value: github.com/agentic-mesh-protocol/agentic-mesh-protocol/gen/go
+    - file_option: optimize_for
+      value: SPEED
+
+inputs:
+  - directory: proto
+
+plugins:
+  # ==========================================
+  # Python Generation (for uv)
+  # ==========================================
+
+  # Base Python protobuf
+  - remote: buf.build/protocolbuffers/python:v33.0
+    out: gen/python
+    opt:
+      - pyi_out=gen/python
+
+  # Python gRPC
+  - remote: buf.build/grpc/python:v1.76.0
+    out: gen/python
+
+  # ==========================================
+  # TypeScript Generation (for yarn)
+  # ==========================================
+
+  # Protobuf-ES (modern TypeScript protobuf)
+  - remote: buf.build/bufbuild/es:v2.10.0
+    out: gen/typescript
+    opt:
+      - target=ts
+      - import_extension=none
+
+  # gRPC-Web (traditional)
+  - remote: buf.build/grpc/web:v2.0.2
+    out: gen/typescript
+    opt:
+      - import_style=typescript
+      - mode=grpcwebtext

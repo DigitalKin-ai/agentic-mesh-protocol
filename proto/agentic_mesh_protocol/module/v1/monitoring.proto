@@ -1,0 +1,116 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.module.v1;
+
+import "buf/validate/validate.proto";
+
+// ModuleStatus
+// TODO: adapt to the real status of the module
+enum ModuleStatus {
+  // MODULE_STATUS_UNSPECIFIED is the default value
+  MODULE_STATUS_UNSPECIFIED = 0;
+  // MODULE_STATUS_STARTING is the status when the module is starting
+  MODULE_STATUS_STARTING = 1;
+  // MODULE_STATUS_PROCESSING is the status when the module is processing
+  MODULE_STATUS_PROCESSING = 2;
+  // MODULE_STATUS_CANCELED is the status when the module is canceled
+  MODULE_STATUS_CANCELED = 3;
+  // MODULE_STATUS_FAILED is the status when the module is failed
+  MODULE_STATUS_FAILED = 4;
+  // MODULE_STATUS_EXPIRED is the status when the module is expired
+  MODULE_STATUS_EXPIRED = 5;
+  // MODULE_STATUS_SUCCESS is the status when the module is successful
+  MODULE_STATUS_SUCCESS = 6;
+  // MODULE_STATUS_STOPPED is the status when the module is stopped
+  MODULE_STATUS_STOPPED = 7;
+}
+
+// JobInfo
+//
+// Represents information about a single job
+message JobInfo {
+  // job_id: Database ID of the job inside the Module
+  string job_id = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.prefix = "jobs:",
+    (buf.validate.field).required = true
+  ];
+
+  // job_status: Status of the individual job
+  ModuleStatus job_status = 2 [
+    (buf.validate.field).enum.defined_only = true,
+    (buf.validate.field).required = true
+  ];
+}
+
+// GetModuleStatusRequest
+//
+// Fields:
+//
+// - job_id: Database ID of the Job Module to get status
+message GetModuleStatusRequest {
+  // job_id: Database ID of the Job Module to get status
+  string job_id = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.prefix = "jobs:",
+    (buf.validate.field).required = true
+  ];
+}
+
+// GetModuleStatusResponse
+//
+// Returns:
+//
+// - success: Flag to indicate if the status request was successful
+// - status: Status of the Module
+// - job_id: Database ID of the job inside the Module that was queried
+message GetModuleStatusResponse {
+  // success: Flag to indicate if the status request was successful
+  bool success = 1;
+  // status: Status of the Module
+  ModuleStatus status = 2 [
+    (buf.validate.field).enum.defined_only = true,
+    (buf.validate.field).required = true
+  ];
+  // job_id: Database ID of the job inside the Module that was queried
+  string job_id = 3 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.prefix = "jobs:",
+    (buf.validate.field).required = true
+  ];
+}
+
+// GetModuleJobsRequest
+// TODO: adapt depending on the real way we will get the jobs
+//
+// Fields:
+//
+// - job_id: Database ID of the Job Module to get status
+message GetModuleJobsRequest {}
+
+// GetModuleJobsResponse
+//
+// Returns:
+//
+// - success: Flag to indicate if the status request was successful
+// - jobs: List of jobs with their respective IDs and statuses
+message GetModuleJobsResponse {
+  // success: Flag to indicate if the status request was successful
+  bool success = 1;
+  // jobs: List of jobs with their respective IDs and statuses
+  repeated JobInfo jobs = 3;
+}

@@ -1,0 +1,52 @@
+name: Push to Buf Schema Registry
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'proto/**/*.proto'
+      - 'buf.yaml'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag name for the push (e.g., v1.0.0)'
+        required: false
+        type: string
+
+jobs:
+  push-to-bsr:
+    name: Push to BSR
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'agentic-mesh-protocol'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Buf
+        uses: bufbuild/buf-setup-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push to Buf Schema Registry
+        env:
+          BUF_TOKEN: ${{ secrets.DKIN_CLOUD_TOKEN }}
+        run: |
+          if [ -n "${{ inputs.tag }}" ]; then
+            buf push proto --tag ${{ inputs.tag }}
+          else
+            buf push proto
+          fi
+
+      - name: Comment on commit
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = '${{ inputs.tag }}' || 'latest';
+            github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: `✅ Successfully pushed to Buf Schema Registry with tag: ${tag}\n\nView at: https://buf.build/agentic-mesh-protocol/agentic-mesh-protocol`
+            });
