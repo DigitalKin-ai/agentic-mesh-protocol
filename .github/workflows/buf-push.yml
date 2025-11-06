@@ -28,6 +28,9 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Update buf dependencies
+        run: buf dep update proto
+
       - name: Push to Buf Schema Registry
         env:
           BUF_TOKEN: ${{ secrets.DKIN_CLOUD_TOKEN }}
