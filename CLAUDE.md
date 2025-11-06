@@ -58,9 +58,7 @@ task breaking          # Check for breaking changes against main branch
 task breaking:verbose  # Check with verbose JSON output
 
 # Code generation
-task generate          # Generate code for all languages (Go, Python, TypeScript, docs)
-task generate:go       # Generate only Go code
-task generate:python   # Generate only Python code
+task generate          # Generate code for all languages (Python, TypeScript)
 task generate:check    # Verify generated code is up to date
 
 # Build workflows
@@ -101,7 +99,7 @@ npx buf lint
 # Check for breaking changes against main branch
 npx buf breaking --against '.git#branch=main'
 
-# Generate code for all languages (Python, TypeScript, documentation)
+# Generate code for all languages (Python, TypeScript)
 npx buf generate
 
 # Push schema to Buf Schema Registry (requires DKIN_CLOUD_TOKEN)
@@ -113,10 +111,8 @@ npx buf push proto
 ### Generated Output Locations
 
 When running `buf generate`, code is generated to:
-- `gen/go/` - Go protobuf + gRPC + protovalidate-go
-- `gen/python/` - Python protobuf + gRPC + protovalidate-python
-- `gen/typescript/` - TypeScript (Protobuf-ES + gRPC-Web) + protovalidate-ts
-- `docs/` - Markdown and HTML documentation
+- `gen/python/` - Python protobuf + gRPC
+- `gen/typescript/` - TypeScript (Protobuf-ES + gRPC-Web)
 
 ## Architecture
 
