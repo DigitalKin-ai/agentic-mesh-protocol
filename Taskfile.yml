@@ -2,7 +2,6 @@ version: '3'
 
 vars:
   GEN_DIR: gen
-  DOCS_DIR: docs
   PROTO_DIR: proto
 
 tasks:
@@ -94,7 +93,7 @@ tasks:
 
   # Code generation
   generate:
-    desc: Generate code for all languages (Go, Python, TypeScript, docs)
+    desc: Generate code for all languages (Python, TypeScript)
     cmds:
       - npx buf generate
     sources:
@@ -102,17 +101,6 @@ tasks:
       - buf.gen.yaml
     generates:
       - '{{.GEN_DIR}}/**/*'
-      - '{{.DOCS_DIR}}/**/*'
-
-  generate:go:
-    desc: Generate only Go code
-    cmds:
-      - npx buf generate --template buf.gen.yaml --include-imports --path {{.PROTO_DIR}} --include-wkt
-
-  generate:python:
-    desc: Generate only Python code
-    cmds:
-      - npx buf generate --template buf.gen.yaml --include-imports --path {{.PROTO_DIR}}
 
   generate:check:
     desc: Verify generated code is up to date
@@ -176,7 +164,6 @@ tasks:
     desc: Remove generated files
     cmds:
       - rm -rf {{.GEN_DIR}}/
-      - rm -rf {{.DOCS_DIR}}/
 
   clean:all:
     desc: Remove all generated and dependency files

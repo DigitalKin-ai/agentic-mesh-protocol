@@ -33,11 +33,14 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Update buf dependencies
+        run: buf dep update proto
+
       - name: Buf Format Check
         run: buf format --diff --exit-code
 
       - name: Buf Lint
-        run: buf lint
+        run: buf lint proto
 
   buf-breaking:
     name: Buf Breaking
@@ -54,6 +57,9 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Update buf dependencies
+        run: buf dep update proto
+
       - name: Check Breaking Changes
         run: buf breaking --against '.git#branch=main'
 
@@ -68,6 +74,9 @@ jobs:
         uses: bufbuild/buf-setup-action@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update buf dependencies
+        run: buf dep update proto
 
       - name: Generate Code
         run: buf generate
