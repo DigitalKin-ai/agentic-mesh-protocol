@@ -20,43 +20,43 @@ import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 
-// FileType: Enum for file type classification
+// FileType represents the classification of file types in the system.
 enum FileType {
-  // FILE_TYPE_UNSPECIFIED: Default value, should not be used
+  // FILE_TYPE_UNSPECIFIED is the default unspecified value.
   FILE_TYPE_UNSPECIFIED = 0;
-  // FILE_TYPE_DOCUMENT: Document files (PDF, DOC, TXT, etc.)
+  // FILE_TYPE_DOCUMENT represents document files (PDF, DOC, TXT, etc.).
   FILE_TYPE_DOCUMENT = 1;
-  // FILE_TYPE_IMAGE: Image files (PNG, JPG, GIF, etc.)
+  // FILE_TYPE_IMAGE represents image files (PNG, JPG, GIF, etc.).
   FILE_TYPE_IMAGE = 2;
-  // FILE_TYPE_VIDEO: Video files (MP4, AVI, MOV, etc.)
+  // FILE_TYPE_VIDEO represents video files (MP4, AVI, MOV, etc.).
   FILE_TYPE_VIDEO = 3;
-  // FILE_TYPE_AUDIO: Audio files (MP3, WAV, etc.)
+  // FILE_TYPE_AUDIO represents audio files (MP3, WAV, etc.).
   FILE_TYPE_AUDIO = 4;
-  // FILE_TYPE_ARCHIVE: Archive files (ZIP, TAR, etc.)
+  // FILE_TYPE_ARCHIVE represents archive files (ZIP, TAR, etc.).
   FILE_TYPE_ARCHIVE = 5;
-  // FILE_TYPE_CODE: Source code files
+  // FILE_TYPE_CODE represents source code files.
   FILE_TYPE_CODE = 6;
-  // FILE_TYPE_OTHER: Other file types
+  // FILE_TYPE_OTHER represents other file types.
   FILE_TYPE_OTHER = 7;
 }
 
-// FileStatus: Enum for file status in the system
+// FileStatus represents the lifecycle status of a file in the system.
 enum FileStatus {
-  // FILE_STATUS_UNSPECIFIED: Default value, should not be used
+  // FILE_STATUS_UNSPECIFIED is the default unspecified value.
   FILE_STATUS_UNSPECIFIED = 0;
-  // FILE_STATUS_UPLOADING: File is being uploaded
+  // FILE_STATUS_UPLOADING indicates the file is currently being uploaded.
   FILE_STATUS_UPLOADING = 1;
-  // FILE_STATUS_ACTIVE: File is active and available
+  // FILE_STATUS_ACTIVE indicates the file is active and available for use.
   FILE_STATUS_ACTIVE = 2;
-  // FILE_STATUS_PROCESSING: File is being processed
+  // FILE_STATUS_PROCESSING indicates the file is being processed.
   FILE_STATUS_PROCESSING = 3;
-  // FILE_STATUS_ARCHIVED: File is archived
+  // FILE_STATUS_ARCHIVED indicates the file has been archived.
   FILE_STATUS_ARCHIVED = 4;
-  // FILE_STATUS_DELETED: File is marked for deletion
+  // FILE_STATUS_DELETED indicates the file is marked for deletion.
   FILE_STATUS_DELETED = 5;
 }
 
-// File: Message to represent stored files with comprehensive metadata
+// File represents a stored file with comprehensive metadata.
 message File {
   // file_id: Unique identifier for the file (UUID)
   string file_id = 1 [
@@ -83,7 +83,10 @@ message File {
   ];
 
   // content_type: MIME type of the file
-  string content_type = 5 [(buf.validate.field).required = true];
+  string content_type = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 
   // size_bytes: Size of the file in bytes
   int64 size_bytes = 6 [
@@ -91,17 +94,26 @@ message File {
     (buf.validate.field).int64.gte = 0
   ];
 
-  // checksum: SHA-256 checksum of the file content
-  string checksum = 7 [(buf.validate.field).required = true];
+  // checksum: SHA-256 checksum of the file content (SHA-256 format)
+  string checksum = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 
   // metadata: Flexible metadata for additional file properties
   google.protobuf.Struct metadata = 8;
 
   // storage_uri: Internal URI for accessing the file content
-  string storage_uri = 9 [(buf.validate.field).required = true];
+  string storage_uri = 9 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 
   // file_url: External URL for accessing the file content
-  string file_url = 10 [(buf.validate.field).required = true];
+  string file_url = 10 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 
   // status: Current status of the file
   FileStatus status = 11 [
@@ -113,7 +125,7 @@ message File {
   bytes content = 12;
 }
 
-// FileFilter: Filter criteria for querying files
+// FileFilter contains criteria for querying and filtering files.
 message FileFilter {
   // names: Filter by file names (exact matches)
   repeated string names = 1;
@@ -161,9 +173,9 @@ message FileFilter {
   string content_type = 14;
 }
 
-// FileResult: Wrapper for file operations that may succeed or fail
+// FileResult wraps the result of a file operation which may succeed or fail.
 message FileResult {
-  // result: The result of the file operation (either success or error)
+  // result contains either a successfully processed file or error information.
   oneof result {
     // file: Successfully processed file
     File file = 1;
@@ -172,7 +184,7 @@ message FileResult {
   }
 }
 
-// UploadFileData: Data for uploading a single file
+// UploadFileData contains the data required for uploading a single file.
 message UploadFileData {
   // context: Context ID for the file
   string context = 1 [
@@ -193,10 +205,16 @@ message UploadFileData {
   ];
 
   // content_type: MIME type of the file
-  string content_type = 4 [(buf.validate.field).required = true];
+  string content_type = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 
   // content: File content
-  bytes content = 5 [(buf.validate.field).required = true];
+  bytes content = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).bytes.min_len = 1
+  ];
 
   // metadata: Additional metadata for the file
   google.protobuf.Struct metadata = 6;
@@ -211,7 +229,7 @@ message UploadFileData {
   bool replace_if_exists = 8;
 }
 
-// UploadFilesRequest: Request to upload multiple files
+// UploadFilesRequest is the request message for uploading multiple files.
 message UploadFilesRequest {
   // files: List of files to upload
   repeated UploadFileData files = 1 [
@@ -220,19 +238,19 @@ message UploadFilesRequest {
   ];
 }
 
-// UploadFilesResponse: Response for file upload operations
+// UploadFilesResponse is the response message for file upload operations.
 message UploadFilesResponse {
   // results: Results for each uploaded file
   repeated FileResult results = 1;
 
   // total_uploaded: Number of successfully uploaded files
-  int32 total_uploaded = 2;
+  int32 total_uploaded = 2 [(buf.validate.field).int32.gte = 0];
 
   // total_failed: Number of failed uploads
-  int32 total_failed = 3;
+  int32 total_failed = 3 [(buf.validate.field).int32.gte = 0];
 }
 
-// GetFileRequest: Request to get a specific file
+// GetFileRequest is the request message for retrieving a specific file.
 message GetFileRequest {
   // context: Context ID for the file
   string context = 1 [
@@ -250,7 +268,7 @@ message GetFileRequest {
   bool include_content = 3;
 }
 
-// GetFileResponse: Response containing file information
+// GetFileResponse is the response message containing file information.
 message GetFileResponse {
   // file: The requested file
   File file = 1 [(buf.validate.field).required = true];
@@ -259,7 +277,7 @@ message GetFileResponse {
   bytes content = 2;
 }
 
-// UpdateFileRequest: Request to update a file
+// UpdateFileRequest is the request message for updating a file.
 message UpdateFileRequest {
   // context: Context ID for the file
   string context = 1 [
@@ -274,13 +292,13 @@ message UpdateFileRequest {
   ];
 
   // new_name: New name for the file (optional)
-  string new_name = 3;
+  string new_name = 3 [(buf.validate.field).string.min_len = 1];
 
-  // file_type: New file type (optional)
-  FileType file_type = 4;
+  // file_type: New file type (optional, cannot be UNSPECIFIED)
+  FileType file_type = 4 [(buf.validate.field).enum.not_in = 0];
 
   // content_type: New content type (optional)
-  string content_type = 5;
+  string content_type = 5 [(buf.validate.field).string.min_len = 1];
 
   // content: New file content (optional)
   bytes content = 6;
@@ -295,13 +313,13 @@ message UpdateFileRequest {
   google.protobuf.Struct metadata = 8;
 }
 
-// UpdateFileResponse: Response for file update
+// UpdateFileResponse is the response message for file update operations.
 message UpdateFileResponse {
   // result: Result of the file update operation
   FileResult result = 1;
 }
 
-// GetFilesRequest: Request to get multiple files by various criteria
+// GetFilesRequest is the request message for retrieving multiple files by various criteria.
 message GetFilesRequest {
   // context: Context ID for the files
   string context = 1 [
@@ -328,19 +346,16 @@ message GetFilesRequest {
   bool include_content = 6;
 }
 
-// GetFilesResponse: Response containing multiple files
+// GetFilesResponse is the response message containing multiple files.
 message GetFilesResponse {
   // files: List of files matching the criteria
-  repeated File files = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).repeated.min_items = 1
-  ];
+  repeated File files = 1;
 
   // total_count: Total number of files matching the criteria
-  int32 total_count = 2;
+  int32 total_count = 2 [(buf.validate.field).int32.gte = 0];
 }
 
-// DeleteFilesRequest: Request to delete multiple files
+// DeleteFilesRequest is the request message for deleting multiple files.
 message DeleteFilesRequest {
   // context: Context ID for the files
   string context = 1 [
@@ -358,14 +373,14 @@ message DeleteFilesRequest {
   bool permanent = 4;
 }
 
-// DeleteFilesResponse: Response for file deletion
+// DeleteFilesResponse is the response message for file deletion operations.
 message DeleteFilesResponse {
   // results: Results for each file deletion attempt
   map<string, bool> results = 1;
 
   // total_deleted: Number of successfully deleted files
-  int32 total_deleted = 2;
+  int32 total_deleted = 2 [(buf.validate.field).int32.gte = 0];
 
   // total_failed: Number of failed deletions
-  int32 total_failed = 3;
+  int32 total_failed = 3 [(buf.validate.field).int32.gte = 0];
 }

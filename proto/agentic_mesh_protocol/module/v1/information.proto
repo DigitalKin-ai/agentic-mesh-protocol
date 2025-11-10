@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       https://www.gnu.org/licenses/gpl-3.0.html
+//     https://www.gnu.org/licenses/gpl-3.0.html
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -137,4 +137,34 @@ message GetModuleSecretResponse {
   bool success = 1;
   // secret_schema: Secret schema of the Module
   google.protobuf.Struct secret_schema = 2 [(buf.validate.field).required = true];
+}
+
+// GetConfigSetupModuleRequest
+//
+// Fields:
+//
+// - module_id: Database ID of the Module to get config setup schema
+// - llm_format: Define if the setup schema should be in LLM format or raw pydantic format
+message GetConfigSetupModuleRequest {
+  // module_id: Database ID of the Module to get setup schema
+  string module_id = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).required = true
+  ];
+  // llm_format: Define if the setup schema should be in LLM format or raw pydantic format
+  bool llm_format = 2;
+}
+
+// GetConfigSetupModuleResponse
+//
+// Returns:
+//
+// - success: Flag to indicate if the config setup schema request was successful
+// - config_setup_schema: Config setup schema of the Module
+message GetConfigSetupModuleResponse {
+  // success: Flag to indicate if the setup schema request was successful
+  bool success = 1;
+  // config_setup_schema: Setup schema of the Module
+  google.protobuf.Struct config_setup_schema = 2 [(buf.validate.field).required = true];
 }
