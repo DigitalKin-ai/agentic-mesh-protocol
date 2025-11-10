@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       https://www.gnu.org/licenses/gpl-3.0.html
+//     https://www.gnu.org/licenses/gpl-3.0.html
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,13 +20,13 @@ import "buf/validate/validate.proto";
 
 // ModuleStatus mirroring a module instance state,
 enum ModuleStatus {
-  // MODULE_STATUS_UNSPECIFIED: Unspecified module status.
+  // MODULE_STATUS_UNSPECIFIED is the default unspecified value.
   MODULE_STATUS_UNSPECIFIED = 0;
-  // MODULE_STATUS_RUNNING: Module alive.
+  // MODULE_STATUS_RUNNING indicates the module is alive.
   MODULE_STATUS_RUNNING = 1;
-  // MODULE_STATUS_IDLE: Module waiting for an event / update.
+  // MODULE_STATUS_IDLE indicates the module is waiting for an event / update.
   MODULE_STATUS_IDLE = 2;
-  // MODULE_STATUS_ENDED: Module signals the end of task or have been killed.
+  // MODULE_STATUS_ENDED indicates the module signals the end of task or have been killed.
   MODULE_STATUS_ENDED = 3;
 }
 

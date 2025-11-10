@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       https://www.gnu.org/licenses/gpl-3.0.html
+//     https://www.gnu.org/licenses/gpl-3.0.html
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -40,4 +40,6 @@ service SetupService {
   rpc UpdateSetupVersion(UpdateSetupVersionRequest) returns (UpdateSetupVersionResponse);
   // DeleteSetupVersion deletes a setup version.
   rpc DeleteSetupVersion(DeleteSetupVersionRequest) returns (DeleteSetupVersionResponse);
+  // ListSetups retrieves a paginated list of setups, filtered by organisation or owner.
+  rpc ListSetups(ListSetupsRequest) returns (ListSetupsResponse);
 }
