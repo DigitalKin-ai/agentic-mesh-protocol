@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       https://www.gnu.org/licenses/gpl-3.0.html
+//     https://www.gnu.org/licenses/gpl-3.0.html
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,22 +16,60 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.filesystem.v1;
 
-import "agentic_mesh_protocol/filesystem/v1/data.proto";
+import "agentic_mesh_protocol/filesystem/v1/filesystem.proto";
 
-// FileSystemService: Service to store objects
-service FileSystemService {
-  // UploadFile: Upload a file to the system
-  rpc UploadFile(UploadFileRequest) returns (UploadFileResponse);
+// FilesystemService: Service for managing files and file operations
+//
+// This service provides comprehensive file management capabilities including
+// upload, retrieval, update, and deletion operations with metadata support,
+// filtering, and pagination.
+service FilesystemService {
+  // UploadFiles: Upload multiple files to the system
+  //
+  // This method allows batch uploading of files with validation and
+  // error handling for each individual file. Files are processed
+  // atomically - if one fails, others may still succeed.
+  //
+  rpc UploadFiles(UploadFilesRequest) returns (UploadFilesResponse);
 
-  // GetFile: Get a file by ID
+  // GetFile: Retrieve a specific file by ID or name
+  //
+  // This method fetches detailed information about a single file,
+  // with optional content inclusion. Supports lookup by either
+  // unique ID or name within a kin_context.
+  //
   rpc GetFile(GetFileRequest) returns (GetFileResponse);
 
-  // GetFilesByMission: Get files by mission
-  rpc GetFilesByMission(GetFilesByMissionRequest) returns (GetFilesByMissionResponse);
+  // GetFiles: Retrieve multiple files by various criteria
+  //
+  // This method provides efficient retrieval of multiple files using:
+  // - File IDs
+  // - File names
+  // - Path prefix
+  // With support for:
+  // - Pagination for large result sets
+  // - Optional content inclusion
+  // - Total count of matching files
+  //
+  rpc GetFiles(GetFilesRequest) returns (GetFilesResponse);
 
-  // GetFilesByName: Get files by name and mission
-  rpc GetFilesByName(GetFilesByNameRequest) returns (GetFilesByNameResponse);
+  // UpdateFile: Update file metadata, content, or both
+  //
+  // This method allows updating various aspects of a file:
+  // - Rename files
+  // - Update content and content type
+  // - Modify metadata
+  // - Create new versions
+  //
+  rpc UpdateFile(UpdateFileRequest) returns (UpdateFileResponse);
 
-  // DeleteFile: Delete a file by name and mission
-  rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse);
+  // DeleteFiles: Delete multiple files
+  //
+  // This method supports batch deletion of files with options for:
+  // - Soft deletion (marking as deleted)
+  // - Permanent deletion
+  // - Force deletion of files in use
+  // - Individual error reporting per file
+  //
+  rpc DeleteFiles(DeleteFilesRequest) returns (DeleteFilesResponse);
 }
