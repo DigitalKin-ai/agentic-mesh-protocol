@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       https://www.gnu.org/licenses/gpl-3.0.html
+//     https://www.gnu.org/licenses/gpl-3.0.html
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -213,10 +213,7 @@ message CreateSetupVersionResponse {
 // - setup_version_id: The unique identifier of the setup version.
 message GetSetupVersionRequest {
   // setup_version_id: The unique identifier of the setup version.
-  string setup_version_id = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
-  ];
+  string setup_version_id = 1;
 }
 
 // GetSetupVersionResponse
@@ -293,4 +290,27 @@ message DeleteSetupVersionRequest {
 message DeleteSetupVersionResponse {
   // success: description flag of the operation.
   bool success = 1;
+}
+
+// ListSetupsRequest is the request message for listing setups.
+message ListSetupsRequest {
+  // organisation_id: Filter by organisation ID.
+  optional string organisation_id = 1;
+  // owner_id: Filter by owner ID.
+  optional string owner_id = 2;
+  // limit: Maximum number of setups to return.
+  int32 limit = 3 [
+    (buf.validate.field).int32.gte = 1,
+    (buf.validate.field).int32.lte = 1000
+  ];
+  // offset: Number of setups to skip.
+  int32 offset = 4 [(buf.validate.field).int32.gte = 0];
+}
+
+// ListSetupsResponse is the response message containing a list of setups.
+message ListSetupsResponse {
+  // setups: List of setups matching the criteria.
+  repeated Setup setups = 1;
+  // total_count: Total number of setups matching the criteria.
+  int32 total_count = 2 [(buf.validate.field).int32.gte = 0];
 }
