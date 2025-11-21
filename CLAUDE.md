@@ -13,9 +13,9 @@ agentic-mesh-protocol/
 ├── proto/                    # Protocol Buffer definitions
 │   ├── buf.yaml             # Buf linting configuration
 │   └── agentic_mesh_protocol/
-├── gen/                      # Generated TypeScript code (build output, not committed)
-│   ├── python/              # Python protobuf + gRPC
-│   └── typescript/          # TypeScript (ts-proto generated)
+├── gen/                      # Generated TypeScript code (committed for git dependencies)
+│   ├── python/              # Python protobuf + gRPC (not committed)
+│   └── typescript/          # TypeScript (ts-proto generated, committed to git)
 ├── index.ts                  # Main barrel export entry point
 ├── buf.gen.yaml             # Code generation configuration
 ├── Taskfile.yml             # Task runner commands
@@ -25,7 +25,7 @@ agentic-mesh-protocol/
 
 **Key Files & Directories:**
 - `proto/` - Source of truth: Protocol Buffer definitions
-- `gen/typescript/` - Generated TypeScript code (via ts-proto, excluded from git)
+- `gen/typescript/` - Generated TypeScript code (via ts-proto, **committed to git** for git dependency support)
 - `index.ts` - Handwritten barrel export at root (re-exports all services/types)
 - **TypeScript-only package** - Users' build systems compile the .ts files
 
@@ -404,5 +404,7 @@ ID prefixes are enforced via buf.validate:
 
 ### Build Process
 1. **Generate**: `buf generate` creates TypeScript from proto files in `gen/typescript/`
-2. **Publish**: TypeScript files (`index.ts` + `gen/typescript/`) are published to npm
-3. **Compile**: Users' build systems compile the TypeScript (not pre-compiled)
+2. **Commit**: Generated TypeScript code in `gen/typescript/` is committed to git (required for git dependencies)
+3. **Publish**: TypeScript files (`index.ts` + `gen/typescript/`) are published to npm
+4. **Compile**: Users' build systems compile the TypeScript (not pre-compiled)
+5. **Prepare script**: `npm run generate` runs automatically on `npm install` from git

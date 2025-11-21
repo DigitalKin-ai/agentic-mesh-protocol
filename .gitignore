@@ -10,7 +10,7 @@
 *.tsbuildinfo
 
 # Generated code (buf generate output)
-/gen/
+# Note: gen/ is now committed for git dependency support
 /docs/
 
 # Dependencies

@@ -17,6 +17,7 @@
     "generate": "npx buf generate",
     "build": "npm run generate",
     "clean": "rm -rf gen/",
+    "prepare": "npm run generate",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
