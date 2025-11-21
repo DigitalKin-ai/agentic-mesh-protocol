@@ -6,6 +6,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The **Agentic Mesh Protocol** is a gRPC-based protocol specification for multi-agent systems. It provides standardized APIs for agent modules to discover, communicate, and collaborate in a distributed mesh architecture. This repository contains only Protocol Buffer definitions - no implementation code.
 
+### Repository Structure
+
+```
+agentic-mesh-protocol/
+├── proto/                    # Protocol Buffer definitions
+│   ├── buf.yaml             # Buf linting configuration
+│   └── agentic_mesh_protocol/
+├── gen/                      # Generated TypeScript code (build output, not committed)
+│   ├── python/              # Python protobuf + gRPC
+│   └── typescript/          # TypeScript (ts-proto generated)
+├── index.ts                  # Main barrel export entry point
+├── buf.gen.yaml             # Code generation configuration
+├── Taskfile.yml             # Task runner commands
+├── package.json             # npm package configuration
+└── CLAUDE.md                # This file
+```
+
+**Key Files & Directories:**
+- `proto/` - Source of truth: Protocol Buffer definitions
+- `gen/typescript/` - Generated TypeScript code (via ts-proto, excluded from git)
+- `index.ts` - Handwritten barrel export at root (re-exports all services/types)
+- **TypeScript-only package** - Users' build systems compile the .ts files
+
 ## Prerequisites
 
 Before using this project, you need to install the following tools:
@@ -28,9 +51,14 @@ Before using this project, you need to install the following tools:
   - Install from: https://taskfile.dev/installation/
   - Or: `brew install go-task` (macOS), `snap install task` (Linux)
 
-After installing prerequisites, run `task check` to verify your setup.
+After installing prerequisites:
+1. Run `task check` to verify your setup, or
+2. Run `task install` to install all dependencies (npm + buf dependencies), or
+3. Manually run `npm install && npx buf dep update proto`
 
 ## Development Commands
+
+**IMPORTANT**: All commands in this section must be run from the **repository root directory** (where `Taskfile.yml`, `buf.gen.yaml`, and `package.json` are located), NOT from the `proto/` subdirectory. The proto files are in `proto/`, but build configuration files are at the root.
 
 ### Using Taskfile (Recommended)
 
@@ -63,7 +91,7 @@ task generate:check    # Verify generated code is up to date
 
 # Build workflows
 task build             # Full build - format, lint, and generate
-task build:ci          # CI build - includes format check and breaking change detection
+task build:ci          # CI build - format check, lint, breaking, and generate check
 task ci                # Run all CI checks locally (recommended before pushing)
 
 # Buf Schema Registry
@@ -71,7 +99,7 @@ task push              # Push schema to BSR (requires DKIN_CLOUD_TOKEN or BUF_TO
 task push:tag TAG=v1.0.0  # Push schema with a specific tag
 
 # Cleanup
-task clean             # Remove generated files (gen/, docs/)
+task clean             # Remove generated files (gen/)
 task clean:all         # Remove all generated and dependency files
 
 # Development helpers
@@ -84,11 +112,12 @@ task stats             # Show statistics about proto files
 
 ### Direct Commands
 
-You can also run the underlying commands directly:
+You can also run the underlying commands directly (from the repository root):
 
 ```bash
-# Install dependencies
+# Install dependencies (first time setup)
 npm install
+npx buf dep update proto  # Download buf dependencies (protovalidate, etc.)
 
 # Format proto files
 npx buf format -w
@@ -99,20 +128,37 @@ npx buf lint
 # Check for breaking changes against main branch
 npx buf breaking --against '.git#branch=main'
 
-# Generate code for all languages (Python, TypeScript)
+# Generate code from proto files (Python + TypeScript)
 npx buf generate
+
+# Or use npm script
+npm run build  # Runs: npx buf generate
 
 # Push schema to Buf Schema Registry (requires DKIN_CLOUD_TOKEN)
 npx buf push proto
 ```
 
-**Note**: The `buf` CLI is installed as an npm dependency. Use `npx buf` to run it, which will use the locally installed version from `node_modules/.bin/`.
+**Note**: The `buf` CLI is installed as an npm dependency. Use `npx buf` to run it, which will use the locally installed version from `node_modules/.bin/`. You must run `npx buf dep update proto` after `npm install` to download Protocol Buffer dependencies (like `buf.build/bufbuild/protovalidate`).
 
-### Generated Output Locations
+### Code Generation
 
-When running `buf generate`, code is generated to:
-- `gen/python/` - Python protobuf + gRPC
-- `gen/typescript/` - TypeScript (Protobuf-ES + gRPC-Web)
+This is a **TypeScript-only package** - users' build systems compile the `.ts` files.
+
+#### Generate TypeScript from Proto Files
+```bash
+npx buf generate     # or: task generate or: npm run build
+```
+- Uses **ts-proto** plugin to generate TypeScript
+- Output: `gen/typescript/` directory
+- Generates **@grpc/grpc-js** compatible code (Node.js servers)
+- Creates service definitions, message types, and client/server interfaces
+
+### Output Locations
+
+After running `npm run build`:
+- `gen/python/` - Python protobuf + gRPC stubs
+- `gen/typescript/` - Generated TypeScript from proto files (ts-proto)
+- `index.ts` - Main entry point with barrel exports for all services
 
 ## Architecture
 
@@ -205,6 +251,102 @@ The protocol depends on:
 - `buf.build/googleapis/googleapis` - Standard Google APIs
 - `buf.build/bufbuild/protovalidate` - Request validation annotations
 
+### Runtime Dependencies
+
+The npm package requires:
+- `@grpc/grpc-js` (^1.13.3) - gRPC implementation for Node.js
+- `google-protobuf` (^3.21.4) - Protocol Buffers runtime
+- **TypeScript** - Required to compile the .ts files in consuming projects
+
+## Using as an NPM Package
+
+This repository is packaged as `@digitalkin/agentic-mesh-protocol` for consumption in Node.js projects like `node-services-provider`.
+
+### Publishing
+
+#### Option 1: npm link (Local Development)
+```bash
+# In agentic-mesh-protocol repository
+npm install
+npm run build
+npm link
+
+# In consuming project (e.g., node-services-provider)
+npm link @digitalkin/agentic-mesh-protocol
+```
+
+#### Option 2: GitHub Packages (Private Registry)
+```bash
+# Build and publish
+npm run build
+npm publish
+
+# In consuming project
+npm install @digitalkin/agentic-mesh-protocol
+```
+
+#### Option 3: Git Dependency
+```json
+{
+  "dependencies": {
+    "@digitalkin/agentic-mesh-protocol": "github:DigitalKin-ai/agentic-mesh-protocol#main"
+  }
+}
+```
+
+### Consuming in node-services-provider
+
+Once published/linked, import services like this:
+
+```typescript
+// Import specific services
+import {
+  ModuleServiceService,
+  ModuleServiceClient,
+  StartModuleRequest,
+  StartModuleResponse,
+} from '@digitalkin/agentic-mesh-protocol';
+
+// Import from specific service
+import {
+  StorageServiceService,
+  StoreRecordRequest,
+  StorageRecord,
+} from '@digitalkin/agentic-mesh-protocol';
+
+// Use with @grpc/grpc-js
+import * as grpc from '@grpc/grpc-js';
+
+const client = new ModuleServiceClient(
+  'localhost:50051',
+  grpc.credentials.createInsecure()
+);
+```
+
+### Migration from service-apis-node
+
+To migrate from `service-apis-node` to this package:
+
+1. **Update package.json**:
+```json
+{
+  "dependencies": {
+    "@digitalkin/agentic-mesh-protocol": "^1.0.0"
+  }
+}
+```
+
+2. **Update imports**:
+```typescript
+// Old
+import { ModuleServiceService } from 'service-apis-node/digitalkin_proto/...';
+
+// New
+import { ModuleServiceService } from '@digitalkin/agentic-mesh-protocol';
+```
+
+3. **Verify compatibility**: Both use `@grpc/grpc-js`, so server implementations remain the same
+
 ## CI/CD
 
 Three GitHub Actions workflows provide comprehensive validation and automation:
@@ -237,14 +379,30 @@ Automatically pushes schema to Buf Schema Registry:
 
 ## Important Notes
 
-- This is a protocol-only repository - contains no implementation code
+### Protocol and Structure
+- This repository contains Protocol Buffer definitions and generates code for consumption
 - All proto files must maintain backward compatibility (checked by CI)
 - All packages use v1 versioning (e.g., `agentic_mesh_protocol.module.v1`, `agentic_mesh_protocol.storage.v1`)
-- ID prefixes are enforced via buf.validate:
-  - Module IDs must be prefixed with "modules:"
-  - Job IDs must be prefixed with "jobs:"
-  - Setup IDs must be prefixed with "setups:"
-  - Mission IDs must be prefixed with "missions:"
-  - User IDs must be prefixed with "users:"
-  - Organisation IDs must be prefixed with "organisations:"
 - Licensed under GPL-3.0
+
+### TypeScript/Node.js Package
+- **Package name**: `@digitalkin/agentic-mesh-protocol`
+- **Generator**: ts-proto (generates @grpc/grpc-js compatible code for Node.js servers)
+- **Output**: TypeScript-only package (`index.ts` + `gen/typescript/`)
+- **Entry point**: `index.ts` (barrel export re-exporting all services and types)
+- **Compatibility**: Works with existing Node.js gRPC servers using @grpc/grpc-js
+- **Build**: Users' TypeScript compilers handle compilation (no pre-compilation)
+
+### Validation Rules
+ID prefixes are enforced via buf.validate:
+- Module IDs must be prefixed with "modules:"
+- Job IDs must be prefixed with "jobs:"
+- Setup IDs must be prefixed with "setups:"
+- Mission IDs must be prefixed with "missions:"
+- User IDs must be prefixed with "users:"
+- Organisation IDs must be prefixed with "organisations:"
+
+### Build Process
+1. **Generate**: `buf generate` creates TypeScript from proto files in `gen/typescript/`
+2. **Publish**: TypeScript files (`index.ts` + `gen/typescript/`) are published to npm
+3. **Compile**: Users' build systems compile the TypeScript (not pre-compiled)

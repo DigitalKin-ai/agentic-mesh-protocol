@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       https://www.gnu.org/licenses/gpl-3.0.html
+//     https://www.gnu.org/licenses/gpl-3.0.html
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -37,5 +37,8 @@ message Metadata {
   // tags: List of tag to describe a module functionalities.
   repeated Tag tags = 2;
   // description: Module's description for search and indexing
-  optional string description = 3 [(buf.validate.field).string.min_len = 1];
+  optional string description = 3 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).required = true
+  ];
 }

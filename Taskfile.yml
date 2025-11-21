@@ -139,6 +139,7 @@ tasks:
       - task: format
       - task: lint
       - task: generate
+      - echo "✅ Build completed successfully!"
 
   build:ci:
     desc: CI build - format check, lint, breaking, and generate check
@@ -161,7 +162,7 @@ tasks:
 
   # Cleanup
   clean:
-    desc: Remove generated files
+    desc: Remove generated files (gen/)
     cmds:
       - rm -rf {{.GEN_DIR}}/
 

@@ -8,7 +8,6 @@ managed:
 
 inputs:
   - directory: proto
-  - module: buf.build/bufbuild/protovalidate
 
 plugins:
   # ==========================================
@@ -26,19 +25,29 @@ plugins:
     out: gen/python
 
   # ==========================================
-  # TypeScript Generation (for yarn)
+  # TypeScript/Node.js Generation (for Node.js servers)
   # ==========================================
 
-  # Protobuf-ES (modern TypeScript protobuf)
-  - remote: buf.build/bufbuild/es:v2.10.0
+  # ts-proto for Node.js gRPC (compatible with @grpc/grpc-js)
+  - local: protoc-gen-ts_proto
     out: gen/typescript
     opt:
-      - target=ts
-      - import_extension=none
+      # Core options
+      - outputServices=grpc-js        # Generate @grpc/grpc-js compatible code
+      - outputClientImpl=grpc-js      # Generate client implementations
+      - env=node                      # Node.js environment
+      - esModuleInterop=true          # Better import compatibility
 
-  # gRPC-Web (traditional)
-  - remote: buf.build/grpc/web:v2.0.2
-    out: gen/typescript
-    opt:
-      - import_style=typescript
-      - mode=grpcwebtext
+      # Type safety
+      - useOptionals=messages         # Optional fields as T | undefined
+      - useDate=true                  # Use Date instead of Timestamp
+      - forceLong=string              # Convert longs to strings
+
+      # File organization
+      - importSuffix=.js              # Add .js to imports (ES modules)
+
+      # Naming conventions
+      - snakeToCamel=keys             # Convert snake_case to camelCase
+
+      # Code style
+      - esLintDisable=true            # Add eslint-disable comments

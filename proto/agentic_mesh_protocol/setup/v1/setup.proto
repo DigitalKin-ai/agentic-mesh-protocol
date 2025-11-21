@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       https://www.gnu.org/licenses/gpl-3.0.html
+//     https://www.gnu.org/licenses/gpl-3.0.html
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +19,40 @@ package agentic_mesh_protocol.setup.v1;
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
+
+// SetupStatus
+// Represents the status of a setup.
+//
+// Fields:
+// - DRAFT: Setup is a draft
+// - VALIDATING: Setup is being validated
+// - READY: Setup is ready
+// - PAUSED: Setup is paused
+// - FAILED: Setup failed
+// - ARCHIVED: Setup has been archived
+// - NEEDS_CONFIGURATION: Setup needs configuration
+// - CONFIGURATION_FAILED: Setup configuration failed
+// - CONFIGURATION_SUCCEEDED: Setup configuration succeeded
+enum SetupStatus {
+    // DRAFT: Setup is a draft
+    DRAFT = 0;
+    // VALIDATING: Setup is being validated
+    VALIDATING = 1;
+    // READY: Setup is ready
+    READY = 2;
+    // PAUSED: Setup is paused
+    PAUSED = 4;
+    // FAILED: Setup failed
+    FAILED = 5;
+    // ARCHIVED: Setup has been archived
+    ARCHIVED = 6;
+    // NEEDS_CONFIGURATION: Setup needs configuration
+    NEEDS_CONFIGURATION = 7;
+    // CONFIGURATION_FAILED: Setup configuration failed
+    CONFIGURATION_FAILED = 8;
+    // CONFIGURATION_SUCCEEDED: Setup configuration succeeded
+    CONFIGURATION_SUCCEEDED = 9;    
+}
 
 // SetupVersion
 // Represents a version of a setup's configuration.
@@ -66,6 +100,8 @@ message Setup {
   string module_id = 5 [(buf.validate.field).required = true];
   // current_setup_version: The unique identifier of the active setup version.
   optional SetupVersion current_setup_version = 6;
+  // status: The status of the setup.
+  SetupStatus status = 7 [(buf.validate.field).required = true];
 }
 
 // CreateSetupRequest
@@ -88,6 +124,8 @@ message CreateSetupRequest {
   string module_id = 4 [(buf.validate.field).required = true];
   // current_setup_version: The unique identifier of the active setup version.
   optional SetupVersion current_setup_version = 5;
+  // status: The status of the setup.
+  SetupStatus status = 6 [(buf.validate.field).required = true];
 }
 
 // CreateSetupResponse
@@ -145,6 +183,8 @@ message UpdateSetupRequest {
   string owner_id = 3;
   // current_setup_version: The unique identifier of the active setup version.
   SetupVersion current_setup_version = 4;
+  // status: The status of the setup.
+  SetupStatus status = 5 [(buf.validate.field).required = true];
 }
 
 // UpdateSetupResponse
@@ -213,10 +253,7 @@ message CreateSetupVersionResponse {
 // - setup_version_id: The unique identifier of the setup version.
 message GetSetupVersionRequest {
   // setup_version_id: The unique identifier of the setup version.
-  string setup_version_id = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
-  ];
+  string setup_version_id = 1;
 }
 
 // GetSetupVersionResponse
@@ -293,4 +330,27 @@ message DeleteSetupVersionRequest {
 message DeleteSetupVersionResponse {
   // success: description flag of the operation.
   bool success = 1;
+}
+
+// ListSetupsRequest is the request message for listing setups.
+message ListSetupsRequest {
+  // organisation_id: Filter by organisation ID.
+  optional string organisation_id = 1;
+  // owner_id: Filter by owner ID.
+  optional string owner_id = 2;
+  // limit: Maximum number of setups to return.
+  int32 limit = 3 [
+    (buf.validate.field).int32.gte = 1,
+    (buf.validate.field).int32.lte = 1000
+  ];
+  // offset: Number of setups to skip.
+  int32 offset = 4 [(buf.validate.field).int32.gte = 0];
+}
+
+// ListSetupsResponse is the response message containing a list of setups.
+message ListSetupsResponse {
+  // setups: List of setups matching the criteria.
+  repeated Setup setups = 1;
+  // total_count: Total number of setups matching the criteria.
+  int32 total_count = 2 [(buf.validate.field).int32.gte = 0];
 }

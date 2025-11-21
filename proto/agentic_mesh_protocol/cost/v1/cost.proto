@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       https://www.gnu.org/licenses/gpl-3.0.html
+//     https://www.gnu.org/licenses/gpl-3.0.html
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,107 +18,206 @@ package agentic_mesh_protocol.cost.v1;
 
 import "buf/validate/validate.proto";
 
-// CostType: Enum for the type of cost
+// CostType represents the classification of cost types in the system.
 enum CostType {
-  // COST_TYPE_UNSPECIFIED: Unspecified cost type
-  COST_TYPE_UNSPECIFIED = 0;
-  // COST_TYPE_TOKEN_INPUT: Token input cost
-  COST_TYPE_TOKEN_INPUT = 1;
-  // COST_TYPE_TOKEN_OUTPUT: Token output cost
-  COST_TYPE_TOKEN_OUTPUT = 2;
-  // COST_TYPE_API_CALL: API call cost
-  COST_TYPE_API_CALL = 3;
-  // COST_TYPE_STORAGE: Storage cost
-  COST_TYPE_STORAGE = 4;
-  // COST_TYPE_TIME: Time cost
-  COST_TYPE_TIME = 5;
+  // UNSPECIFIED is the default unspecified value.
+  UNSPECIFIED = 0;
+  // TOKEN_INPUT represents token input costs.
+  TOKEN_INPUT = 1;
+  // TOKEN_OUTPUT represents token output costs.
+  TOKEN_OUTPUT = 2;
+  // API_CALL represents API call costs.
+  API_CALL = 3;
+  // STORAGE represents storage costs.
+  STORAGE = 4;
+  // TIME represents time-based costs.
+  TIME = 5;
+  // OTHER represents other types of costs.
+  OTHER = 6;
 }
 
-// Cost: Message to represent a cost
+// Cost represents a cost entry with comprehensive tracking information.
 message Cost {
-  // cost: The cost value
-  double cost = 1 [(buf.validate.field).required = true];
-  // mission_id: Mission ID linked to the cost
+  // cost is the total cost value.
+  double cost = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gte = 0
+  ];
+
+  // mission_id is the mission ID linked to this cost.
   string mission_id = 2 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:"
+    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.min_len = 1
   ];
-  // name: Name of the cost (unique by mission_id)
-  string name = 3 [(buf.validate.field).required = true];
-  // type: Type of the cost
-  CostType type = 4 [(buf.validate.field).required = true];
-  // unit: Unit of the cost
-  string unit = 5 [(buf.validate.field).required = true];
+
+  // name is the descriptive name of the cost.
+  string name = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // cost_type is the classification of the cost.
+  CostType cost_type = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum.not_in = 0
+  ];
+
+  // unit is the unit of measurement for the cost (e.g., "tokens", "calls", "GB").
+  string unit = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // rate is the cost per unit.
+  double rate = 6 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gte = 0
+  ];
+
+  // setup_version_id is the setup version ID associated with this cost.
+  string setup_version_id = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "setup_versions:",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // quantity is the number of units consumed.
+  double quantity = 8 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gte = 0
+  ];
 }
 
-// AddCostRequest: Request to add a cost
+// AddCostRequest is the request message for adding a cost entry.
 message AddCostRequest {
-  // cost: The cost value
-  double cost = 1 [(buf.validate.field).required = true];
-  // mission_id: Mission ID linked to the cost
+  // cost is the total cost value.
+  double cost = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gte = 0
+  ];
+
+  // mission_id is the mission ID to link this cost to.
   string mission_id = 2 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:"
+    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.min_len = 1
   ];
-  // name: Name of the cost (unique by mission_id)
-  string name = 3 [(buf.validate.field).required = true];
-  // type: Type of the cost
-  CostType type = 4 [(buf.validate.field).required = true];
-  // unit: Unit of the cost
-  string unit = 5 [(buf.validate.field).required = true];
+
+  // name is the descriptive name for this cost.
+  string name = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // cost_type is the classification of the cost.
+  CostType cost_type = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum.not_in = 0
+  ];
+
+  // unit is the unit of measurement (e.g., "tokens", "calls", "GB").
+  string unit = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // rate is the cost per unit.
+  double rate = 6 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gte = 0
+  ];
+
+  // setup_version_id is the setup version ID to associate with this cost.
+  string setup_version_id = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "setup_versions:",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // quantity is the number of units consumed.
+  double quantity = 8 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gte = 0
+  ];
 }
 
-// AddCostResponse: Response to added cost
+// AddCostResponse is the response message for adding a cost entry.
 message AddCostResponse {
-  // success: Success of the operation
-  bool success = 1 [(buf.validate.field).required = true];
+  // success indicates whether the cost was successfully added.
+  bool success = 1;
 }
 
-// GetCostsByMissionRequest: Request to get costs by mission
-message GetCostsByMissionRequest {
-  // mission_id: Mission ID linked to the cost
-  string mission_id = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:"
+// CostFilter contains criteria for filtering cost queries.
+message CostFilter {
+  // names filters costs by one or more names.
+  repeated string names = 1 [(buf.validate.field).repeated.items.string.min_len = 1];
+
+  // cost_types filters costs by cost type classifications.
+  repeated CostType cost_types = 2 [(buf.validate.field).repeated.items.enum.not_in = 0];
+
+  // setup_version_ids filters costs by setup version IDs.
+  repeated string setup_version_ids = 3 [
+    (buf.validate.field).repeated.items.string.prefix = "setup_versions:",
+    (buf.validate.field).repeated.items.string.min_len = 1
   ];
 }
 
-// GetCostsByMissionResponse: Response to get costs by mission
-message GetCostsByMissionResponse {
-  // costs: Costs
-  repeated Cost costs = 1 [(buf.validate.field).repeated.min_items = 0];
-}
-
-// GetCostsByNameRequest: Request to get costs by name
-message GetCostsByNameRequest {
-  // mission_id: Mission ID linked to the cost
+// GetCostsRequest is the request message for retrieving multiple costs.
+message GetCostsRequest {
+  // mission_id is the mission ID to query costs for.
   string mission_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:"
+    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.min_len = 1
   ];
-  // name: Name of the cost (unique by mission_id)
-  string name = 2 [(buf.validate.field).required = true];
+
+  // filter contains optional filtering criteria.
+  CostFilter filter = 2;
+
+  // limit is the maximum number of costs to return.
+  int32 limit = 3 [
+    (buf.validate.field).int32.gte = 1,
+    (buf.validate.field).int32.lte = 1000
+  ];
+
+  // offset is the number of costs to skip for pagination.
+  int32 offset = 4 [(buf.validate.field).int32.gte = 0];
 }
 
-// GetCostsByNameResponse: Response to get costs by name
-message GetCostsByNameResponse {
-  // costs: Costs
-  repeated Cost costs = 1 [(buf.validate.field).repeated.min_items = 0];
+// GetCostsResponse is the response message containing multiple costs.
+message GetCostsResponse {
+  // costs is the list of matching cost entries.
+  repeated Cost costs = 1;
+
+  // total_count is the total number of costs matching the criteria.
+  int32 total_count = 2 [(buf.validate.field).int32.gte = 0];
+
+  // total_cost is the sum of all matching cost values.
+  double total_cost = 3 [(buf.validate.field).double.gte = 0];
 }
 
-// GetCostsByTypeRequest: Request to get costs by type
-message GetCostsByTypeRequest {
-  // mission_id: Mission ID linked to the cost
+// GetCostRequest is the request message for retrieving costs by name.
+message GetCostRequest {
+  // mission_id is the mission ID to query costs for.
   string mission_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:"
+    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.min_len = 1
   ];
-  // type: Type of the cost
-  CostType type = 2 [(buf.validate.field).required = true];
+
+  // name is the specific cost name to retrieve.
+  string name = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 }
 
-// GetCostsByTypeResponse: Response to get costs by type
-message GetCostsByTypeResponse {
-  // costs: Costs
-  repeated Cost costs = 1 [(buf.validate.field).repeated.min_items = 0];
+// GetCostResponse is the response message for cost retrieval by name.
+message GetCostResponse {
+  // costs is the list of cost entries matching the name.
+  repeated Cost costs = 1;
+
+  // total_cost is the sum of all matching cost values.
+  double total_cost = 2 [(buf.validate.field).double.gte = 0];
 }

@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       https://www.gnu.org/licenses/gpl-3.0.html
+//     https://www.gnu.org/licenses/gpl-3.0.html
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,17 +18,14 @@ package agentic_mesh_protocol.cost.v1;
 
 import "agentic_mesh_protocol/cost/v1/cost.proto";
 
-// CostService: Service to manage costs
+// CostService provides operations for tracking and querying operational costs.
 service CostService {
-  // AddCost: Add a cost
+  // AddCost records a new cost entry for a mission.
   rpc AddCost(AddCostRequest) returns (AddCostResponse);
 
-  // GetCostsByMission: Get a cost by Mission ID
-  rpc GetCostsByMission(GetCostsByMissionRequest) returns (GetCostsByMissionResponse);
+  // GetCost retrieves cost entries by name within a mission.
+  rpc GetCost(GetCostRequest) returns (GetCostResponse);
 
-  // GetCostsByName: Get costs by name
-  rpc GetCostsByName(GetCostsByNameRequest) returns (GetCostsByNameResponse);
-
-  // GetCostsByType: Get costs by type
-  rpc GetCostsByType(GetCostsByTypeRequest) returns (GetCostsByTypeResponse);
+  // GetCosts retrieves multiple cost entries with optional filtering and pagination.
+  rpc GetCosts(GetCostsRequest) returns (GetCostsResponse);
 }
