@@ -16,6 +16,7 @@
     "deps:update": "npx buf dep update proto",
     "generate": "npx buf generate",
     "build": "npm run generate",
+    "prepare": "npm run generate",
     "clean": "rm -rf gen/",
     "prepublishOnly": "npm run build"
   },
