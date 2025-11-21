@@ -1,5 +1,55 @@
 {
-    "dependencies": {
-        "@bufbuild/buf": "1.59.0"
-    }
+  "name": "@digitalkin/agentic-mesh-protocol",
+  "version": "1.0.0",
+  "description": "Node.js gRPC interfaces for Agentic Mesh Protocol - Protocol Buffer definitions for multi-agent systems",
+  "type": "module",
+  "main": "index.ts",
+  "types": "index.ts",
+  "files": [
+    "index.ts",
+    "gen/typescript/**/*.ts",
+    "proto/**/*.proto",
+    "buf.yaml",
+    "buf.gen.yaml"
+  ],
+  "scripts": {
+    "deps:update": "npx buf dep update proto",
+    "generate": "npx buf generate",
+    "build": "npm run generate",
+    "clean": "rm -rf gen/",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "grpc",
+    "protobuf",
+    "multi-agent",
+    "agent",
+    "mesh",
+    "protocol",
+    "digitalkin"
+  ],
+  "author": "DigitalKin Inc.",
+  "license": "GPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DigitalKin-ai/agentic-mesh-protocol.git"
+  },
+  "bugs": {
+    "url": "https://github.com/DigitalKin-ai/agentic-mesh-protocol/issues"
+  },
+  "homepage": "https://github.com/DigitalKin-ai/agentic-mesh-protocol#readme",
+  "dependencies": {
+    "@grpc/grpc-js": "^1.13.3",
+    "google-protobuf": "^3.21.4"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "1.59.0",
+    "@types/google-protobuf": "^3.15.12",
+    "@types/node": "^22.0.0",
+    "ts-proto": "^2.8.3",
+    "typescript": "^5.8.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }

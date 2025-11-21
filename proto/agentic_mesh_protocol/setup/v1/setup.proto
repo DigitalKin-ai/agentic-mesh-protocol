@@ -20,6 +20,40 @@ import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 
+// SetupStatus
+// Represents the status of a setup.
+//
+// Fields:
+// - DRAFT: Setup is a draft
+// - VALIDATING: Setup is being validated
+// - READY: Setup is ready
+// - PAUSED: Setup is paused
+// - FAILED: Setup failed
+// - ARCHIVED: Setup has been archived
+// - NEEDS_CONFIGURATION: Setup needs configuration
+// - CONFIGURATION_FAILED: Setup configuration failed
+// - CONFIGURATION_SUCCEEDED: Setup configuration succeeded
+enum SetupStatus {
+    // DRAFT: Setup is a draft
+    DRAFT = 0;
+    // VALIDATING: Setup is being validated
+    VALIDATING = 1;
+    // READY: Setup is ready
+    READY = 2;
+    // PAUSED: Setup is paused
+    PAUSED = 4;
+    // FAILED: Setup failed
+    FAILED = 5;
+    // ARCHIVED: Setup has been archived
+    ARCHIVED = 6;
+    // NEEDS_CONFIGURATION: Setup needs configuration
+    NEEDS_CONFIGURATION = 7;
+    // CONFIGURATION_FAILED: Setup configuration failed
+    CONFIGURATION_FAILED = 8;
+    // CONFIGURATION_SUCCEEDED: Setup configuration succeeded
+    CONFIGURATION_SUCCEEDED = 9;    
+}
+
 // SetupVersion
 // Represents a version of a setup's configuration.
 //
@@ -66,6 +100,8 @@ message Setup {
   string module_id = 5 [(buf.validate.field).required = true];
   // current_setup_version: The unique identifier of the active setup version.
   optional SetupVersion current_setup_version = 6;
+  // status: The status of the setup.
+  SetupStatus status = 7 [(buf.validate.field).required = true];
 }
 
 // CreateSetupRequest
@@ -88,6 +124,8 @@ message CreateSetupRequest {
   string module_id = 4 [(buf.validate.field).required = true];
   // current_setup_version: The unique identifier of the active setup version.
   optional SetupVersion current_setup_version = 5;
+  // status: The status of the setup.
+  SetupStatus status = 6 [(buf.validate.field).required = true];
 }
 
 // CreateSetupResponse
@@ -145,6 +183,8 @@ message UpdateSetupRequest {
   string owner_id = 3;
   // current_setup_version: The unique identifier of the active setup version.
   SetupVersion current_setup_version = 4;
+  // status: The status of the setup.
+  SetupStatus status = 5 [(buf.validate.field).required = true];
 }
 
 // UpdateSetupResponse
