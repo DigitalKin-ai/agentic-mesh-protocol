@@ -1,5 +1,5 @@
 {
     "dependencies": {
-        "@bufbuild/buf": "1.59.0"
+        "@bufbuild/buf": "1.61.0"
     }
 }
