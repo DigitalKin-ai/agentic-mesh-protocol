@@ -85,10 +85,10 @@ message UserProfile {
 
 // GetUserProfileRequest: Request to get a user profile
 message GetUserProfileRequest {
-  // user_id: Unique identifier for the user
-  string user_id = 1 [
+  // mission_id: Unique identifier for the mission
+  string mission_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "users:"
+    (buf.validate.field).string.prefix = "missions:"
   ];
 }
 
