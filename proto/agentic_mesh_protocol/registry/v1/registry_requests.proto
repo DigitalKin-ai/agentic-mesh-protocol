@@ -1,0 +1,206 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.registry.v1;
+
+import "agentic_mesh_protocol/registry/v1/registry_enums.proto";
+import "agentic_mesh_protocol/registry/v1/registry_models.proto";
+
+import "buf/validate/validate.proto";
+
+// -------------------------
+// REGISTRATION
+// -------------------------
+
+// Called by a module gRPC at startup to declare itself in the network.
+// NOTE: module_id is expected to already exist in the platform database.
+message RegisterModuleRequest {
+  // ID
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.min_len = 1
+  ];
+  // Address
+  string address = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+  // Port
+  int32 port = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32.gte = 1,
+    (buf.validate.field).int32.lte = 65535
+  ];
+  // Version
+  string version = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ]; // runtime version of the deployed module
+}
+
+// RegisterModuleResponse
+message RegisterModuleResponse {
+  // Module descriptor
+  ModuleDescriptor module = 1 [
+    (buf.validate.field).required = true
+  ];
+}
+
+// HeartbeatRequest
+message HeartbeatRequest {
+  // ID
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// HeartbeatResponse
+message HeartbeatResponse {
+  // Status
+  ModuleStatus status = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum.not_in = 0
+  ]; // what the registry considers for this module (ACTIVE, READY, etc.)
+}
+
+// -------------------------
+// DISCOVERY
+// -------------------------
+
+// Discover setups that are available (agents / tools).
+message DiscoverSetupsRequest {
+  // Basic filtering
+  // Organization ID
+  string organization_id = 1 [
+    (buf.validate.field).string.prefix = "organizations:",
+    (buf.validate.field).string.min_len = 1
+  ];
+  // Visibility
+  repeated Visibility visibility = 2 [
+    (buf.validate.field).repeated.items.enum.not_in = 0
+  ];
+  // Status
+  repeated SetupStatus status = 3 [
+    (buf.validate.field).repeated.items.enum.not_in = 0
+  ]; // typically READY / CONFIGURATION_SUCCEEDED
+
+  // e.g. agent, tool
+  repeated ModuleType module_types = 4 [
+    (buf.validate.field).repeated.items.enum.not_in = 0
+  ];
+
+  // Simple text search
+  string query = 5 [
+    (buf.validate.field).string.min_len = 1
+  ]; // matches on name / documentation depending on implementation
+
+  // Filter on specific modules if needed
+  repeated string module_ids = 6 [
+    (buf.validate.field).repeated.items.string.prefix = "modules:",
+    (buf.validate.field).repeated.items.string.min_len = 1
+  ];
+
+  // Pagination
+  // Limit
+  int32 limit = 7 [
+    (buf.validate.field).int32.gte = 1,
+    (buf.validate.field).int32.lte = 100
+  ];
+  // Offset
+  int32 offset = 8 [
+    (buf.validate.field).int32.gte = 0
+  ];
+}
+
+// DiscoverSetupsResponse
+message DiscoverSetupsResponse {
+  // Setups
+  repeated SetupDescriptor setups = 1 [
+    (buf.validate.field).repeated.items.required = true
+  ];
+}
+
+// Discover raw modules (rarely used by agents directly).
+message DiscoverModulesRequest {
+  // Organization ID
+  string organization_id = 1 [
+    (buf.validate.field).string.prefix = "organizations:",
+    (buf.validate.field).string.min_len = 1
+  ];
+  // Module types
+  repeated ModuleType module_types = 2 [
+    (buf.validate.field).repeated.items.enum.not_in = 0
+  ];
+  // Status
+  repeated ModuleStatus status = 3 [
+    (buf.validate.field).repeated.items.enum.not_in = 0
+  ];
+  // Visibility
+  repeated Visibility visibility = 4 [
+    (buf.validate.field).repeated.items.enum.not_in = 0
+  ];
+
+  // Simple text search
+  string query = 5 [
+    (buf.validate.field).string.min_len = 1
+  ]; // matches on name / documentation
+
+  // Pagination
+  // Limit
+  int32 limit = 6 [
+    (buf.validate.field).int32.gte = 1,
+    (buf.validate.field).int32.lte = 100
+  ];
+  // Offset
+  int32 offset = 7 [
+    (buf.validate.field).int32.gte = 0
+  ];
+}
+
+// DiscoverModulesResponse
+message DiscoverModulesResponse {
+  // Modules
+  repeated ModuleDescriptor modules = 1 [
+    (buf.validate.field).repeated.items.required = true
+  ];
+}
+
+// -------------------------
+// RESOLUTION / INFO
+// -------------------------
+
+// Resolve a setup_id into a complete descriptor (config + endpoint module).
+message GetSetupRequest {
+  // ID
+  string setup_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "setups:",
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// Resolve a module_id into a complete descriptor.
+message GetModuleRequest {
+  // ID
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.min_len = 1
+  ];
+}

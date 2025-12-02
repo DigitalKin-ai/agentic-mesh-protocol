@@ -1,0 +1,79 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.registry.v1;
+
+// -------------------------
+// ENUMS
+// -------------------------
+
+// ModuleStatus
+enum ModuleStatus {
+  // Unspecified
+  MODULE_STATUS_UNSPECIFIED = 0;
+  // Ready
+  MODULE_STATUS_READY = 1;
+  // Active
+  MODULE_STATUS_ACTIVE = 2;
+  // Archived
+  MODULE_STATUS_ARCHIVED = 3;
+}
+
+// SetupStatus
+enum SetupStatus {
+  // Unspecified
+  SETUP_STATUS_UNSPECIFIED = 0;
+  // Draft
+  SETUP_STATUS_DRAFT = 1;
+  // Waiting for approval
+  SETUP_STATUS_WAITING_FOR_APPROVAL = 2;
+  // Ready
+  SETUP_STATUS_READY = 3;
+  // Paused
+  SETUP_STATUS_PAUSED = 4;
+  // Failed
+  SETUP_STATUS_FAILED = 5;
+  // Archived
+  SETUP_STATUS_ARCHIVED = 6;
+  // Needs configuration
+  SETUP_STATUS_NEEDS_CONFIGURATION = 7;
+  // Configuration failed
+  SETUP_STATUS_CONFIGURATION_FAILED = 8;
+  // Configuration succeeded
+  SETUP_STATUS_CONFIGURATION_SUCCEEDED = 9;
+}
+
+// Visibility
+enum Visibility {
+  // Unspecified
+  VISIBILITY_UNSPECIFIED = 0;
+  // Public
+  VISIBILITY_PUBLIC = 1;
+  // Private
+  VISIBILITY_PRIVATE = 2;
+  // Internal
+  VISIBILITY_INTERNAL = 3;
+}
+
+// ModuleType
+enum ModuleType {
+  // Unspecified
+  MODULE_TYPE_UNSPECIFIED = 0;
+  // Agent
+  MODULE_TYPE_AGENT = 1;
+  // Tool
+  MODULE_TYPE_TOOL = 2;
+}
