@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       https://www.gnu.org/licenses/gpl-3.0.html
+//     https://www.gnu.org/licenses/gpl-3.0.html
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,17 +18,23 @@ package agentic_mesh_protocol.storage.v1;
 
 import "agentic_mesh_protocol/storage/v1/data.proto";
 
-// StorageService: Service to store data
+// StorageService: Service for managing structured data storage
 service StorageService {
-  // StoreRecord: Store a new data
+  // StoreRecord: Create a new record in the storage
   rpc StoreRecord(StoreRecordRequest) returns (StoreRecordResponse);
 
-  // ReadRecord: Get data by mission and name
+  // ReadRecord: Retrieve a single record by ID
   rpc ReadRecord(ReadRecordRequest) returns (ReadRecordResponse);
 
-  // ModifyRecord: Update data record
-  rpc ModifyRecord(ModifyRecordRequest) returns (ModifyRecordResponse);
+  // UpdateRecord: Update an existing record
+  rpc UpdateRecord(UpdateRecordRequest) returns (UpdateRecordResponse);
 
-  // RemoveRecord: Delete data
+  // RemoveRecord: Delete a record from storage
   rpc RemoveRecord(RemoveRecordRequest) returns (RemoveRecordResponse);
+
+  // ListRecords: List records with filtering and pagination
+  rpc ListRecords(ListRecordsRequest) returns (ListRecordsResponse);
+
+  // RemoveCollection: Delete all records in a given collection
+  rpc RemoveCollection(RemoveCollectionRequest) returns (RemoveCollectionResponse);
 }

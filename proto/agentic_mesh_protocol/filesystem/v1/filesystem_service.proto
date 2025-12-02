@@ -18,58 +18,33 @@ package agentic_mesh_protocol.filesystem.v1;
 
 import "agentic_mesh_protocol/filesystem/v1/filesystem.proto";
 
-// FilesystemService: Service for managing files and file operations
-//
-// This service provides comprehensive file management capabilities including
+// FilesystemService provides comprehensive file management capabilities including
 // upload, retrieval, update, and deletion operations with metadata support,
 // filtering, and pagination.
 service FilesystemService {
-  // UploadFiles: Upload multiple files to the system
-  //
-  // This method allows batch uploading of files with validation and
+  // UploadFiles allows batch uploading of files with validation and
   // error handling for each individual file. Files are processed
   // atomically - if one fails, others may still succeed.
-  //
   rpc UploadFiles(UploadFilesRequest) returns (UploadFilesResponse);
 
-  // GetFile: Retrieve a specific file by ID or name
-  //
-  // This method fetches detailed information about a single file,
+  // GetFile fetches detailed information about a single file,
   // with optional content inclusion. Supports lookup by either
-  // unique ID or name within a kin_context.
-  //
+  // unique ID or name within a context.
   rpc GetFile(GetFileRequest) returns (GetFileResponse);
 
-  // GetFiles: Retrieve multiple files by various criteria
-  //
-  // This method provides efficient retrieval of multiple files using:
-  // - File IDs
-  // - File names
-  // - Path prefix
-  // With support for:
-  // - Pagination for large result sets
-  // - Optional content inclusion
-  // - Total count of matching files
-  //
+  // GetFiles provides efficient retrieval of multiple files using
+  // file IDs, file names, or path prefix, with support for
+  // pagination for large result sets, optional content inclusion,
+  // and total count of matching files.
   rpc GetFiles(GetFilesRequest) returns (GetFilesResponse);
 
-  // UpdateFile: Update file metadata, content, or both
-  //
-  // This method allows updating various aspects of a file:
-  // - Rename files
-  // - Update content and content type
-  // - Modify metadata
-  // - Create new versions
-  //
+  // UpdateFile allows updating various aspects of a file including
+  // renaming files, updating content and content type, modifying metadata,
+  // and creating new versions.
   rpc UpdateFile(UpdateFileRequest) returns (UpdateFileResponse);
 
-  // DeleteFiles: Delete multiple files
-  //
-  // This method supports batch deletion of files with options for:
-  // - Soft deletion (marking as deleted)
-  // - Permanent deletion
-  // - Force deletion of files in use
-  // - Individual error reporting per file
-  //
+  // DeleteFiles supports batch deletion of files with options for
+  // soft deletion (marking as deleted), permanent deletion,
+  // force deletion of files in use, and individual error reporting per file.
   rpc DeleteFiles(DeleteFilesRequest) returns (DeleteFilesResponse);
 }

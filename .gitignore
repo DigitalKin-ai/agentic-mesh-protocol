@@ -6,6 +6,9 @@
 # Build outputs
 /out
 
+# TypeScript build cache
+*.tsbuildinfo
+
 # Generated code (buf generate output)
 /gen/
 /docs/
@@ -14,9 +17,6 @@
 node_modules/
 package-lock.json
 yarn.lock
-
-# Buf files
-**/buf.lock
 
 # Temporary files
 run.sh

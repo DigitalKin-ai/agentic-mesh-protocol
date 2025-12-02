@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       https://www.gnu.org/licenses/gpl-3.0.html
+//     https://www.gnu.org/licenses/gpl-3.0.html
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +16,42 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.module.v1;
 
+import "agentic_mesh_protocol/setup/v1/setup.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
+
+// ConfigSetupModuleRequest
+// This request is used to configure an existing setup version.
+//
+// Fields:
+// - setup_version: The setup version to configure.
+// - content: The new content to compute and/or configure.
+// - mission_id: Database ID of the Module to start
+message ConfigSetupModuleRequest {
+  // setup_version: The setup version to configure.
+  agentic_mesh_protocol.setup.v1.SetupVersion setup_version = 1 [(buf.validate.field).required = true];
+  // content: The new content to compute and/or configure.
+  google.protobuf.Struct content = 2 [(buf.validate.field).required = true];
+  // mission_id: Database ID of the Module to start
+  string mission_id = 3 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).required = true
+  ];
+}
+
+// ConfigSetupModuleResponse
+// Returns the configured setup version.
+//
+// Fields:
+// - success: description flag of the operation.
+// - setup_version: The updated setup version entity.
+message ConfigSetupModuleResponse {
+  // success: description flag of the operation.
+  bool success = 1;
+  // setup_version: The updated setup version entity.
+  agentic_mesh_protocol.setup.v1.SetupVersion setup_version = 2;
+}
 
 // StartModuleRequest
 // TODO: do we have to add secret_id ?
@@ -71,7 +105,7 @@ message StartModuleResponse {
   bool success = 1;
   // output: Structured output data of a started job (streamed)
   google.protobuf.Struct output = 2 [(buf.validate.field).required = true];
-  // job_id: Database ID of the job    inside the Module that was queried
+  // job_id: Database ID of the job  inside the Module that was queried
   string job_id = 3 [
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.prefix = "jobs:",
