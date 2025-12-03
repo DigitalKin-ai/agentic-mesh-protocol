@@ -37,7 +37,6 @@ plugins:
       - outputClientImpl=grpc-js      # Generate client implementations
       - env=node                      # Node.js environment
       - esModuleInterop=true          # Better import compatibility
-      - emitImportedFiles=false
       
       # Type safety
       - useOptionals=messages         # Optional fields as T | undefined
