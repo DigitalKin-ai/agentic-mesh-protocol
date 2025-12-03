@@ -38,14 +38,16 @@ message Subscription {
   google.protobuf.Timestamp end = 4;
 }
 
-// Credits: Message to represent user credit allocation and usage
-message Credits {
-  // allocated: Total credits allocated to the user
-  int64 allocated = 1;
-  // used: Credits used by the user
-  int64 used = 2;
-  // timestamp: Last update timestamp for credits
-  google.protobuf.Timestamp timestamp = 3;
+// CreditLot: Message to represent user credit allocation and usage
+message CreditLot {
+  // source: Source of the credit lot (e.g., "top-up", "subs", "free plan"...)
+  string source = 1;
+  // total: Total credit lot total to the user
+  int64 total = 2;
+  // remaining: credit lot remaining by the user
+  double remaining = 3;
+  // timestamp: Last update timestamp for creditLot
+  google.protobuf.Timestamp timestamp = 4;
 }
 
 // UserProfile: Message to represent a user profile
@@ -70,15 +72,19 @@ message UserProfile {
   // last_name: User last name
   string last_name = 5 [(buf.validate.field).required = true];
   // creation_date: Profile creation date
-  google.protobuf.Timestamp creation_date = 6 [(buf.validate.field).required = true];
+  google.protobuf.Timestamp creation_date = 6 [
+    (buf.validate.field).required = true
+  ];
   // update_date: Profile last update date
-  google.protobuf.Timestamp update_date = 7 [(buf.validate.field).required = true];
+  google.protobuf.Timestamp update_date = 7 [
+    (buf.validate.field).required = true
+  ];
   // locale: User locale preference
   string locale = 8 [(buf.validate.field).required = true];
   // subscription: User subscription information
   Subscription subscription = 9;
   // credits: User credit allocation and usage
-  Credits credits = 10;
+  repeated CreditLot credits = 10;
   // metadata: Additional user metadata (preferences, settings, etc.)
   google.protobuf.Struct metadata = 11;
 }
