@@ -93,7 +93,7 @@ tasks:
 
   # Code generation
   generate:
-    desc: Generate code for all languages (Python, TypeScript)
+    desc: Generate code for all languages Python
     cmds:
       - npx buf generate
     sources:

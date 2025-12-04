@@ -6,19 +6,22 @@
     "main": "index.ts",
     "types": "index.ts",
     "files": [
-        "index.ts",
-        "gen/typescript/**/*.ts",
-        "gen/typescript/**/*.js",
-        "gen/typescript/**/*.d.ts",
-        "proto/**/*.proto",
-        "buf.yaml",
-        "buf.gen.yaml"
+		"index.ts",
+		"gen/typescript/**/*.ts",
+		"gen/typescript/**/*.js",
+		"gen/typescript/**/*.d.ts",
+		"gen/descriptor.bin",
+		"gen/descriptor.json",
+		"proto/**/*.proto",
+		"buf.yaml",
+		"buf.gen.ts.yaml"
     ],
     "scripts": {
         "deps:update": "npx buf dep update proto",
-        "generate": "npx buf generate && tsc -p tsconfig.gen.json",
+		"generate": "npx buf generate --template buf.gen.ts.yaml && tsc -p tsconfig.gen.json",
+		"generate:reflection": "npx buf build proto -o gen/descriptor.bin && npx buf build proto -o gen/descriptor.json",
         "build": "npm run generate",
-        "prepare": "npm run generate",
+        "prepare": "npm run generate && npm run generate:reflection",
         "clean": "rm -rf gen/",
         "prepublishOnly": "npm run build"
     },
