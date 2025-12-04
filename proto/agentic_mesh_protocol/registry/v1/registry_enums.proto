@@ -72,8 +72,8 @@ enum Visibility {
 enum ModuleType {
   // Unspecified
   MODULE_TYPE_UNSPECIFIED = 0;
-  // Agent
-  MODULE_TYPE_AGENT = 1;
+  // Archetype
+  MODULE_TYPE_ARCHETYPE = 1;
   // Tool
   MODULE_TYPE_TOOL = 2;
 }
