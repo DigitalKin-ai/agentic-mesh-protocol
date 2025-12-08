@@ -1,0 +1,44 @@
+version: v2
+
+managed:
+  enabled: true
+  override:
+    - file_option: optimize_for
+      value: SPEED
+
+inputs:
+  - directory: proto
+
+plugins:
+  # ==========================================
+  # TypeScript/Node.js Generation (for Node.js servers)
+  # ==========================================
+
+  # ts-proto for Node.js gRPC (compatible with @grpc/grpc-js)
+  - local: protoc-gen-ts_proto
+    out: gen/typescript
+    strategy: all
+    opt:
+      # Core options
+      - outputServices=grpc-js        # Generate @grpc/grpc-js compatible code
+      - outputClientImpl=grpc-js      # Generate client implementations
+      - env=node                      # Node.js environment
+      - esModuleInterop=true          # Better import compatibility
+      
+      # Index generation
+      - outputIndex=true              # Generate index.ts files
+      - exportCommonSymbols=false     # Don't re-export common protobuf symbols
+      
+      # Type safety
+      - useOptionals=messages         # Optional fields as T | undefined
+      - useDate=true                  # Use Date instead of Timestamp
+      - forceLong=string              # Convert longs to strings
+
+      # File organization
+      - importSuffix=.js              # Add .js to imports (ES modules)
+
+      # Naming conventions
+      - snakeToCamel=keys             # Convert snake_case to camelCase
+
+      # Code style
+      - esLintDisable=true            # Add eslint-disable comments
