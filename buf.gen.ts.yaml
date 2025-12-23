@@ -24,11 +24,10 @@ plugins:
       - outputClientImpl=grpc-js      # Generate client implementations
       - env=node                      # Node.js environment
       - esModuleInterop=true          # Better import compatibility
-      
+
       # Index generation
-      - outputIndex=true              # Generate index.ts files
       - exportCommonSymbols=false     # Don't re-export common protobuf symbols
-      
+
       # Type safety
       - useOptionals=messages         # Optional fields as T | undefined
       - useDate=true                  # Use Date instead of Timestamp
@@ -42,3 +41,17 @@ plugins:
 
       # Code style
       - esLintDisable=true            # Add eslint-disable comments
+
+  # ==========================================
+  # Zod Schema Generation (with buf.validate support)
+  # ==========================================
+
+  # protoc-gen-zod generates Zod schemas from proto definitions
+  # Reads buf.validate annotations and converts them to Zod validations
+  - local:
+      - node
+      - ./tools/zod/dist/index.js
+    out: gen/typescript
+    opt:
+      - target=ts
+      - include_responses=true

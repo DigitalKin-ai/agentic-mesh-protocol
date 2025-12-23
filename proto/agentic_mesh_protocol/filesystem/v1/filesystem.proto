@@ -58,10 +58,10 @@ enum FileStatus {
 
 // File represents a stored file with comprehensive metadata.
 message File {
-  // file_id: Unique identifier for the file (UUID)
+  // file_id: Unique identifier for the file
   string file_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.uuid = true
+    (buf.validate.field).string.pattern = "^files:.*$"
   ];
 
   // context: Context ID linked to the file
@@ -131,7 +131,7 @@ message FileFilter {
   repeated string names = 1;
 
   // file_ids: Filter by file IDs
-  repeated string file_ids = 2 [(buf.validate.field).repeated.items.string.uuid = true];
+  repeated string file_ids = 2 [(buf.validate.field).repeated.items.string.pattern = "^files:.*$"];
 
   // file_types: Filter by file types
   repeated FileType file_types = 3 [(buf.validate.field).repeated.items.enum.not_in = 0];
@@ -166,8 +166,8 @@ message FileFilter {
   // max_size_bytes: Filter files with maximum size
   int64 max_size_bytes = 12 [(buf.validate.field).int64.gte = 0];
 
-  // prefix: Filter by path prefix (e.g., "folder1/")
-  string prefix = 13 [(buf.validate.field).string.pattern = "^[^/]*/?[^/]*$"];
+  // prefix: Filter by path prefix (e.g., "/folder1/"). Prevents path traversal (no ".." allowed).
+  string prefix = 13 [(buf.validate.field).string.pattern = "^[^.]*([.][^.]+)*[.]?$"];
 
   // content_type: Filter by content type
   string content_type = 14;
@@ -189,13 +189,14 @@ message UploadFileData {
   // context: Context ID for the file
   string context = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^(missions:|setups:).*$"
+    (buf.validate.field).string.pattern = "(^(missions:|setups:).*$|^default$)"
   ];
 
   // name: Name of the file
   string name = 2 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.pattern = "^[^.]*([.][^.]+)*[.]?$"
   ];
 
   // file_type: Type classification of the file
@@ -254,14 +255,13 @@ message UploadFilesResponse {
 message GetFileRequest {
   // context: Context ID for the file
   string context = 1 [
-    (buf.validate.field).required = true,
     (buf.validate.field).string.pattern = "^(missions:|setups:).*$"
   ];
 
   // file_id: File ID
   string file_id = 2 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.uuid = true
+    (buf.validate.field).string.pattern = "^files:.*$"
   ];
 
   // include_content: Whether to include file content in response
@@ -288,7 +288,7 @@ message UpdateFileRequest {
   // file_id: Current id of the file
   string file_id = 2 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.uuid = true
+    (buf.validate.field).string.pattern = "^files:.*$"
   ];
 
   // new_name: New name for the file (optional)
