@@ -22,3 +22,6 @@ yarn.lock
 run.sh
 *.tmp
 *.log
+
+# Dist folders in tools
+/tools/**/dist/
