@@ -40,7 +40,10 @@ export function getValidationChain(field: DescField): ValidationChain {
       return chain;
     }
 
-    const constraints = getExtension(options, fieldExtension);
+    const constraints = getExtension(options, fieldExtension) as {
+      required?: boolean;
+      type?: { case: string; value: unknown };
+    };
     if (!constraints) {
       return chain;
     }
@@ -315,7 +318,7 @@ export function isFieldRequired(field: DescField): boolean {
     if (!hasExtension(options, fieldExtension)) {
       return false;
     }
-    const constraints = getExtension(options, fieldExtension);
+    const constraints = getExtension(options, fieldExtension) as { required?: boolean };
     return constraints?.required ?? false;
   } catch {
     return false;

@@ -2,7 +2,7 @@
     "name": "@digitalkin/agentic-mesh-protocol",
     "version": "1.0.0",
     "description": "Node.js gRPC interfaces for Agentic Mesh Protocol - Protocol Buffer definitions for multi-agent systems",
-    "type": "module",
+    "type": "commonjs",
     "main": "index.ts",
     "types": "index.ts",
     "files": [
