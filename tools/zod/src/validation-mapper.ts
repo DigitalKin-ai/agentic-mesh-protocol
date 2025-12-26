@@ -16,6 +16,10 @@ export interface ValidationChain {
   required: boolean;
   /** Whether enum should filter out UNSPECIFIED (value 0) */
   enumDefinedOnly: boolean;
+  /** Zod methods to apply to array items (for repeated fields with items constraints) */
+  itemMethods: string[];
+  /** Whether enum items should filter out UNSPECIFIED (value 0) */
+  itemEnumNotIn: number[];
 }
 
 /**
@@ -26,6 +30,8 @@ export function getValidationChain(field: DescField): ValidationChain {
     methods: [],
     required: false,
     enumDefinedOnly: false,
+    itemMethods: [],
+    itemEnumNotIn: [],
   };
 
   try {
@@ -170,7 +176,8 @@ function processBytesConstraints(constraints: any, chain: ValidationChain): void
   if (constraints.minLen !== undefined && constraints.minLen > 0n) {
     chain.methods.push(`.refine((b) => b.length >= ${Number(constraints.minLen)}, { message: "Bytes must be at least ${constraints.minLen} bytes" })`);
   }
-  if (constraints.maxLen !== undefined) {
+  // Only generate maxLen if it's explicitly set (> 0), since 0 is the default value
+  if (constraints.maxLen !== undefined && constraints.maxLen > 0n) {
     chain.methods.push(`.refine((b) => b.length <= ${Number(constraints.maxLen)}, { message: "Bytes must be at most ${constraints.maxLen} bytes" })`);
   }
 }
@@ -205,7 +212,11 @@ function processNumericConstraints(constraints: any, chain: ValidationChain): vo
     }
   }
 
-  if (constraints.const !== undefined) {
+  // Only generate const constraint if it's explicitly defined
+  // Since 0 is the default value for numeric fields in protobuf, we check if const is truthy
+  // or if it's actually 0n (checking via the presence of other constraints that would indicate intent)
+  // For simplicity, we only generate const if the value is non-zero, as const=0 is extremely rare
+  if (constraints.const !== undefined && Number(constraints.const) !== 0) {
     chain.methods.push(`.refine((n) => n === ${Number(constraints.const)}, { message: "Must equal ${constraints.const}" })`);
   }
   if (constraints.in && constraints.in.length > 0) {
@@ -286,11 +297,128 @@ function processRepeatedConstraints(constraints: any, chain: ValidationChain): v
   if (constraints.minItems !== undefined && constraints.minItems > 0n) {
     chain.methods.push(`.min(${Number(constraints.minItems)})`);
   }
-  if (constraints.maxItems !== undefined) {
+  // Only generate maxItems if it's explicitly set (> 0), since 0 is the default value
+  if (constraints.maxItems !== undefined && constraints.maxItems > 0n) {
     chain.methods.push(`.max(${Number(constraints.maxItems)})`);
   }
   if (constraints.unique) {
     chain.methods.push('.refine((arr) => new Set(arr).size === arr.length, { message: "Items must be unique" })');
+  }
+
+  // Process item-level constraints (e.g., repeated.items.string.uuid)
+  const items = constraints.items;
+  if (items && items.type) {
+    const itemType = items.type;
+    switch (itemType.case) {
+      case "string":
+        processStringItemConstraints(itemType.value, chain);
+        break;
+      case "enum":
+        processEnumItemConstraints(itemType.value, chain);
+        break;
+      case "int32":
+      case "int64":
+      case "uint32":
+      case "uint64":
+      case "sint32":
+      case "sint64":
+      case "fixed32":
+      case "fixed64":
+      case "sfixed32":
+      case "sfixed64":
+        processNumericItemConstraints(itemType.value, chain);
+        break;
+    }
+  }
+}
+
+/**
+ * Process string constraints for array items
+ */
+function processStringItemConstraints(constraints: any, chain: ValidationChain): void {
+  // Length constraints
+  if (constraints.minLen !== undefined && constraints.minLen > 0n) {
+    chain.itemMethods.push(`.min(${Number(constraints.minLen)})`);
+  }
+  if (constraints.maxLen !== undefined && constraints.maxLen > 0n) {
+    chain.itemMethods.push(`.max(${Number(constraints.maxLen)})`);
+  }
+
+  // Pattern constraint
+  if (constraints.pattern) {
+    const escapedPattern = constraints.pattern.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    chain.itemMethods.push(`.regex(new RegExp("${escapedPattern}"))`);
+  }
+
+  // Prefix/suffix constraints
+  if (constraints.prefix) {
+    chain.itemMethods.push(`.startsWith("${constraints.prefix}")`);
+  }
+  if (constraints.suffix) {
+    chain.itemMethods.push(`.endsWith("${constraints.suffix}")`);
+  }
+
+  // Well-known format constraints
+  const wellKnown = constraints.wellKnown;
+  if (wellKnown) {
+    switch (wellKnown.case) {
+      case "email":
+        if (wellKnown.value) chain.itemMethods.push(".email()");
+        break;
+      case "uuid":
+        if (wellKnown.value) chain.itemMethods.push(".uuid()");
+        break;
+      case "uri":
+        if (wellKnown.value) chain.itemMethods.push(".url()");
+        break;
+      case "ip":
+        if (wellKnown.value) chain.itemMethods.push(".ip()");
+        break;
+      case "ipv4":
+        if (wellKnown.value) chain.itemMethods.push('.ip({ version: "v4" })');
+        break;
+      case "ipv6":
+        if (wellKnown.value) chain.itemMethods.push('.ip({ version: "v6" })');
+        break;
+    }
+  }
+}
+
+/**
+ * Process enum constraints for array items
+ */
+function processEnumItemConstraints(constraints: any, chain: ValidationChain): void {
+  if (constraints.notIn && constraints.notIn.length > 0) {
+    chain.itemEnumNotIn = constraints.notIn.map((v: any) => Number(v));
+  }
+}
+
+/**
+ * Process numeric constraints for array items
+ */
+function processNumericItemConstraints(constraints: any, chain: ValidationChain): void {
+  const greaterThan = constraints.greaterThan;
+  if (greaterThan) {
+    switch (greaterThan.case) {
+      case "gt":
+        chain.itemMethods.push(`.gt(${Number(greaterThan.value)})`);
+        break;
+      case "gte":
+        chain.itemMethods.push(`.gte(${Number(greaterThan.value)})`);
+        break;
+    }
+  }
+
+  const lessThan = constraints.lessThan;
+  if (lessThan) {
+    switch (lessThan.case) {
+      case "lt":
+        chain.itemMethods.push(`.lt(${Number(lessThan.value)})`);
+        break;
+      case "lte":
+        chain.itemMethods.push(`.lte(${Number(lessThan.value)})`);
+        break;
+    }
   }
 }
 
@@ -301,7 +429,8 @@ function processMapConstraints(constraints: any, chain: ValidationChain): void {
   if (constraints.minPairs !== undefined && constraints.minPairs > 0n) {
     chain.methods.push(`.refine((m) => Object.keys(m).length >= ${Number(constraints.minPairs)}, { message: "Map must have at least ${constraints.minPairs} entries" })`);
   }
-  if (constraints.maxPairs !== undefined) {
+  // Only generate maxPairs if it's explicitly set (> 0), since 0 is the default value
+  if (constraints.maxPairs !== undefined && constraints.maxPairs > 0n) {
     chain.methods.push(`.refine((m) => Object.keys(m).length <= ${Number(constraints.maxPairs)}, { message: "Map must have at most ${constraints.maxPairs} entries" })`);
   }
 }

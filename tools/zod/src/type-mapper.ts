@@ -187,8 +187,8 @@ function mapMessageToZod(
 
   // Handle well-known types
   if (typeName === "google.protobuf.Timestamp") {
-    // For forms, timestamps are often ISO strings
-    return { zodType: "z.string().datetime()" };
+    // Convert to Date object - ts-proto with useDate=true converts Timestamps to Date
+    return { zodType: "z.coerce.date()" };
   }
 
   if (typeName === "google.protobuf.Duration") {

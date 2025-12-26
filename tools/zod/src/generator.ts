@@ -319,6 +319,28 @@ function generateFieldSchema(
     }
   }
 
+  // For list fields, apply item-level constraints from buf.validate
+  if (field.fieldKind === "list" && (validation.itemMethods.length > 0 || validation.itemEnumNotIn.length > 0)) {
+    // Extract the item type from z.array(itemType)
+    const match = zodExpression.match(/^z\.array\((.+)\)$/);
+    if (match) {
+      let itemType = match[1];
+
+      // Apply item methods (e.g., .uuid(), .min(), .max())
+      for (const method of validation.itemMethods) {
+        itemType += method;
+      }
+
+      // Apply enum notIn constraint for items
+      if (validation.itemEnumNotIn.length > 0) {
+        const values = validation.itemEnumNotIn.join(", ");
+        itemType += `.refine((e) => ![${values}].includes(e), { message: "Must not be one of: ${values}" })`;
+      }
+
+      zodExpression = `z.array(${itemType})`;
+    }
+  }
+
   // Add validation methods from buf.validate annotations
   for (const method of validation.methods) {
     zodExpression += method;
