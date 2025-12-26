@@ -131,12 +131,13 @@ export function mapScalarToZod(scalar: ScalarType): string {
     case ScalarType.INT64:
     case ScalarType.SINT64:
     case ScalarType.SFIXED64:
-      // BigInt in proto, but typically number in forms
-      return "z.number().int()";
+      // ts-proto with forceLong=string converts int64 to string
+      return "z.string()";
 
     case ScalarType.UINT64:
     case ScalarType.FIXED64:
-      return "z.number().int().nonnegative()";
+      // ts-proto with forceLong=string converts uint64 to string
+      return "z.string()";
 
     case ScalarType.FLOAT:
     case ScalarType.DOUBLE:

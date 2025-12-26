@@ -70,16 +70,19 @@ export function getValidationChain(field: DescField): ValidationChain {
           processBytesConstraints(type.value, chain);
           break;
         case "int32":
-        case "int64":
         case "uint32":
-        case "uint64":
         case "sint32":
-        case "sint64":
         case "fixed32":
-        case "fixed64":
         case "sfixed32":
-        case "sfixed64":
           processNumericConstraints(type.value, chain);
+          break;
+        case "int64":
+        case "uint64":
+        case "sint64":
+        case "fixed64":
+        case "sfixed64":
+          // int64/uint64 are strings in TypeScript (forceLong=string)
+          processInt64Constraints(type.value, chain);
           break;
         case "float":
         case "double":
@@ -230,6 +233,49 @@ function processNumericConstraints(constraints: any, chain: ValidationChain): vo
 }
 
 /**
+ * Process int64/uint64 constraints (these are strings in TypeScript with forceLong=string)
+ */
+function processInt64Constraints(constraints: any, chain: ValidationChain): void {
+  // Handle greaterThan oneof - use refine since value is a string
+  const greaterThan = constraints.greaterThan;
+  if (greaterThan) {
+    switch (greaterThan.case) {
+      case "gt":
+        chain.methods.push(`.refine((s) => BigInt(s) > ${greaterThan.value}n, { message: "Must be > ${greaterThan.value}" })`);
+        break;
+      case "gte":
+        chain.methods.push(`.refine((s) => BigInt(s) >= ${greaterThan.value}n, { message: "Must be >= ${greaterThan.value}" })`);
+        break;
+    }
+  }
+
+  // Handle lessThan oneof
+  const lessThan = constraints.lessThan;
+  if (lessThan) {
+    switch (lessThan.case) {
+      case "lt":
+        chain.methods.push(`.refine((s) => BigInt(s) < ${lessThan.value}n, { message: "Must be < ${lessThan.value}" })`);
+        break;
+      case "lte":
+        chain.methods.push(`.refine((s) => BigInt(s) <= ${lessThan.value}n, { message: "Must be <= ${lessThan.value}" })`);
+        break;
+    }
+  }
+
+  if (constraints.const !== undefined && Number(constraints.const) !== 0) {
+    chain.methods.push(`.refine((s) => BigInt(s) === ${constraints.const}n, { message: "Must equal ${constraints.const}" })`);
+  }
+  if (constraints.in && constraints.in.length > 0) {
+    const values = constraints.in.map((v: any) => `${v}n`).join(", ");
+    chain.methods.push(`.refine((s) => [${values}].includes(BigInt(s)), { message: "Must be one of: ${constraints.in.join(", ")}" })`);
+  }
+  if (constraints.notIn && constraints.notIn.length > 0) {
+    const values = constraints.notIn.map((v: any) => `${v}n`).join(", ");
+    chain.methods.push(`.refine((s) => ![${values}].includes(BigInt(s)), { message: "Must not be one of: ${constraints.notIn.join(", ")}" })`);
+  }
+}
+
+/**
  * Process float/double constraints
  */
 function processFloatConstraints(constraints: any, chain: ValidationChain): void {
@@ -317,16 +363,19 @@ function processRepeatedConstraints(constraints: any, chain: ValidationChain): v
         processEnumItemConstraints(itemType.value, chain);
         break;
       case "int32":
-      case "int64":
       case "uint32":
-      case "uint64":
       case "sint32":
-      case "sint64":
       case "fixed32":
-      case "fixed64":
       case "sfixed32":
-      case "sfixed64":
         processNumericItemConstraints(itemType.value, chain);
+        break;
+      case "int64":
+      case "uint64":
+      case "sint64":
+      case "fixed64":
+      case "sfixed64":
+        // int64/uint64 items are strings in TypeScript (forceLong=string)
+        processInt64ItemConstraints(itemType.value, chain);
         break;
     }
   }
@@ -417,6 +466,35 @@ function processNumericItemConstraints(constraints: any, chain: ValidationChain)
         break;
       case "lte":
         chain.itemMethods.push(`.lte(${Number(lessThan.value)})`);
+        break;
+    }
+  }
+}
+
+/**
+ * Process int64/uint64 constraints for array items (strings with forceLong=string)
+ */
+function processInt64ItemConstraints(constraints: any, chain: ValidationChain): void {
+  const greaterThan = constraints.greaterThan;
+  if (greaterThan) {
+    switch (greaterThan.case) {
+      case "gt":
+        chain.itemMethods.push(`.refine((s) => BigInt(s) > ${greaterThan.value}n, { message: "Must be > ${greaterThan.value}" })`);
+        break;
+      case "gte":
+        chain.itemMethods.push(`.refine((s) => BigInt(s) >= ${greaterThan.value}n, { message: "Must be >= ${greaterThan.value}" })`);
+        break;
+    }
+  }
+
+  const lessThan = constraints.lessThan;
+  if (lessThan) {
+    switch (lessThan.case) {
+      case "lt":
+        chain.itemMethods.push(`.refine((s) => BigInt(s) < ${lessThan.value}n, { message: "Must be < ${lessThan.value}" })`);
+        break;
+      case "lte":
+        chain.itemMethods.push(`.refine((s) => BigInt(s) <= ${lessThan.value}n, { message: "Must be <= ${lessThan.value}" })`);
         break;
     }
   }
