@@ -254,7 +254,6 @@ message UploadFilesResponse {
 message GetFileRequest {
   // context: Context ID for the file
   string context = 1 [
-    (buf.validate.field).required = true,
     (buf.validate.field).string.pattern = "^(missions:|setups:).*$"
   ];
 

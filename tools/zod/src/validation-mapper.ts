@@ -20,6 +20,10 @@ export interface ValidationChain {
   itemMethods: string[];
   /** Whether enum items should filter out UNSPECIFIED (value 0) */
   itemEnumNotIn: number[];
+  /** String pattern constraint (stored separately to handle optional fields) */
+  stringPattern?: string;
+  /** String pattern for array items */
+  itemStringPattern?: string;
 }
 
 /**
@@ -126,10 +130,10 @@ function processStringConstraints(constraints: any, chain: ValidationChain): voi
     chain.methods.push(`.length(${Number(constraints.len)})`);
   }
 
-  // Pattern/regex constraint
+  // Pattern/regex constraint - stored separately to handle optional fields
+  // The generator will decide whether to use .regex() or .refine() based on required
   if (constraints.pattern) {
-    const escapedPattern = constraints.pattern.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-    chain.methods.push(`.regex(new RegExp("${escapedPattern}"))`);
+    chain.stringPattern = constraints.pattern;
   }
 
   // Prefix/suffix constraints
@@ -393,10 +397,9 @@ function processStringItemConstraints(constraints: any, chain: ValidationChain):
     chain.itemMethods.push(`.max(${Number(constraints.maxLen)})`);
   }
 
-  // Pattern constraint
+  // Pattern constraint - stored separately to handle optional items
   if (constraints.pattern) {
-    const escapedPattern = constraints.pattern.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-    chain.itemMethods.push(`.regex(new RegExp("${escapedPattern}"))`);
+    chain.itemStringPattern = constraints.pattern;
   }
 
   // Prefix/suffix constraints

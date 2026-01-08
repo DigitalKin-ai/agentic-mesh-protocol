@@ -290,6 +290,13 @@ function inferTsType(field: DescField): string {
 }
 
 /**
+ * Escapes a regex pattern for use in generated code
+ */
+function escapePattern(pattern: string): string {
+  return pattern.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+/**
  * Generates a Zod schema for a single field
  */
 function generateFieldSchema(
@@ -301,6 +308,10 @@ function generateFieldSchema(
   const fieldName = toCamelCase(field.name);
   const typeInfo = mapFieldToZod(field, context);
   const validation = getValidationChain(field);
+
+  // Determine if field is required early (needed for pattern handling)
+  const fieldIsOptional = isFieldOptional(field);
+  const fieldIsRequired = isFieldRequired(field) || validation.required;
 
   // Build the Zod type with validation chain
   let zodExpression = typeInfo.zodType;
@@ -320,7 +331,7 @@ function generateFieldSchema(
   }
 
   // For list fields, apply item-level constraints from buf.validate
-  if (field.fieldKind === "list" && (validation.itemMethods.length > 0 || validation.itemEnumNotIn.length > 0)) {
+  if (field.fieldKind === "list" && (validation.itemMethods.length > 0 || validation.itemEnumNotIn.length > 0 || validation.itemStringPattern)) {
     // Extract the item type from z.array(itemType)
     const match = zodExpression.match(/^z\.array\((.+)\)$/);
     if (match) {
@@ -329,6 +340,13 @@ function generateFieldSchema(
       // Apply item methods (e.g., .uuid(), .min(), .max())
       for (const method of validation.itemMethods) {
         itemType += method;
+      }
+
+      // Apply item string pattern - items in arrays should validate if non-empty
+      // (empty strings in arrays are typically not valid items)
+      if (validation.itemStringPattern) {
+        const escapedPattern = escapePattern(validation.itemStringPattern);
+        itemType += `.refine((v) => v === "" || new RegExp("${escapedPattern}").test(v), { message: "Must match pattern: ${escapedPattern}" })`;
       }
 
       // Apply enum notIn constraint for items
@@ -346,15 +364,24 @@ function generateFieldSchema(
     zodExpression += method;
   }
 
+  // Handle string pattern constraint
+  // If required: use strict .regex()
+  // If optional: use .refine() that allows empty strings (Proto3 default value)
+  if (validation.stringPattern) {
+    const escapedPattern = escapePattern(validation.stringPattern);
+    if (fieldIsRequired) {
+      zodExpression += `.regex(new RegExp("${escapedPattern}"))`;
+    } else {
+      zodExpression += `.refine((v) => v === "" || new RegExp("${escapedPattern}").test(v), { message: "Must match pattern: ${escapedPattern}" })`;
+    }
+  }
+
   // Handle enum defined_only constraint
   if (validation.enumDefinedOnly && field.fieldKind === "enum") {
     zodExpression += `.refine((v) => v !== 0, "Value is required")`;
   }
 
   // Handle optional fields
-  const fieldIsOptional = isFieldOptional(field);
-  const fieldIsRequired = isFieldRequired(field) || validation.required;
-
   if (fieldIsOptional && !fieldIsRequired) {
     zodExpression += ".optional()";
   }

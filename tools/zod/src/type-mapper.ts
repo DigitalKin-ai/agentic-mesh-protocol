@@ -271,15 +271,30 @@ function mapMessageToZod(
 
 /**
  * Checks if a field should be marked as optional in Zod
+ *
+ * In Proto3, all fields are implicitly optional with default values:
+ * - Scalars default to zero value ("", 0, false)
+ * - Messages default to null/undefined
+ * - Only fields with buf.validate.required = true should be required in Zod
  */
 export function isFieldOptional(field: DescField): boolean {
-  // Proto3 optional keyword
+  // In Proto3, all scalar and enum fields are optional (have default values)
+  if (field.fieldKind === "scalar" || field.fieldKind === "enum") {
+    return true;
+  }
+
+  // Proto3 explicit optional keyword
   if (field.proto.proto3Optional) {
     return true;
   }
 
   // Message fields are implicitly optional in proto3
   if (field.fieldKind === "message") {
+    return true;
+  }
+
+  // List and map fields are also optional (default to empty)
+  if (field.fieldKind === "list" || field.fieldKind === "map") {
     return true;
   }
 
