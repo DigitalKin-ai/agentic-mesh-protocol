@@ -20,88 +20,85 @@ import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 
-// Metadata: Message to represent user metadata (security keys, etc.)
+// ═════════════════════════════════════ Objects ════════════════════════════════════ //
+
+// Metadata represents user metadata such as security keys.
 message Metadata {
-  // security_key: Security key for the user
+  // security_key is the security key for the user.
   string security_key = 1;
 }
 
-// Subscription: Message to represent user subscription information
+// Subscription represents user subscription details.
 message Subscription {
-  // tier: Subscription tier level
+  // tier is the subscription tier level (e.g., "free", "pro").
   string tier = 1;
-  // status: Current subscription status
+
+  // status is the current subscription status.
   string status = 2;
-  // start: Subscription start date
+
+  // start is the subscription start date.
   google.protobuf.Timestamp start = 3;
-  // end: Subscription end date
+
+  // end is the subscription end date.
   google.protobuf.Timestamp end = 4;
 }
 
-// CreditLot: Message to represent user credit allocation and usage
+// CreditLot represents user credit allocation and usage.
 message CreditLot {
-  // source: Source of the credit lot (e.g., "top-up", "subs", "free plan"...)
+  // source is the source of the credit lot (e.g., "top-up", "subscription").
   string source = 1;
-  // total: Total credit lot total to the user
+
+  // total is the total credits allocated in this lot.
   int64 total = 2;
-  // remaining: credit lot remaining by the user
+
+  // remaining is the number of credits remaining in this lot.
   double remaining = 3;
-  // timestamp: Last update timestamp for creditLot
+
+  // timestamp is the last update timestamp for this credit lot.
   google.protobuf.Timestamp timestamp = 4;
 }
 
-// UserProfile: Message to represent a user profile
+// UserProfile represents the full profile of a user in the system.
 message UserProfile {
-  // user_id: Unique identifier for the user
+  // user_id is the unique identifier for the user.
   string user_id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "users:"
   ];
-  // organisation_id: Organisation ID linked to the user
+
+  // organisation_id is the organisation ID linked to the user.
   string organisation_id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "organisations:"
   ];
-  // email: User email address
+
+  // email is the user's email address.
   string email = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.email = true
   ];
-  // first_name: User first name
+
+  // first_name is the user's first name.
   string first_name = 4 [(buf.validate.field).required = true];
-  // last_name: User last name
+
+  // last_name is the user's last name.
   string last_name = 5 [(buf.validate.field).required = true];
-  // creation_date: Profile creation date
-  google.protobuf.Timestamp creation_date = 6 [
-    (buf.validate.field).required = true
-  ];
-  // update_date: Profile last update date
-  google.protobuf.Timestamp update_date = 7 [
-    (buf.validate.field).required = true
-  ];
-  // locale: User locale preference
+
+  // creation_date is the timestamp when the profile was created.
+  google.protobuf.Timestamp creation_date = 6 [(buf.validate.field).required = true];
+
+  // update_date is the timestamp when the profile was last updated.
+  google.protobuf.Timestamp update_date = 7 [(buf.validate.field).required = true];
+
+  // locale is the user's preferred locale.
   string locale = 8 [(buf.validate.field).required = true];
-  // subscription: User subscription information
+
+  // subscription contains user subscription information.
   Subscription subscription = 9;
-  // credits: User credit allocation and usage
+
+  // credits is the list of user credit allocations.
   repeated CreditLot credits = 10;
-  // metadata: Additional user metadata (preferences, settings, etc.)
+
+  // metadata contains additional key-value preferences or settings.
   google.protobuf.Struct metadata = 11;
-}
-
-// GetUserProfileRequest: Request to get a user profile
-message GetUserProfileRequest {
-  // mission_id: Unique identifier for the mission
-  string mission_id = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:"
-  ];
-}
-
-// GetUserProfileResponse: Response after getting a user profile
-message GetUserProfileResponse {
-  // success: Success of the operation
-  bool success = 1 [(buf.validate.field).required = true];
-  // user_profile: Retrieved user profile
-  UserProfile user_profile = 2 [(buf.validate.field).required = true];
 }

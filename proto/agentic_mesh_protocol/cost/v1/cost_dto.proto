@@ -1,0 +1,143 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.cost.v1;
+
+import "agentic_mesh_protocol/cost/v1/cost.proto";
+import "agentic_mesh_protocol/cost/v1/cost_messages.proto";
+import "buf/validate/validate.proto";
+
+// ════════════════════════════════════ Requests ════════════════════════════════════ //
+
+// AddCostRequest is the request message for adding a cost entry.
+message AddCostRequest {
+  // cost is the total cost value.
+  double cost = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gt = 0
+  ];
+
+  // mission_id is the mission ID to link this cost to.
+  string mission_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // name is the descriptive name for this cost.
+  string name = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // cost_type is the classification of the cost.
+  CostType cost_type = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // unit is the unit of measurement (e.g., "tokens", "calls", "GB").
+  string unit = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // rate is the cost per unit.
+  double rate = 6 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gt = 0
+  ];
+
+  // setup_version_id is the setup version ID to associate with this cost.
+  string setup_version_id = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "setup_versions:",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // quantity is the number of units consumed.
+  double quantity = 8 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gt = 0
+  ];
+}
+
+// GetCostsRequest is the request message for retrieving multiple costs.
+message GetCostsRequest {
+  // mission_id is the mission ID to query costs for.
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // filter contains optional filtering criteria.
+  CostFilter filter = 2;
+
+  // limit is the maximum number of costs to return.
+  int32 limit = 3 [
+    (buf.validate.field).int32.gt = 0,
+    (buf.validate.field).int32.lt = 1000
+  ];
+
+  // offset is the number of costs to skip for pagination.
+  int32 offset = 4 [(buf.validate.field).int32.gt = 0];
+}
+
+// GetCostRequest is the request message for retrieving costs by name.
+message GetCostRequest {
+  // mission_id is the mission ID to query costs for.
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // name is the specific cost name to retrieve.
+  string name = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// ════════════════════════════════════ Responses ═══════════════════════════════════ //
+
+// AddCostResponse is the response message for adding a cost entry.
+message AddCostResponse {
+  // success indicates whether the cost was successfully added.
+  bool success = 1;
+}
+
+// GetCostsResponse is the response message containing multiple costs.
+message GetCostsResponse {
+  // costs is the list of matching cost entries.
+  repeated Cost costs = 1;
+
+  // total_count is the total number of costs matching the criteria.
+  int32 total_count = 2 [(buf.validate.field).int32.gte = 0];
+
+  // total_cost is the sum of all matching cost values.
+  double total_cost = 3 [(buf.validate.field).double.gte = 0];
+}
+
+// GetCostResponse is the response message for cost retrieval by name.
+message GetCostResponse {
+  // costs is the list of cost entries matching the name.
+  repeated Cost costs = 1;
+
+  // total_cost is the sum of all matching cost values.
+  double total_cost = 2 [(buf.validate.field).double.gte = 0];
+}

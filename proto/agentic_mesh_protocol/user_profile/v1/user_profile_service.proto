@@ -16,7 +16,7 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.user_profile.v1;
 
-import "agentic_mesh_protocol/user_profile/v1/user_profile.proto";
+import "agentic_mesh_protocol/user_profile/v1/user_profile_dto.proto";
 
 // UserProfileService: Service to manage user profiles
 service UserProfileService {

@@ -16,7 +16,7 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.setup.v1;
 
-import "agentic_mesh_protocol/setup/v1/setup.proto";
+import "agentic_mesh_protocol/setup/v1/setup_dto.proto";
 
 // SetupService
 // Provides operations for setups and setup versions.

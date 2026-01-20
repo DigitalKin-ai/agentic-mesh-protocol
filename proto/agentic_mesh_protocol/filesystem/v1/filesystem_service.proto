@@ -16,7 +16,7 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.filesystem.v1;
 
-import "agentic_mesh_protocol/filesystem/v1/filesystem.proto";
+import "agentic_mesh_protocol/filesystem/v1/filesystem_dto.proto";
 
 // FilesystemService provides comprehensive file management capabilities including
 // upload, retrieval, update, and deletion operations with metadata support,

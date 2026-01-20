@@ -16,64 +16,36 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.registry.v1;
 
-// -------------------------
-// ENUMS
-// -------------------------
-
-// ModuleStatus
-enum ModuleStatus {
-  // Unspecified
-  MODULE_STATUS_UNSPECIFIED = 0;
-  // Ready
-  MODULE_STATUS_READY = 1;
-  // Active
-  MODULE_STATUS_ACTIVE = 2;
-  // Archived
-  MODULE_STATUS_ARCHIVED = 3;
-}
+// ════════════════════════════════════ Objects ═════════════════════════════════════ //
 
 // SetupStatus
 enum SetupStatus {
-  // Unspecified
-  SETUP_STATUS_UNSPECIFIED = 0;
   // Draft
-  SETUP_STATUS_DRAFT = 1;
+  DRAFT = 0;
   // Waiting for approval
-  SETUP_STATUS_WAITING_FOR_APPROVAL = 2;
-  // Ready
-  SETUP_STATUS_READY = 3;
+  WAITING_FOR_APPROVAL = 1;
+  // Ok
+  READY = 2;
   // Paused
-  SETUP_STATUS_PAUSED = 4;
+  PAUSED = 3;
   // Failed
-  SETUP_STATUS_FAILED = 5;
+  FAILED = 4;
   // Archived
-  SETUP_STATUS_ARCHIVED = 6;
+  ARCHIVED = 5;
   // Needs configuration
-  SETUP_STATUS_NEEDS_CONFIGURATION = 7;
+  NEEDS_CONFIGURATION = 6;
   // Configuration failed
-  SETUP_STATUS_CONFIGURATION_FAILED = 8;
+  CONFIGURATION_FAILED = 7;
   // Configuration succeeded
-  SETUP_STATUS_CONFIGURATION_SUCCEEDED = 9;
+  CONFIGURATION_SUCCEEDED = 8;
 }
 
 // Visibility
 enum Visibility {
-  // Unspecified
-  VISIBILITY_UNSPECIFIED = 0;
   // Public
-  VISIBILITY_PUBLIC = 1;
+  PUBLIC = 0;
   // Private
-  VISIBILITY_PRIVATE = 2;
+  PRIVATE = 1;
   // Internal
-  VISIBILITY_INTERNAL = 3;
-}
-
-// ModuleType
-enum ModuleType {
-  // Unspecified
-  MODULE_TYPE_UNSPECIFIED = 0;
-  // Archetype
-  MODULE_TYPE_ARCHETYPE = 1;
-  // Tool
-  MODULE_TYPE_TOOL = 2;
+  INTERNAL = 2;
 }

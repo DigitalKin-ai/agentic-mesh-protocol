@@ -16,35 +16,23 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.registry.v1;
 
-import "agentic_mesh_protocol/registry/v1/registry_models.proto";
-import "agentic_mesh_protocol/registry/v1/registry_requests.proto";
+import "agentic_mesh_protocol/registry/v1/registry_dto.proto";
+import "agentic_mesh_protocol/registry/v1/registry_messages.proto";
 
 // RegistryService is the entry point for agents and tools
 // to register themselves and discover other resources in the mesh.
 service RegistryService {
-  // -----------------------
-  // 1. REGISTRATION
-  // -----------------------
-
   // Called by a module gRPC at startup to declare itself in the network.
   rpc RegisterModule(RegisterModuleRequest) returns (RegisterModuleResponse);
 
   // Optional but useful if you want a bit of liveness.
   rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
 
-  // -----------------------
-  // 2. DISCOVERY
-  // -----------------------
-
   // Discover setups that are available (agents / tools).
   rpc DiscoverSetups(DiscoverSetupsRequest) returns (DiscoverSetupsResponse);
 
   // Discover raw modules (rarely used by agents directly).
   rpc DiscoverModules(DiscoverModulesRequest) returns (DiscoverModulesResponse);
-
-  // -----------------------
-  // 3. RESOLUTION / INFO
-  // -----------------------
 
   // Resolve a setup_id into a complete descriptor (config + endpoint module).
   rpc GetSetup(GetSetupRequest) returns (SetupDescriptor);

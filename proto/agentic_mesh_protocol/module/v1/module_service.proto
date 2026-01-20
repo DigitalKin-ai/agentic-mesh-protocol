@@ -16,9 +16,7 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.module.v1;
 
-import "agentic_mesh_protocol/module/v1/information.proto";
-import "agentic_mesh_protocol/module/v1/lifecycle.proto";
-import "agentic_mesh_protocol/module/v1/monitoring.proto";
+import "agentic_mesh_protocol/module/v1/module_dto.proto";
 
 // ModuleService
 // It represents a functional unit within an agent in the multi-agent system (SMA).
@@ -33,10 +31,6 @@ service ModuleService {
   rpc StartModule(StartModuleRequest) returns (stream StartModuleResponse);
   // StopModule
   rpc StopModule(StopModuleRequest) returns (StopModuleResponse);
-  // GetModuleStatus
-  rpc GetModuleStatus(GetModuleStatusRequest) returns (GetModuleStatusResponse);
-  // GetModuleJobs
-  rpc GetModuleJobs(GetModuleJobsRequest) returns (GetModuleJobsResponse);
   // GetModuleInput
   rpc GetModuleInput(GetModuleInputRequest) returns (GetModuleInputResponse);
   // GetModuleOutput

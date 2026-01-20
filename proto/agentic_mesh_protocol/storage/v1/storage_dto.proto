@@ -1,0 +1,199 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.storage.v1;
+
+import "agentic_mesh_protocol/storage/v1/storage.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
+
+// ════════════════════════════════════ Requests ════════════════════════════════════ //
+
+// StoreRecordRequest is the request message for storing a new record.
+message StoreRecordRequest {
+  // data is the JSON object to store.
+  google.protobuf.Struct data = 1 [(buf.validate.field).required = true];
+
+  // mission_id is the unique identifier of the mission.
+  string mission_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.prefix = "missions:"
+  ];
+
+  // collection is the name of the group for the records.
+  string collection = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // record_id is the unique identifier for the record within the collection.
+  string record_id = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // data_type is the category of the data being stored.
+  DataType data_type = 5 [(buf.validate.field).required = true];
+}
+
+// ReadRecordRequest is the request message for retrieving a record.
+message ReadRecordRequest {
+  // mission_id is the unique identifier of the mission.
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // collection is the name of the group for the records.
+  string collection = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // record_id is the unique identifier for the record.
+  string record_id = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// UpdateRecordRequest is the request message for modifying an existing record.
+message UpdateRecordRequest {
+  // data is the updated JSON object.
+  google.protobuf.Struct data = 1 [(buf.validate.field).required = true];
+
+  // mission_id is the unique identifier of the mission.
+  string mission_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // collection is the name of the group for the records.
+  string collection = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // record_id is the unique identifier for the record.
+  string record_id = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// RemoveRecordRequest is the request message for deleting a specific record.
+message RemoveRecordRequest {
+  // mission_id is the unique identifier of the mission.
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // collection is the name of the group for the records.
+  string collection = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // record_id is the unique identifier for the record.
+  string record_id = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// ListRecordsRequest is the request message for listing all records in a collection.
+message ListRecordsRequest {
+  // mission_id is the unique identifier of the mission.
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // collection is the name of the group for the records.
+  string collection = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// RemoveCollectionRequest is the request message for deleting an entire collection.
+message RemoveCollectionRequest {
+  // mission_id is the unique identifier of the mission.
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // collection is the name of the collection to remove.
+  string collection = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// ════════════════════════════════════ Responses ═══════════════════════════════════ //
+
+// StoreRecordResponse is the response message for a record storage operation.
+message StoreRecordResponse {
+  // success indicates if the operation was successful.
+  bool success = 1 [(buf.validate.field).required = true];
+
+  // stored_data is the record that was stored.
+  StorageRecord stored_data = 2 [(buf.validate.field).required = true];
+}
+
+// ReadRecordResponse is the response message for a record retrieval operation.
+message ReadRecordResponse {
+  // success indicates if the operation was successful.
+  bool success = 1 [(buf.validate.field).required = true];
+
+  // stored_data is the retrieved record.
+  StorageRecord stored_data = 2 [(buf.validate.field).required = true];
+}
+
+// UpdateRecordResponse is the response message for a record modification operation.
+message UpdateRecordResponse {
+  // success indicates if the operation was successful.
+  bool success = 1 [(buf.validate.field).required = true];
+
+  // stored_data is the updated record.
+  StorageRecord stored_data = 2 [(buf.validate.field).required = true];
+}
+
+// RemoveRecordResponse is the response message for a record deletion operation.
+message RemoveRecordResponse {
+  // success indicates if the operation was successful.
+  bool success = 1 [(buf.validate.field).required = true];
+}
+
+// ListRecordsResponse is the response message for listing records.
+message ListRecordsResponse {
+  // records is the list of records found in the collection.
+  repeated StorageRecord records = 1 [(buf.validate.field).required = true];
+}
+
+// RemoveCollectionResponse is the response message for a collection deletion operation.
+message RemoveCollectionResponse {
+  // success indicates if the operation was successful.
+  bool success = 1 [(buf.validate.field).required = true];
+}

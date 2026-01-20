@@ -14,18 +14,24 @@
 
 syntax = "proto3";
 
-package agentic_mesh_protocol.cost.v1;
+package agentic_mesh_protocol.module.v1;
 
-import "agentic_mesh_protocol/cost/v1/cost_dto.proto";
+// ═════════════════════════════════════ Objects ════════════════════════════════════ //
 
-// CostService provides operations for tracking and querying operational costs.
-service CostService {
-  // AddCost records a new cost entry for a mission.
-  rpc AddCost(AddCostRequest) returns (AddCostResponse);
+// ModuleStatus
+enum ModuleStatus {
+  // Ready
+  READY = 0;
+  // Active
+  ACTIVE = 1;
+  // Archived
+  ARCHIVED = 2;
+}
 
-  // GetCost retrieves cost entries by name within a mission.
-  rpc GetCost(GetCostRequest) returns (GetCostResponse);
-
-  // GetCosts retrieves multiple cost entries with optional filtering and pagination.
-  rpc GetCosts(GetCostsRequest) returns (GetCostsResponse);
+// ModuleType
+enum ModuleType {
+  // Archetype
+  ARCHETYPE = 0;
+  // Tool
+  TOOL = 1;
 }

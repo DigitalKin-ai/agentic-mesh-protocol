@@ -1,0 +1,228 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.module.v1;
+
+import "agentic_mesh_protocol/setup/v1/setup.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
+
+// ════════════════════════════════════ Requests ════════════════════════════════════ //
+
+// GetModuleStatusRequest is the request message for retrieving module status.
+message GetModuleStatusRequest {
+  // job_id is the database ID of the job to get status.
+  string job_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "jobs:",
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// GetModuleJobsRequest is the request message for retrieving all module jobs.
+message GetModuleJobsRequest {}
+
+// GetModuleInputRequest is the request message for retrieving module input schema.
+message GetModuleInputRequest {
+  // module_id is the database ID of the module to get input schema.
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // llm_format defines if the input schema should be in LLM format or raw pydantic format.
+  bool llm_format = 2;
+}
+
+// GetModuleOutputRequest is the request message for retrieving module output schema.
+message GetModuleOutputRequest {
+  // module_id is the database ID of the module to get output schema.
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // llm_format defines if the output schema should be in LLM format or raw pydantic format.
+  bool llm_format = 2;
+}
+
+// GetModuleSetupRequest is the request message for retrieving module setup schema.
+message GetModuleSetupRequest {
+  // module_id is the database ID of the module to get setup schema.
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // llm_format defines if the setup schema should be in LLM format or raw pydantic format.
+  bool llm_format = 2;
+}
+
+// GetModuleSecretRequest is the request message for retrieving module secret schema.
+message GetModuleSecretRequest {
+  // module_id is the database ID of the module to get secret schema.
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // llm_format defines if the secret schema should be in LLM format or raw pydantic format.
+  bool llm_format = 2;
+}
+
+// GetConfigSetupModuleRequest is the request message for retrieving module config setup schema.
+message GetConfigSetupModuleRequest {
+  // module_id is the database ID of the module to get config setup schema.
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // llm_format defines if the config setup schema should be in LLM format or raw pydantic format.
+  bool llm_format = 2;
+}
+
+// ConfigSetupModuleRequest is the request message for configuring an existing setup version.
+message ConfigSetupModuleRequest {
+  // setup_version is the setup version to configure.
+  agentic_mesh_protocol.setup.v1.SetupVersion setup_version = 1 [(buf.validate.field).required = true];
+
+  // content is the new content to compute and/or configure.
+  google.protobuf.Struct content = 2 [(buf.validate.field).required = true];
+
+  // mission_id is the database ID of the mission.
+  string mission_id = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// StartModuleRequest is the request message for starting a module.
+message StartModuleRequest {
+  // input is the structured input data for the module.
+  google.protobuf.Struct input = 1 [(buf.validate.field).required = true];
+
+  // setup_id is the database ID of the setup used to start the module.
+  string setup_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "setups:",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // mission_id is the database ID of the mission.
+  string mission_id = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// StopModuleRequest is the request message for stopping a module job.
+message StopModuleRequest {
+  // job_id is the database ID of the job to stop.
+  string job_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "jobs:",
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// ════════════════════════════════════ Responses ═══════════════════════════════════ //
+
+// GetModuleInputResponse is the response message for module input schema retrieval.
+message GetModuleInputResponse {
+  // success indicates if the input schema request was successful.
+  bool success = 1;
+
+  // input_schema is the input schema of the module.
+  google.protobuf.Struct input_schema = 2 [(buf.validate.field).required = true];
+}
+
+// GetModuleOutputResponse is the response message for module output schema retrieval.
+message GetModuleOutputResponse {
+  // success indicates if the output schema request was successful.
+  bool success = 1;
+
+  // output_schema is the output schema of the module.
+  google.protobuf.Struct output_schema = 2 [(buf.validate.field).required = true];
+}
+
+// GetModuleSetupResponse is the response message for module setup schema retrieval.
+message GetModuleSetupResponse {
+  // success indicates if the setup schema request was successful.
+  bool success = 1;
+
+  // setup_schema is the setup schema of the module.
+  google.protobuf.Struct setup_schema = 2 [(buf.validate.field).required = true];
+}
+
+// GetModuleSecretResponse is the response message for module secret schema retrieval.
+message GetModuleSecretResponse {
+  // success indicates if the secret schema request was successful.
+  bool success = 1;
+
+  // secret_schema is the secret schema of the module.
+  google.protobuf.Struct secret_schema = 2 [(buf.validate.field).required = true];
+}
+
+// GetConfigSetupModuleResponse is the response message for module config setup schema retrieval.
+message GetConfigSetupModuleResponse {
+  // success indicates if the config setup schema request was successful.
+  bool success = 1;
+
+  // config_setup_schema is the config setup schema of the module.
+  google.protobuf.Struct config_setup_schema = 2 [(buf.validate.field).required = true];
+}
+
+// ConfigSetupModuleResponse is the response message for setup configuration.
+message ConfigSetupModuleResponse {
+  // success indicates if the operation was successful.
+  bool success = 1;
+
+  // setup_version is the updated setup version entity.
+  agentic_mesh_protocol.setup.v1.SetupVersion setup_version = 2;
+}
+
+// StartModuleResponse is the response message for module start operation.
+message StartModuleResponse {
+  // success indicates if the start request was successful.
+  bool success = 1;
+
+  // output is the structured output data of the started job (streamed).
+  google.protobuf.Struct output = 2 [(buf.validate.field).required = true];
+
+  // job_id is the database ID of the job inside the module.
+  string job_id = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "jobs:",
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// StopModuleResponse is the response message for module stop operation.
+message StopModuleResponse {
+  // success indicates if the stop request was successful.
+  bool success = 1;
+
+  // job_id is the database ID of the job that was stopped.
+  optional string job_id = 2 [(buf.validate.field).string.prefix = "jobs:"];
+}
