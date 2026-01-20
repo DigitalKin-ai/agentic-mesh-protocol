@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       https://www.gnu.org/licenses/gpl-3.0.html
+//     https://www.gnu.org/licenses/gpl-3.0.html
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,12 +14,18 @@
 
 syntax = "proto3";
 
-package agentic_mesh_protocol.user_profile.v1;
+package agentic_mesh_protocol.storage.v1;
 
-import "agentic_mesh_protocol/user_profile/v1/user_profile_dto.proto";
-
-// UserProfileService: Service to manage user profiles
-service UserProfileService {
-  // GetUserProfile: Get a user profile by user ID
-  rpc GetUserProfile(GetUserProfileRequest) returns (GetUserProfileResponse);
+// Type of data stored in the system.
+enum DataType {
+  // Unspecified data type.
+  DATA_TYPE_UNSPECIFIED = 0;
+  // Output data type.
+  OUTPUT = 1;
+  // View data type.
+  VIEW = 2;
+  // Logs data type.
+  LOGS = 3;
+  // Other data type.
+  OTHER = 4;
 }

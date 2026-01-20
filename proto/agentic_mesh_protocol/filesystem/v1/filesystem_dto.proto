@@ -1,0 +1,206 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.filesystem.v1;
+
+import "agentic_mesh_protocol/filesystem/v1/filesystem_enums.proto";
+import "agentic_mesh_protocol/filesystem/v1/filesystem_messages.proto";
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
+import "agentic_mesh_protocol/pagination/v1/pagination.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
+
+// ════════════════════════════════════ GetFile ════════════════════════════════════ //
+
+// GetFileRequest is the request message for retrieving a single file.
+message GetFileRequest {
+  // context: Context ID for the file
+  string context = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "context_prefix"
+      expression: "this.startsWith('missions:') || this.startsWith('setups:')"
+      message: "context must start with 'mission:' or 'setups:'"
+    },
+    (buf.validate.field).cel = {
+      id: "context_length"
+      expression:
+        "this.startsWith('missions:') ? this.size() >= 10 : true"
+        "|| this.startsWith('setups:') ? this.size() >= 8 : true"
+      message: "context must be at least 1 characters long"
+    }
+  ];
+  // file_id: File ID
+  string id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+  // include_content: Whether to include file content in response
+  bool include_content = 3 [(buf.validate.field).required = true];
+}
+
+// GetFileResponse is the response message containing the requested file.
+message GetFileResponse {
+  // Result of the operation. Expected oneof type: File or OperationError.
+  FileResult result = 1 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ GetFiles ════════════════════════════════════ //
+
+// GetFilesRequest is the request message for retrieving multiple files.
+message ListFilesRequest {
+  // context: Context ID for the files
+  string context = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "context_prefix"
+      expression: "this.startsWith('missions:') || this.startsWith('setups:')"
+      message: "context must start with 'mission:' or 'setups:'"
+    },
+    (buf.validate.field).cel = {
+      id: "context_length"
+      expression:
+        "this.startsWith('missions:') ? this.size() >= 10 : true"
+        "|| this.startsWith('setups:') ? this.size() >= 8 : true"
+      message: "context must be at least 1 characters long"
+    }
+  ];
+  // include_content: Whether to include file content in response
+  bool include_content = 3 [(buf.validate.field).required = true];
+  // pagination contains pagination settings.
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 4 [(buf.validate.field).required = true];
+  // filters: How to identify the files
+  FileFilter filters = 5 [(buf.validate.field).required = true];
+}
+
+// GetFilesResponse is the response message containing the list of files.
+message ListFilesResponse {
+  // Result of the operation. Expected oneof type: File or OperationError.
+  repeated FileResult result = 1 [(buf.validate.field).required = true];
+  // bulk: Bulk response containing the list of files and pagination info
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ UploadFiles ════════════════════════════════════ //
+
+// UploadFilesRequest is the request message for uploading multiple files.
+message UploadFilesRequest {
+  // files: List of files to upload
+  repeated UploadFileData files = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.min_items = 1
+  ];
+}
+
+// UploadFilesResponse is the response message for file upload operations.
+message UploadFilesResponse {
+  // Result of the operation. Expected oneof type: File or OperationError.
+  repeated FileResult result = 1 [(buf.validate.field).required = true];
+  // bulk: Bulk response containing the results of the upload operation
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ UpdateFile ════════════════════════════════════ //
+
+// UpdateFileRequest is the request message for updating a file.
+message UpdateFileRequest {
+  // context: Context ID for the file
+  string context = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "context_prefix"
+      expression: "this.startsWith('missions:') || this.startsWith('setups:')"
+      message: "context must start with 'mission:' or 'setups:'"
+    },
+    (buf.validate.field).cel = {
+      id: "context_length"
+      expression:
+        "this.startsWith('missions:') ? this.size() >= 10 : true"
+        "|| this.startsWith('setups:') ? this.size() >= 8 : true"
+      message: "context must be at least 1 characters long"
+    }
+  ];
+  // file_id: Current id of the file
+  string id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+  // content: New file content (optional)
+  optional bytes content = 3 [(buf.validate.field).required = false];
+  // new_name: New name for the file (optional)
+  optional string new_name = 4 [
+    (buf.validate.field).required = false,
+    (buf.validate.field).string.min_len = 1
+  ];
+  // content_type: New content type (optional)
+  optional string content_type = 5 [
+    (buf.validate.field).required = false,
+    (buf.validate.field).string.min_len = 1
+  ];
+  // file_type: New file type
+  optional FileType type = 6 [
+    (buf.validate.field).required = false,
+    (buf.validate.field).enum.defined_only = true
+  ];
+  // status: New status of the file
+  FileStatus status = 7 [(buf.validate.field).required = true];
+  // metadata: New metadata (optional, will merge with existing)
+  optional google.protobuf.Struct metadata = 8 [(buf.validate.field).required = false];
+}
+
+// UpdateFileResponse is the response message for file update operations.
+message UpdateFileResponse {
+  // Result of the operation. Expected oneof type: File or OperationError.
+  FileResult result = 1 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ DeleteFiles ════════════════════════════════════ //
+
+// DeleteFilesRequest is the request message for deleting multiple files.
+message DeleteFilesRequest {
+  // context: Context ID for the files
+  string context = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "context_prefix"
+      expression: "this.startsWith('missions:') || this.startsWith('setups:')"
+      message: "context must start with 'mission:' or 'setups:'"
+    },
+    (buf.validate.field).cel = {
+      id: "context_length"
+      expression:
+        "this.startsWith('missions:') ? this.size() >= 10 : true"
+        "|| this.startsWith('setups:') ? this.size() >= 8 : true"
+      message: "context must be at least 1 characters long"
+    }
+  ];
+  // force: Whether to force delete even if file is in use
+  bool force = 2 [(buf.validate.field).required = true];
+  // permanent: Whether to permanently delete (vs mark as deleted)
+  bool permanent = 3 [(buf.validate.field).required = true];
+  // filters: How to identify the files
+  FileFilter filters = 4 [(buf.validate.field).required = true];
+}
+
+// DeleteFilesResponse is the response message for file deletion operations.
+message DeleteFilesResponse {
+  // Result of the operation. Expected oneof type: File or OperationError.
+  repeated FileResult result = 1 [(buf.validate.field).required = true];
+  // bulk: Bulk response containing the results of the delete operation
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
+}

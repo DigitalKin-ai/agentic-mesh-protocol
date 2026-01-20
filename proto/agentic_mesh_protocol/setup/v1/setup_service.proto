@@ -16,7 +16,7 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.setup.v1;
 
-import "agentic_mesh_protocol/setup/v1/setup.proto";
+import "agentic_mesh_protocol/setup/v1/setup_dto.proto";
 
 // SetupService
 // Provides operations for setups and setup versions.
@@ -25,21 +25,10 @@ service SetupService {
   rpc CreateSetup(CreateSetupRequest) returns (CreateSetupResponse);
   // GetSetup retrieves a setup by its unique identifier.
   rpc GetSetup(GetSetupRequest) returns (GetSetupResponse);
+  // ListSetups retrieves a paginated list of setups, filtered by organization or owner.
+  rpc ListSetups(ListSetupsRequest) returns (ListSetupsResponse);
   // UpdateSetup updates an existing setup.
   rpc UpdateSetup(UpdateSetupRequest) returns (UpdateSetupResponse);
   // DeleteSetup deletes a setup.
   rpc DeleteSetup(DeleteSetupRequest) returns (DeleteSetupResponse);
-
-  // CreateSetupVersion creates a new setup version.
-  rpc CreateSetupVersion(CreateSetupVersionRequest) returns (CreateSetupVersionResponse);
-  // GetSetupVersion retrieves a setup version by its unique identifier.
-  rpc GetSetupVersion(GetSetupVersionRequest) returns (GetSetupVersionResponse);
-  // SearchSetupVersions searches for setup versions based on provided filters.
-  rpc SearchSetupVersions(SearchSetupVersionsRequest) returns (SearchSetupVersionsResponse);
-  // UpdateSetupVersion updates an existing setup version.
-  rpc UpdateSetupVersion(UpdateSetupVersionRequest) returns (UpdateSetupVersionResponse);
-  // DeleteSetupVersion deletes a setup version.
-  rpc DeleteSetupVersion(DeleteSetupVersionRequest) returns (DeleteSetupVersionResponse);
-  // ListSetups retrieves a paginated list of setups, filtered by organisation or owner.
-  rpc ListSetups(ListSetupsRequest) returns (ListSetupsResponse);
 }

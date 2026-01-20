@@ -14,16 +14,26 @@
 
 syntax = "proto3";
 
-package agentic_mesh_protocol.registry.v1;
+package agentic_mesh_protocol.module.v1;
 
-// Visibility
-enum Visibility {
-  // UNSPECIFIED visibility: default value, should not be used.
-  VISIBILITY_UNSPECIFIED = 0;
-  // Public visibility: accessible to everyone.
-  PUBLIC = 1;
-  // Private visibility: accessible only to the owner or module.
-  PRIVATE = 2;
-  // Internal visibility: reserved for internal system use.
-  INTERNAL = 3;
+// Status of a module in the system.
+enum ModuleStatus {
+  //UNSPECIFIED indicates an unspecified module status.
+  MODULE_STATUS_UNSPECIFIED = 0;
+  // The module is ready to be used.
+  READY = 1;
+  // The module is currently active.
+  ACTIVE = 2;
+  // The module is archived and inactive.
+  ARCHIVED = 3;
+}
+
+// Type of the module in the system.
+enum ModuleType {
+  // UNTYPED represents an unspecified module type.
+  MODULE_TYPE_UNSPECIFIED = 0;
+  // The module is an archetype (template or base type).
+  ARCHETYPE = 1;
+  // The module is a tool (utility or service).
+  TOOL = 2;
 }

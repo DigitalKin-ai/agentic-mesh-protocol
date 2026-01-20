@@ -16,22 +16,16 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.cost.v1;
 
-import "agentic_mesh_protocol/cost/v1/cost.proto";
+import "agentic_mesh_protocol/cost/v1/cost_dto.proto";
 
 // CostService provides operations for tracking and querying operational costs.
 service CostService {
+  // GetCosts retrieves multiple cost entries with optional filtering and pagination.
+  rpc ListCosts(ListCostsRequest) returns (ListCostsResponse);
   // AddCost records a new cost entry for a mission.
-  rpc AddCost(AddCostRequest) returns (AddCostResponse);
-
-  // GetCost retrieves cost entries by name within a mission.
-  rpc GetCost(GetCostRequest) returns (GetCostResponse);
-
-  // GetCosts retrieves multiple cost entries with filtering and pagination.
-  rpc GetCosts(GetCostsRequest) returns (GetCostsResponse);
-
+  rpc CreateCost(CreateCostRequest) returns (CreateCostResponse);
   // GetCostConfig retrieves cost configuration for a setup version.
-  rpc GetCostConfig(GetCostConfigRequest) returns (GetCostConfigResponse);
-
+  rpc ListCostConfig(ListCostConfigRequest) returns (ListCostConfigResponse);
   // SetCostConfig stores cost configuration for a setup version.
   rpc SetCostConfig(SetCostConfigRequest) returns (SetCostConfigResponse);
 }

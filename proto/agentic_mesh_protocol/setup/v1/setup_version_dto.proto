@@ -1,0 +1,182 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.setup.v1;
+
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
+import "agentic_mesh_protocol/pagination/v1/pagination.proto";
+import "agentic_mesh_protocol/setup/v1/setup_messages.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
+
+// ════════════════════════════════════ CreateSetupVersion ════════════════════════════════════ //
+
+// Request and Response messages for creating a new Setup Version.
+message CreateSetupVersionRequest {
+  // setup_id is the unique identifier of the parent setup.
+  string setup_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "setup_id_prefix"
+      expression: "this.startsWith('setups:')"
+      message: "setup_id must start with 'setups:'"
+    },
+    (buf.validate.field).cel = {
+      id: "setup_id_length"
+      expression: "this.size() >= 8"
+      message: "setup_id must be at least 1 characters long"
+    }
+  ];
+
+  // version is the version label (e.g., "v1", "v2").
+  string version = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // content contains key-value pairs for configuration content.
+  google.protobuf.Struct content = 3 [(buf.validate.field).required = true];
+}
+
+// Response message for CreateSetupVersion operation.
+message CreateSetupVersionResponse {
+  // Result of the operation. Expected oneof type: SetupVersion or OperationError.
+  SetupResult result = 1 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ GetSetupVersion ════════════════════════════════════ //
+
+// Request and Response messages for retrieving a Setup Version by its ID.
+message GetSetupVersionRequest {
+  // setup_version_id is the unique identifier of the setup version.
+  string setup_version_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "setup_versions_id_prefix"
+      expression: "this.startsWith('setup_versions:')"
+      message: "setup_versions must start with 'setup_versions:'"
+    },
+    (buf.validate.field).cel = {
+      id: "setup_versions_id_length"
+      expression: "this.size() >= 16"
+      message: "setup_versions must be at least 1 characters long"
+    }
+  ];
+}
+
+// Response message for GetSetupVersion operation.
+message GetSetupVersionResponse {
+  // Result of the operation. Expected oneof type: SetupVersion or OperationError.
+  SetupResult result = 1 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ SearchSetupVersions ════════════════════════════════════ //
+
+// Request and Response messages for searching Setup Versions.
+message SearchSetupVersionsRequest {
+  // setup_id is the unique identifier of the parent setup.
+  string setup_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "setup_id_prefix"
+      expression: "this.startsWith('setups:')"
+      message: "setup_id must start with 'setups:'"
+    },
+    (buf.validate.field).cel = {
+      id: "setup_id_length"
+      expression: "this.size() >= 8"
+      message: "setup_id must be at least 1 characters long"
+    }
+  ];
+
+  // version is the version label to filter with.
+  optional string version = 2 [
+    (buf.validate.field).required = false,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // pagination contains pagination settings.
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 3 [(buf.validate.field).required = true];
+}
+
+// Response message for SearchSetupVersions operation.
+message SearchSetupVersionsResponse {
+  // Result of the operation. Expected oneof type: SetupVersion or OperationError.
+  repeated SetupResult result = 1 [(buf.validate.field).required = true];
+  // bulk contains information about the bulk operation and pagination.
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ UpdateSetupVersion ════════════════════════════════════ //
+
+// Request and Response messages for updating an existing Setup Version.
+message UpdateSetupVersionRequest {
+  // setup_version_id is the unique identifier of the setup version to update.
+  string setup_version_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "setup_versions_id_prefix"
+      expression: "this.startsWith('setup_versions:')"
+      message: "setup_versions must start with 'setup_versions:'"
+    },
+    (buf.validate.field).cel = {
+      id: "setup_versions_id_length"
+      expression: "this.size() >= 16"
+      message: "setup_versions must be at least 1 characters long"
+    }
+  ];
+
+  // version is the version label.
+  string version = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // content contains key-value pairs for configuration content.
+  google.protobuf.Struct content = 3 [(buf.validate.field).required = true];
+}
+
+// Response message for UpdateSetupVersion operation.
+message UpdateSetupVersionResponse {
+  // Result of the operation. Expected oneof type: SetupVersion or OperationError.
+  SetupResult result = 1 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ DeleteSetupVersion ════════════════════════════════════ //
+
+// Request and Response messages for deleting a Setup Version.
+message DeleteSetupVersionRequest {
+  // setup_version_id is the unique identifier of the setup version.
+  string setup_version_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "setup_versions_id_prefix"
+      expression: "this.startsWith('setup_versions:')"
+      message: "setup_versions must start with 'setup_versions:'"
+    },
+    (buf.validate.field).cel = {
+      id: "setup_versions_id_length"
+      expression: "this.size() >= 16"
+      message: "setup_versions must be at least 1 characters long"
+    }
+  ];
+}
+
+// Response message for DeleteSetupVersion operation.
+message DeleteSetupVersionResponse {
+  // Result of the operation. Expected oneof type: SetupVersion or OperationError.
+  SetupResult result = 1 [(buf.validate.field).required = true];
+}

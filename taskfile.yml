@@ -1,0 +1,96 @@
+version: "3"
+
+vars:
+  GEN_DIR: gen/python
+  PROTO_DIR: proto
+
+tasks:
+  # =============================================================================
+  # DEFAULT
+  # =============================================================================
+  default:
+    desc: "Show available tasks"
+    cmds:
+      - task --list
+    silent: true
+
+  # =============================================================================
+  # INSTALL
+  # =============================================================================
+  install:
+    desc: "Install npm dependencies (for buf)"
+    cmds:
+      - npm install
+    sources:
+      - package.json
+      - package-lock.json
+    generates:
+      - node_modules/**/*
+    status:
+      - test -d node_modules
+
+  # =============================================================================
+  # GEN - Proto code generation (Python only)
+  # =============================================================================
+  gen:
+    desc: "Generate Python code from proto files"
+    cmds:
+      - npx buf generate
+    sources:
+      - "{{.PROTO_DIR}}/**/*.proto"
+      - buf.gen.yaml
+    generates:
+      - "{{.GEN_DIR}}/**/*"
+
+  # =============================================================================
+  # LINT - Proto quality
+  # =============================================================================
+  lint:
+    desc: "Run all proto linting checks"
+    cmds:
+      - task: lint:format:check
+      - task: lint:check
+
+  lint:check:
+    desc: "Lint proto files with buf"
+    cmds:
+      - npx buf lint {{.PROTO_DIR}}
+
+  lint:format:
+    desc: "Format proto files with buf"
+    cmds:
+      - npx buf format -w {{.PROTO_DIR}}
+
+  lint:format:check:
+    desc: "Check proto file formatting (no write)"
+    cmds:
+      - npx buf format -d {{.PROTO_DIR}} --exit-code
+
+  # =============================================================================
+  # VERSION - Breaking changes detection
+  # =============================================================================
+  version:breaking:
+    desc: "Check for breaking changes against main branch"
+    cmds:
+      - npx buf breaking --against '.git#branch=main'
+
+  version:breaking:verbose:
+    desc: "Check for breaking changes (verbose JSON output)"
+    cmds:
+      - npx buf breaking --against '.git#branch=main' --error-format=json | jq
+
+  # =============================================================================
+  # CLEAN
+  # =============================================================================
+  clean:
+    desc: "Clean generated Python files"
+    cmds:
+      - rm -rf {{.GEN_DIR}}
+      - rm -rf gen
+      - rm -rf .task
+
+  clean:all:
+    desc: "Deep clean (generated files + node_modules)"
+    cmds:
+      - task: clean
+      - rm -rf node_modules

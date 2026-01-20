@@ -14,16 +14,22 @@
 
 syntax = "proto3";
 
-package agentic_mesh_protocol.registry.v1;
+package agentic_mesh_protocol.cost.v1;
 
-// Visibility
-enum Visibility {
-  // UNSPECIFIED visibility: default value, should not be used.
-  VISIBILITY_UNSPECIFIED = 0;
-  // Public visibility: accessible to everyone.
-  PUBLIC = 1;
-  // Private visibility: accessible only to the owner or module.
-  PRIVATE = 2;
-  // Internal visibility: reserved for internal system use.
-  INTERNAL = 3;
+// CostType represents the classification of cost types in the system.
+enum CostType {
+  // UNTYPED represents an unspecified cost type.
+  COST_TYPE_UNSPECIFIED = 0;
+  // TOKEN_INPUT represents token input costs.
+  TOKEN_INPUT = 1;
+  // TOKEN_OUTPUT represents token output costs.
+  TOKEN_OUTPUT = 2;
+  // API_CALL represents API call costs.
+  API_CALL = 3;
+  // STORAGE represents storage costs.
+  STORAGE = 4;
+  // TIME represents time-based costs.
+  TIME = 5;
+  // OTHER represents other types of costs.
+  OTHER = 6;
 }

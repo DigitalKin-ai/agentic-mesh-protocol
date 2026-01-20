@@ -16,25 +16,25 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.storage.v1;
 
-import "agentic_mesh_protocol/storage/v1/data.proto";
+import "agentic_mesh_protocol/storage/v1/storage_dto.proto";
 
 // StorageService: Service for managing structured data storage
 service StorageService {
   // StoreRecord: Create a new record in the storage
-  rpc StoreRecord(StoreRecordRequest) returns (StoreRecordResponse);
+  rpc CreateRecord(CreateRecordRequest) returns (CreateRecordResponse);
 
   // ReadRecord: Retrieve a single record by ID
-  rpc ReadRecord(ReadRecordRequest) returns (ReadRecordResponse);
+  rpc GetRecord(GetRecordRequest) returns (GetRecordResponse);
 
   // UpdateRecord: Update an existing record
   rpc UpdateRecord(UpdateRecordRequest) returns (UpdateRecordResponse);
 
   // RemoveRecord: Delete a record from storage
-  rpc RemoveRecord(RemoveRecordRequest) returns (RemoveRecordResponse);
+  rpc DeleteRecord(DeleteRecordRequest) returns (DeleteRecordResponse);
 
   // ListRecords: List records with filtering and pagination
   rpc ListRecords(ListRecordsRequest) returns (ListRecordsResponse);
 
   // RemoveCollection: Delete all records in a given collection
-  rpc RemoveCollection(RemoveCollectionRequest) returns (RemoveCollectionResponse);
+  rpc DeleteCollection(DeleteCollectionRequest) returns (DeleteCollectionResponse);
 }
