@@ -94,7 +94,7 @@ message GetCostsRequest {
   ];
 
   // offset is the number of costs to skip for pagination.
-  int32 offset = 4 [(buf.validate.field).int32.gt = 0];
+  int32 offset = 4 [(buf.validate.field).int32.gte = 0];
 }
 
 // GetCostRequest is the request message for retrieving costs by name.

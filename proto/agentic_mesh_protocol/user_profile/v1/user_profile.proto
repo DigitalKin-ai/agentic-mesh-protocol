@@ -67,9 +67,9 @@ message UserProfile {
   ];
 
   // organisation_id is the organisation ID linked to the user.
-  string organisation_id = 2 [
+  string organization_id = 2 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "organisations:"
+    (buf.validate.field).string.prefix = "organizations:"
   ];
 
   // email is the user's email address.
@@ -85,10 +85,10 @@ message UserProfile {
   string last_name = 5 [(buf.validate.field).required = true];
 
   // creation_date is the timestamp when the profile was created.
-  google.protobuf.Timestamp creation_date = 6 [(buf.validate.field).required = true];
+  google.protobuf.Timestamp creation_at = 6 [(buf.validate.field).required = true];
 
   // update_date is the timestamp when the profile was last updated.
-  google.protobuf.Timestamp update_date = 7 [(buf.validate.field).required = true];
+  google.protobuf.Timestamp update_at = 7 [(buf.validate.field).required = true];
 
   // locale is the user's preferred locale.
   string locale = 8 [(buf.validate.field).required = true];

@@ -51,14 +51,14 @@ message GetFilesRequest {
   // filters: How to identify the files
   FileFilter filters = 2 [(buf.validate.field).required = true];
 
-  // list_size: Number of files to return per page
-  int32 list_size = 3 [
+  // limit: Number of files to return per page
+  int32 limit = 3 [
     (buf.validate.field).int32.gt = 0,
     (buf.validate.field).int32.lt = 1000
   ];
 
   // offset: Offset of the first file in the list
-  int32 offset = 4 [(buf.validate.field).int32.gt = 0];
+  int32 offset = 4 [(buf.validate.field).int32.gte = 0];
 
   // order: Field to order results by
   string order = 5;

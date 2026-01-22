@@ -61,10 +61,10 @@ message StorageRecord {
   ];
 
   // creation_date is the timestamp when the record was created.
-  google.protobuf.Timestamp creation_date = 5 [(buf.validate.field).required = true];
+  google.protobuf.Timestamp creation_at = 5 [(buf.validate.field).required = true];
 
   // update_date is the timestamp when the record was last updated.
-  google.protobuf.Timestamp update_date = 6 [(buf.validate.field).required = true];
+  google.protobuf.Timestamp update_at = 6 [(buf.validate.field).required = true];
 
   // data_type is the category of the data.
   DataType data_type = 7 [(buf.validate.field).required = true];
