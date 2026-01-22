@@ -18,6 +18,7 @@ package agentic_mesh_protocol.registry.v1;
 
 import "agentic_mesh_protocol/module/v1/module.proto";
 import "agentic_mesh_protocol/registry/v1/registry.proto";
+import "agentic_mesh_protocol/setup/v1/setup.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
@@ -126,7 +127,7 @@ message SetupDescriptor {
     (buf.validate.field).string.min_len = 1
   ];
   // Status
-  SetupStatus status = 4 [
+  agentic_mesh_protocol.setup.v1.SetupStatus status = 4 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.not_in = 0
   ];

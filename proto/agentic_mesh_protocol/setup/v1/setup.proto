@@ -65,7 +65,7 @@ message SetupVersion {
   google.protobuf.Struct content = 4 [(buf.validate.field).required = true];
 
   // creation_date is the setup version creation date.
-  google.protobuf.Timestamp creation_at = 5;
+  google.protobuf.Timestamp created_at = 5;
 }
 
 // Setup represents a configuration associated with a mission.

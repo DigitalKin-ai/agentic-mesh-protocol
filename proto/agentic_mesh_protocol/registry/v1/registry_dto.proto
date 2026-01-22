@@ -18,6 +18,7 @@ package agentic_mesh_protocol.registry.v1;
 
 import "agentic_mesh_protocol/module/v1/module.proto";
 import "agentic_mesh_protocol/registry/v1/registry.proto";
+import "agentic_mesh_protocol/setup/v1/setup.proto";
 import "agentic_mesh_protocol/registry/v1/registry_messages.proto";
 import "buf/validate/validate.proto";
 
@@ -74,7 +75,7 @@ message DiscoverSetupsRequest {
   repeated Visibility visibility = 2 [(buf.validate.field).repeated.items.enum.not_in = 0];
 
   // status filters by setup status (typically READY or CONFIGURATION_SUCCEEDED).
-  repeated SetupStatus status = 3 [(buf.validate.field).repeated.items.enum.not_in = 0];
+  repeated agentic_mesh_protocol.setup.v1.SetupStatus status = 3 [(buf.validate.field).repeated.items.enum.not_in = 0];
 
   // module_types filters by module type (e.g., agent, tool).
   repeated agentic_mesh_protocol.module.v1.ModuleType module_types = 4 [(buf.validate.field).repeated.items.enum.not_in = 0];

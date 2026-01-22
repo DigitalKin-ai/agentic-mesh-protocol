@@ -18,28 +18,6 @@ package agentic_mesh_protocol.registry.v1;
 
 // ════════════════════════════════════ Objects ═════════════════════════════════════ //
 
-// SetupStatus
-enum SetupStatus {
-  // Draft
-  DRAFT = 0;
-  // Waiting for approval
-  WAITING_FOR_APPROVAL = 1;
-  // Ok
-  READY = 2;
-  // Paused
-  PAUSED = 3;
-  // Failed
-  FAILED = 4;
-  // Archived
-  ARCHIVED = 5;
-  // Needs configuration
-  NEEDS_CONFIGURATION = 6;
-  // Configuration failed
-  CONFIGURATION_FAILED = 7;
-  // Configuration succeeded
-  CONFIGURATION_SUCCEEDED = 8;
-}
-
 // Visibility
 enum Visibility {
   // Public
