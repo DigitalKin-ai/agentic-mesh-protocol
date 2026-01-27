@@ -20,54 +20,55 @@ import "agentic_mesh_protocol/filesystem/v1/filesystem.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
 
-// ════════════════════════════════════ Requests ════════════════════════════════════ //
-
-// GetFileRequest is the request message for retrieving a specific file.
+// ════════════════════════════════════ GetFile ════════════════════════════════════ //
 message GetFileRequest {
   // context: Context ID for the file
   string context = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.pattern = "^(missions:|setups:).*$"
   ];
-
   // file_id: File ID
   string id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.uuid = true
   ];
-
   // include_content: Whether to include file content in response
   bool include_content = 3;
 }
-
-// GetFilesRequest is the request message for retrieving multiple files by various criteria.
+message GetFileResponse {
+  // file: The requested file
+  File file = 1 [(buf.validate.field).required = true];
+  // content: File content (only if requested)
+  bytes content = 2;
+}
+// ════════════════════════════════════ GetFiles ════════════════════════════════════ //
 message GetFilesRequest {
   // context: Context ID for the files
   string context = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.pattern = "^(missions:|setups:).*$"
   ];
-
   // filters: How to identify the files
   FileFilter filters = 2 [(buf.validate.field).required = true];
-
   // limit: Number of files to return per page
   int32 limit = 3 [
     (buf.validate.field).int32.gt = 0,
     (buf.validate.field).int32.lt = 1000
   ];
-
   // offset: Offset of the first file in the list
   int32 offset = 4 [(buf.validate.field).int32.gte = 0];
-
   // order: Field to order results by
   string order = 5;
-
   // include_content: Whether to include file content in response
   bool include_content = 6;
 }
-
-// UploadFilesRequest is the request message for uploading multiple files.
+message GetFilesResponse {
+  // files: List of files matching the criteria
+  repeated File files = 1;
+  // total_count: Total number of files matching the criteria
+  int32 total_count = 2 [(buf.validate.field).int32.gte = 0];
+}
+// ════════════════════════════════════ UploadFiles ════════════════════════════════════ //
 message UploadFilesRequest {
   // files: List of files to upload
   repeated UploadFileData files = 1 [
@@ -75,104 +76,62 @@ message UploadFilesRequest {
     (buf.validate.field).repeated.min_items = 1
   ];
 }
-
-// UpdateFileRequest is the request message for updating a file.
+message UploadFilesResponse {
+  // results: Results for each uploaded file
+  repeated FileResult results = 1;
+  // total_uploaded: Number of successfully uploaded files
+  int32 total_uploaded = 2 [(buf.validate.field).int32.gte = 0];
+  // total_failed: Number of failed uploads
+  int32 total_failed = 3 [(buf.validate.field).int32.gte = 0];
+}
+// ════════════════════════════════════ UpdateFile ════════════════════════════════════ //
 message UpdateFileRequest {
   // context: Context ID for the file
   string context = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.pattern = "^(missions:|setups:).*$"
   ];
-
   // file_id: Current id of the file
   string id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.uuid = true
   ];
-
   // new_name: New name for the file (optional)
   string new_name = 3 [(buf.validate.field).string.min_len = 1];
-
   // file_type: New file type (optional, cannot be UNSPECIFIED)
   FileType type = 4 [(buf.validate.field).enum.defined_only = true];
-
   // content_type: New content type (optional)
   string content_type = 5 [(buf.validate.field).string.min_len = 1];
-
   // content: New file content (optional)
   bytes content = 6;
-
   // status: New status of the file
   FileStatus status = 7 [(buf.validate.field).required = true];
-
   // metadata: New metadata (optional, will merge with existing)
   google.protobuf.Struct metadata = 8;
 }
-
-// DeleteFilesRequest is the request message for deleting multiple files.
+message UpdateFileResponse {
+  // result: Result of the file update operation
+  FileResult result = 1;
+}
+// ════════════════════════════════════ DeleteFiles ════════════════════════════════════ //
 message DeleteFilesRequest {
   // context: Context ID for the files
   string context = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.pattern = "^(missions:|setups:).*$"
   ];
-
   // filters: How to identify the files
   FileFilter filters = 2 [(buf.validate.field).required = true];
-
   // force: Whether to force delete even if file is in use
   bool force = 3;
-
   // permanent: Whether to permanently delete (vs mark as deleted)
   bool permanent = 4;
 }
-
-// ═══════════════════════════════════ Responses ════════════════════════════════════ //
-
-// GetFileResponse is the response message containing file information.
-message GetFileResponse {
-  // file: The requested file
-  File file = 1 [(buf.validate.field).required = true];
-
-  // content: File content (only if requested)
-  bytes content = 2;
-}
-
-// GetFilesResponse is the response message containing multiple files.
-message GetFilesResponse {
-  // files: List of files matching the criteria
-  repeated File files = 1;
-
-  // total_count: Total number of files matching the criteria
-  int32 total_count = 2 [(buf.validate.field).int32.gte = 0];
-}
-
-// UploadFilesResponse is the response message for file upload operations.
-message UploadFilesResponse {
-  // results: Results for each uploaded file
-  repeated FileResult results = 1;
-
-  // total_uploaded: Number of successfully uploaded files
-  int32 total_uploaded = 2 [(buf.validate.field).int32.gte = 0];
-
-  // total_failed: Number of failed uploads
-  int32 total_failed = 3 [(buf.validate.field).int32.gte = 0];
-}
-
-// UpdateFileResponse is the response message for file update operations.
-message UpdateFileResponse {
-  // result: Result of the file update operation
-  FileResult result = 1;
-}
-
-// DeleteFilesResponse is the response message for file deletion operations.
 message DeleteFilesResponse {
   // results: Results for each file deletion attempt
   map<string, bool> results = 1;
-
   // total_deleted: Number of successfully deleted files
   int32 total_deleted = 2 [(buf.validate.field).int32.gte = 0];
-
   // total_failed: Number of failed deletions
   int32 total_failed = 3 [(buf.validate.field).int32.gte = 0];
 }

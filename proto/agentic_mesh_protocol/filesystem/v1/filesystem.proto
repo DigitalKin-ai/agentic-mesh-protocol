@@ -61,61 +61,50 @@ message File {
     (buf.validate.field).required = true,
     (buf.validate.field).string.uuid = true
   ];
-
   // context: Context ID linked to the file
   string context = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.pattern = "^(missions:|setups:).*$"
   ];
-
   // name: Name of the file (unique within context)
   string name = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
-
   // file_type: Type classification of the file
   FileType type = 4 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];
-
   // content_type: MIME type of the file
   string content_type = 5 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
-
   // size_bytes: Size of the file in bytes
   int64 size_bytes = 6 [
     (buf.validate.field).required = true,
     (buf.validate.field).int64.gt = 0
   ];
-
   // checksum: SHA-256 checksum of the file content (SHA-256 format)
   string checksum = 7 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
-
   // metadata: Flexible metadata for additional file properties
   google.protobuf.Struct metadata = 8;
-
   // storage_uri: Internal URI for accessing the file content
   string storage_uri = 9 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
-
   // file_url: External URL for accessing the file content
   string url = 10 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
-
   // status: Current status of the file
   FileStatus status = 11 [(buf.validate.field).required = true];
-
   // content: The content of the file
   bytes content = 12 [(buf.validate.field).bytes.min_len = 1];
 }
