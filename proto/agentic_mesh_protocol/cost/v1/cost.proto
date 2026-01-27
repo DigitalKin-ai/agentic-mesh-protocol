@@ -43,31 +43,26 @@ message Cost {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
-
   // cost is the total cost value.
   double cost = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).double.gt = 0
   ];
-
   // unit is the unit of measurement for the cost (e.g., "tokens", "calls", "GB").
   string unit = 5 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
-
   // quantity is the number of units consumed.
   double quantity = 8 [
     (buf.validate.field).required = true,
     (buf.validate.field).double.gt = 0
   ];
-
   // rate is the cost per unit.
   double rate = 6 [
     (buf.validate.field).required = true,
     (buf.validate.field).double.gt = 0
   ];
-
   // mission_id is the mission ID linked to this cost.
   string mission_id = 2 [
     (buf.validate.field).required = true,
@@ -80,7 +75,6 @@ message Cost {
     (buf.validate.field).string.prefix = "setup_versions:",
     (buf.validate.field).string.min_len = 15
   ];
-
   // cost_type is the classification of the cost.
   CostType type = 4 [
     (buf.validate.field).required = true,

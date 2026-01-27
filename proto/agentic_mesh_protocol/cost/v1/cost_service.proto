@@ -22,10 +22,8 @@ import "agentic_mesh_protocol/cost/v1/cost_dto.proto";
 service CostService {
   // AddCost records a new cost entry for a mission.
   rpc AddCost(AddCostRequest) returns (AddCostResponse);
-
   // GetCost retrieves cost entries by name within a mission.
   rpc GetCost(GetCostRequest) returns (GetCostResponse);
-
   // GetCosts retrieves multiple cost entries with optional filtering and pagination.
   rpc GetCosts(GetCostsRequest) returns (GetCostsResponse);
 }
