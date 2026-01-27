@@ -30,7 +30,7 @@ message RegisterModuleRequest {
   // module_id is the unique identifier of the module (must already exist in database).
   string module_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.pattern = "^modules:.+$",
     (buf.validate.field).string.min_len = 1
   ];
 
@@ -67,7 +67,7 @@ message HeartbeatRequest {
   // module_id is the unique identifier of the module.
   string module_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.pattern = "^modules:.+$",
     (buf.validate.field).string.min_len = 1
   ];
 }
@@ -87,7 +87,7 @@ message HeartbeatResponse {
 message DiscoverSetupsRequest {
   // organization_id filters by organization identifier.
   string organization_id = 1 [
-    (buf.validate.field).string.prefix = "organizations:",
+    (buf.validate.field).string.pattern = "^organizations:.+$",
     (buf.validate.field).string.min_len = 1
   ];
 
@@ -105,7 +105,7 @@ message DiscoverSetupsRequest {
 
   // module_ids filters by specific module identifiers.
   repeated string module_ids = 6 [
-    (buf.validate.field).repeated.items.string.prefix = "modules:",
+    (buf.validate.field).repeated.items.string.pattern = "^modules:.+$",
     (buf.validate.field).repeated.items.string.min_len = 1
   ];
 
@@ -125,7 +125,7 @@ message DiscoverSetupsResponse {
 message DiscoverModulesRequest {
   // organization_id filters by organization identifier.
   string organization_id = 1 [
-    (buf.validate.field).string.prefix = "organizations:",
+    (buf.validate.field).string.pattern = "^organizations:.+$",
     (buf.validate.field).string.min_len = 1
   ];
 
@@ -158,7 +158,7 @@ message GetSetupRequest {
   // setup_id is the unique identifier of the setup.
   string setup_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "setups:",
+    (buf.validate.field).string.pattern = "^setups:.+$",
     (buf.validate.field).string.min_len = 1
   ];
 }
@@ -170,7 +170,7 @@ message GetModuleRequest {
   // module_id is the unique identifier of the module.
   string module_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.pattern = "^modules:.+$",
     (buf.validate.field).string.min_len = 1
   ];
 }

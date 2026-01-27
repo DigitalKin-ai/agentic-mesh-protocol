@@ -52,7 +52,7 @@ message Setup {
   // id is the unique identifier of the setup.
   string id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "setups:"
+    (buf.validate.field).string.pattern = "^setups:.+$"
   ];
 
   // name is the name of the setup.
@@ -61,7 +61,7 @@ message Setup {
   // organization_id is the unique identifier of the organization.
   string organization_id = 3 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "organizations_id:"
+    (buf.validate.field).string.pattern = "^organizations_id:.+$"
   ];
 
   // owner_id is the owner ID of the setup.

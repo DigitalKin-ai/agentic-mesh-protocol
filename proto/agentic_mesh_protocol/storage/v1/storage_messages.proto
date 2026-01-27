@@ -32,7 +32,7 @@ message StorageRecord {
   string mission_id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.prefix = "missions:"
+    (buf.validate.field).string.pattern = "^missions:.+$"
   ];
 
   // collection is the name of the group for the records.

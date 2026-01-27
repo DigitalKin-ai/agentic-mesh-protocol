@@ -63,13 +63,13 @@ message UserProfile {
   // user_id is the unique identifier for the user.
   string user_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "users:"
+    (buf.validate.field).string.pattern = "^users:.+$"
   ];
 
   // organization_id is the organization ID linked to the user.
   string organization_id = 2 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "organizations:"
+    (buf.validate.field).string.pattern = "^organizations:.+$"
   ];
 
   // email is the user's email address.

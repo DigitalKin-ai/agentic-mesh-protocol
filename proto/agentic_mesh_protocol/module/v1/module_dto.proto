@@ -27,7 +27,7 @@ message GetModuleInputRequest {
   // The unique identifier of the module.
   string id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.pattern = "^modules:.+$",
     (buf.validate.field).string.min_len = 8
   ];
   // If true, returns the schema in LLM format.
@@ -49,7 +49,7 @@ message GetModuleOutputRequest {
   // The unique identifier of the module.
   string id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.pattern = "^modules:.+$",
     (buf.validate.field).string.min_len = 8
   ];
   // If true, returns the schema in LLM format.
@@ -71,7 +71,7 @@ message GetModuleSetupRequest {
   // The unique identifier of the module.
   string id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.pattern = "^modules:.+$",
     (buf.validate.field).string.min_len = 8
   ];
   // If true, returns the schema in LLM format.
@@ -93,7 +93,7 @@ message GetModuleSecretRequest {
   // The unique identifier of the module.
   string id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.pattern = "^modules:.+$",
     (buf.validate.field).string.min_len = 8
   ];
   // If true, returns the schema in LLM format.
@@ -115,7 +115,7 @@ message GetConfigSetupModuleRequest {
   // The unique identifier of the module.
   string id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.pattern = "^modules:.+$",
     (buf.validate.field).string.min_len = 8
   ];
   // If true, returns the schema in LLM format.
@@ -141,7 +141,7 @@ message ConfigSetupModuleRequest {
   // The mission ID associated with the setup.
   string mission_id = 3 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.pattern = "^missions:.+$",
     (buf.validate.field).string.min_len = 9
   ];
 }
@@ -163,13 +163,13 @@ message StartModuleRequest {
   // The setup ID to use for the module.
   string setup_id = 2 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "setups:",
+    (buf.validate.field).string.pattern = "^setups:.+$",
     (buf.validate.field).string.min_len = 7
   ];
   // The mission ID associated with the module run.
   string mission_id = 3 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.pattern = "^missions:.+$",
     (buf.validate.field).string.min_len = 9
   ];
 }
@@ -183,7 +183,7 @@ message StartModuleResponse {
   // The job ID for the module run.
   string job_id = 3 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "jobs:",
+    (buf.validate.field).string.pattern = "^jobs:.+$",
     (buf.validate.field).string.min_len = 5
   ];
 }
@@ -195,7 +195,7 @@ message StopModuleRequest {
   // The job ID to stop.
   string job_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "jobs:",
+    (buf.validate.field).string.pattern = "^jobs:.+$",
     (buf.validate.field).string.min_len = 5
   ];
 }
@@ -205,5 +205,5 @@ message StopModuleResponse {
   // Indicates if the operation was successful.
   bool success = 1;
   // The job ID that was stopped (if available).
-  optional string job_id = 2 [(buf.validate.field).string.prefix = "jobs:"];
+  optional string job_id = 2 [(buf.validate.field).string.pattern = "^jobs:.+$"];
 }

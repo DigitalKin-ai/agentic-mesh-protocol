@@ -33,8 +33,7 @@ message AddCostRequest {
   // mission_id is the mission ID to link this cost to.
   string mission_id = 2 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:",
-    (buf.validate.field).string.min_len = 9
+    (buf.validate.field).string.pattern = "^missions:.+$"
   ];
   // name is the descriptive name for this cost.
   string name = 3 [
@@ -59,7 +58,7 @@ message AddCostRequest {
   // setup_version_id is the setup version ID to associate with this cost.
   string setup_version_id = 7 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "setup_versions:",
+    (buf.validate.field).string.pattern = "^setup_versions:.+$",
     (buf.validate.field).string.min_len = 15
   ];
   // quantity is the number of units consumed.
@@ -82,7 +81,7 @@ message GetCostRequest {
   // mission_id is the mission ID to query costs for.
   string mission_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.pattern = "^missions:.+$",
     (buf.validate.field).string.min_len = 9
   ];
   // name is the specific cost name to retrieve.
@@ -107,7 +106,7 @@ message GetCostsRequest {
   // mission_id is the mission ID to query costs for.
   string mission_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.pattern = "^missions:.+$",
     (buf.validate.field).string.min_len = 9
   ];
   // filter contains optional filtering criteria.

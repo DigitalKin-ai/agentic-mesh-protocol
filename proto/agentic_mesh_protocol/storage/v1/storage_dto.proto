@@ -29,7 +29,7 @@ message StoreRecordRequest {
   // mission_id is the unique identifier of the mission.
   string mission_id = 2 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.pattern = "^missions:.+$",
     (buf.validate.field).string.min_len = 9
   ];
 
@@ -63,7 +63,7 @@ message ReadRecordRequest {
   // mission_id is the unique identifier of the mission.
   string mission_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.pattern = "^missions:.+$",
     (buf.validate.field).string.min_len = 9
   ];
 
@@ -97,7 +97,7 @@ message UpdateRecordRequest {
   // mission_id is the unique identifier of the mission.
   string mission_id = 2 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.pattern = "^missions:.+$",
     (buf.validate.field).string.min_len = 9
   ];
 
@@ -128,7 +128,7 @@ message RemoveRecordRequest {
   // mission_id is the unique identifier of the mission.
   string mission_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.pattern = "^missions:.+$",
     (buf.validate.field).string.min_len = 9
   ];
 
@@ -156,7 +156,7 @@ message ListRecordsRequest {
   // mission_id is the unique identifier of the mission.
   string mission_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.pattern = "^missions:.+$",
     (buf.validate.field).string.min_len = 9
   ];
 
@@ -178,7 +178,7 @@ message RemoveCollectionRequest {
   // mission_id is the unique identifier of the mission.
   string mission_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.pattern = "^missions:.+$",
     (buf.validate.field).string.min_len = 9
   ];
 

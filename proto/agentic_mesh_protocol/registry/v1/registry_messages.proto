@@ -28,7 +28,7 @@ message ModuleDescriptor {
   // ID
   string id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.pattern = "^modules:.+$",
     (buf.validate.field).string.min_len = 1
   ]; // SurrealDB module id
   // Name
@@ -74,13 +74,13 @@ message ModuleDescriptor {
   // Organization ID
   string organization_id = 9 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "organizations:",
+    (buf.validate.field).string.pattern = "^organizations:.+$",
     (buf.validate.field).string.min_len = 1
   ];
   // Owner ID
   string owner_id = 10 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "users:",
+    (buf.validate.field).string.pattern = "^users:.+$",
     (buf.validate.field).string.min_len = 1
   ];
 
@@ -113,7 +113,7 @@ message SetupDescriptor {
   // ID
   string id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "setups:",
+    (buf.validate.field).string.pattern = "^setups:.+$",
     (buf.validate.field).string.min_len = 1
   ];
   // Name
@@ -139,25 +139,25 @@ message SetupDescriptor {
   // Organization ID
   string organization_id = 6 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "organizations:",
+    (buf.validate.field).string.pattern = "^organizations:.+$",
     (buf.validate.field).string.min_len = 1
   ];
   // Owner ID
   string owner_id = 7 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "users:",
+    (buf.validate.field).string.pattern = "^users:.+$",
     (buf.validate.field).string.min_len = 1
   ];
   // Card ID
   string card_id = 8 [
-    (buf.validate.field).string.prefix = "cards:",
+    (buf.validate.field).string.pattern = "^cards:.+$",
     (buf.validate.field).string.min_len = 1
   ];
 
   // Link to the module
   string module_id = 9 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.pattern = "^modules:.+$",
     (buf.validate.field).string.min_len = 1
   ];
 
@@ -165,7 +165,7 @@ message SetupDescriptor {
   // ID
   string setup_version_id = 10 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "setup_versions:",
+    (buf.validate.field).string.pattern = "^setup_versions:.+$",
     (buf.validate.field).string.min_len = 1
   ];
   // Version
