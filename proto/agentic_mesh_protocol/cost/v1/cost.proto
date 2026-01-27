@@ -221,3 +221,71 @@ message GetCostResponse {
   // total_cost is the sum of all matching cost values.
   double total_cost = 2 [(buf.validate.field).double.gte = 0];
 }
+
+// CostConfig represents a cost configuration entry defining pricing structure.
+message CostConfig {
+  // name is the unique identifier for this cost configuration.
+  string name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // cost_type is the classification of this cost configuration.
+  CostType cost_type = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // description provides context about this cost configuration.
+  string description = 3;
+
+  // unit is the measurement unit (e.g., "tokens", "calls", "MB").
+  string unit = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // rate is the cost per unit in dollars.
+  double rate = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gt = 0
+  ];
+}
+
+// GetCostConfigRequest is the request for retrieving cost configurations.
+message GetCostConfigRequest {
+  // setup_version_id identifies the setup version to get cost config for.
+  string setup_version_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "setup_versions:",
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// GetCostConfigResponse is the response containing cost configurations.
+message GetCostConfigResponse {
+  // success indicates whether the retrieval was successful.
+  bool success = 1;
+
+  // configs is the list of cost configuration entries.
+  repeated CostConfig configs = 2;
+}
+
+// SetCostConfigRequest is the request for storing cost configurations.
+message SetCostConfigRequest {
+  // setup_version_id identifies the setup version to set cost config for.
+  string setup_version_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "setup_versions:",
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // configs is the list of cost configuration entries to store.
+  repeated CostConfig configs = 2 [(buf.validate.field).required = true];
+}
+
+// SetCostConfigResponse is the response for storing cost configurations.
+message SetCostConfigResponse {
+  // success indicates whether the storage was successful.
+  bool success = 1;
+}

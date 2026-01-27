@@ -168,3 +168,33 @@ message GetConfigSetupModuleResponse {
   // config_setup_schema: Setup schema of the Module
   google.protobuf.Struct config_setup_schema = 2 [(buf.validate.field).required = true];
 }
+
+// GetModuleCostRequest
+//
+// Fields:
+//
+// - module_id: Database ID of the Module to get cost schema
+// - llm_format: If true, return LLM format; else raw pydantic format
+message GetModuleCostRequest {
+  // module_id: Database ID of the Module to get cost schema
+  string module_id = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).required = true
+  ];
+  // llm_format: If true, return LLM format; else raw pydantic format
+  bool llm_format = 2;
+}
+
+// GetModuleCostResponse
+//
+// Returns:
+//
+// - success: Flag to indicate if the cost schema request was successful
+// - cost_schema: Cost configuration schema of the Module
+message GetModuleCostResponse {
+  // success: Flag to indicate if the cost schema request was successful
+  bool success = 1;
+  // cost_schema: Cost configuration schema of the Module
+  google.protobuf.Struct cost_schema = 2 [(buf.validate.field).required = true];
+}

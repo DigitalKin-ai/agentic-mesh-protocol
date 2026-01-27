@@ -49,4 +49,6 @@ service ModuleService {
   rpc GetConfigSetupModule(GetConfigSetupModuleRequest) returns (GetConfigSetupModuleResponse);
   // ConfigSetupModule
   rpc ConfigSetupModule(ConfigSetupModuleRequest) returns (ConfigSetupModuleResponse);
+  // GetModuleCost
+  rpc GetModuleCost(GetModuleCostRequest) returns (GetModuleCostResponse);
 }
