@@ -34,7 +34,7 @@ message AddCostRequest {
   string mission_id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "missions:",
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).string.min_len = 9
   ];
 
   // name is the descriptive name for this cost.
@@ -44,7 +44,7 @@ message AddCostRequest {
   ];
 
   // cost_type is the classification of the cost.
-  CostType cost_type = 4 [
+  CostType type = 4 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];
@@ -90,7 +90,7 @@ message GetCostsRequest {
   // limit is the maximum number of costs to return.
   int32 limit = 3 [
     (buf.validate.field).int32.gt = 0,
-    (buf.validate.field).int32.lt = 1000
+    (buf.validate.field).int32.lt = 1024
   ];
 
   // offset is the number of costs to skip for pagination.

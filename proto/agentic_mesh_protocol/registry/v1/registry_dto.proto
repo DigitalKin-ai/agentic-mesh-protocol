@@ -18,8 +18,8 @@ package agentic_mesh_protocol.registry.v1;
 
 import "agentic_mesh_protocol/module/v1/module.proto";
 import "agentic_mesh_protocol/registry/v1/registry.proto";
-import "agentic_mesh_protocol/setup/v1/setup.proto";
 import "agentic_mesh_protocol/registry/v1/registry_messages.proto";
+import "agentic_mesh_protocol/setup/v1/setup.proto";
 import "buf/validate/validate.proto";
 
 // ════════════════════════════════════ Requests ════════════════════════════════════ //

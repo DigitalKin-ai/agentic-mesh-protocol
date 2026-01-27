@@ -38,7 +38,7 @@ message GetModuleJobsRequest {}
 // GetModuleInputRequest is the request message for retrieving module input schema.
 message GetModuleInputRequest {
   // module_id is the database ID of the module to get input schema.
-  string module_id = 1 [
+  string id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "modules:",
     (buf.validate.field).string.min_len = 1
@@ -51,7 +51,7 @@ message GetModuleInputRequest {
 // GetModuleOutputRequest is the request message for retrieving module output schema.
 message GetModuleOutputRequest {
   // module_id is the database ID of the module to get output schema.
-  string module_id = 1 [
+  string id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "modules:",
     (buf.validate.field).string.min_len = 1
@@ -64,7 +64,7 @@ message GetModuleOutputRequest {
 // GetModuleSetupRequest is the request message for retrieving module setup schema.
 message GetModuleSetupRequest {
   // module_id is the database ID of the module to get setup schema.
-  string module_id = 1 [
+  string id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "modules:",
     (buf.validate.field).string.min_len = 1
@@ -77,7 +77,7 @@ message GetModuleSetupRequest {
 // GetModuleSecretRequest is the request message for retrieving module secret schema.
 message GetModuleSecretRequest {
   // module_id is the database ID of the module to get secret schema.
-  string module_id = 1 [
+  string id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "modules:",
     (buf.validate.field).string.min_len = 1
@@ -90,7 +90,7 @@ message GetModuleSecretRequest {
 // GetConfigSetupModuleRequest is the request message for retrieving module config setup schema.
 message GetConfigSetupModuleRequest {
   // module_id is the database ID of the module to get config setup schema.
-  string module_id = 1 [
+  string id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "modules:",
     (buf.validate.field).string.min_len = 1

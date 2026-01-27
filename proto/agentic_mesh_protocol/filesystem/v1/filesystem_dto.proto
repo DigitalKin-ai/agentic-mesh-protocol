@@ -31,7 +31,7 @@ message GetFileRequest {
   ];
 
   // file_id: File ID
-  string file_id = 2 [
+  string id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.uuid = true
   ];
@@ -85,7 +85,7 @@ message UpdateFileRequest {
   ];
 
   // file_id: Current id of the file
-  string file_id = 2 [
+  string id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.uuid = true
   ];
@@ -94,7 +94,7 @@ message UpdateFileRequest {
   string new_name = 3 [(buf.validate.field).string.min_len = 1];
 
   // file_type: New file type (optional, cannot be UNSPECIFIED)
-  FileType file_type = 4 [(buf.validate.field).enum.defined_only = true];
+  FileType type = 4 [(buf.validate.field).enum.defined_only = true];
 
   // content_type: New content type (optional)
   string content_type = 5 [(buf.validate.field).string.min_len = 1];

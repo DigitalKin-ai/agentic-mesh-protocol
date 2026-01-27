@@ -37,7 +37,7 @@ message ModuleDescriptor {
     (buf.validate.field).string.min_len = 1
   ];
   // Module type
-  agentic_mesh_protocol.module.v1.ModuleType module_type = 3 [
+  agentic_mesh_protocol.module.v1.ModuleType type = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.not_in = 0
   ];

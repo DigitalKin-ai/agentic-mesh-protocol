@@ -57,7 +57,7 @@ enum FileStatus {
 // File represents a stored file with comprehensive metadata.
 message File {
   // file_id: Unique identifier for the file (UUID)
-  string file_id = 1 [
+  string id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.uuid = true
   ];
@@ -75,7 +75,7 @@ message File {
   ];
 
   // file_type: Type classification of the file
-  FileType file_type = 4 [
+  FileType type = 4 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];
@@ -108,7 +108,7 @@ message File {
   ];
 
   // file_url: External URL for accessing the file content
-  string file_url = 10 [
+  string url = 10 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
@@ -126,10 +126,10 @@ message FileFilter {
   repeated string names = 1;
 
   // file_ids: Filter by file IDs
-  repeated string file_ids = 2 [(buf.validate.field).repeated.items.string.uuid = true];
+  repeated string ids = 2 [(buf.validate.field).repeated.items.string.uuid = true];
 
   // file_types: Filter by file types
-  repeated FileType file_types = 3 [
+  repeated FileType types = 3 [
     (buf.validate.field).repeated.items.enum.not_in = 0,
     (buf.validate.field).repeated.items.enum.defined_only = true
   ];
@@ -197,7 +197,7 @@ message UploadFileData {
   ];
 
   // file_type: Type classification of the file
-  FileType file_type = 3 [
+  FileType type = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];

@@ -27,7 +27,7 @@ message CostFilter {
   repeated string names = 1 [(buf.validate.field).repeated.items.string.min_len = 1];
 
   // cost_types filters costs by cost type classifications.
-  repeated CostType cost_types = 2 [(buf.validate.field).repeated.items.enum.defined_only = true];
+  repeated CostType types = 2 [(buf.validate.field).repeated.items.enum.defined_only = true];
 
   // setup_version_ids filters costs by setup version IDs.
   repeated string setup_version_ids = 3 [

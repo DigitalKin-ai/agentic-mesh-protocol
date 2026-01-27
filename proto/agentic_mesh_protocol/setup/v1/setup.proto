@@ -80,13 +80,22 @@ message Setup {
   string name = 2 [(buf.validate.field).required = true];
 
   // organisation_id is the unique identifier of the organisation.
-  string organization_id = 3 [(buf.validate.field).required = true, (buf.validate.field).string.prefix = "organizations_id:"];
+  string organization_id = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "organizations_id:"
+  ];
 
   // owner_id is the owner ID of the setup.
-  string owner_id = 4 [(buf.validate.field).required = true, (buf.validate.field).string.prefix = 'users:'];
+  string owner_id = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = 'users:'
+  ];
 
   // module_id is the module identifier associated with the setup.
-  string module_id = 5 [(buf.validate.field).required = true, (buf.validate.field).string.prefix = 'modules:'];
+  string module_id = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = 'modules:'
+  ];
 
   // current_setup_version is the active setup version.
   optional SetupVersion current_setup_version = 6;
