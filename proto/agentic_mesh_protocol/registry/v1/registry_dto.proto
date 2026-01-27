@@ -16,15 +16,17 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.registry.v1;
 
-import "agentic_mesh_protocol/module/v1/module.proto";
-import "agentic_mesh_protocol/registry/v1/registry.proto";
+import "agentic_mesh_protocol/module/v1/module_enums.proto";
+import "agentic_mesh_protocol/registry/v1/registry_enums.proto";
 import "agentic_mesh_protocol/registry/v1/registry_messages.proto";
-import "agentic_mesh_protocol/setup/v1/setup.proto";
+import "agentic_mesh_protocol/setup/v1/setup_messages.proto";
+import "agentic_mesh_protocol/setup/v1/setup_enums.proto";
+import "agentic_mesh_protocol/pagination/v1/pagination.proto";
 import "buf/validate/validate.proto";
 
-// ════════════════════════════════════ Requests ════════════════════════════════════ //
+// ════════════════════════════════════ RegisterModule ════════════════════════════════════ //
 
-// RegisterModuleRequest is the request message for module registration at startup.
+// RegisterModuleRequest is used by a module to register itself with the registry.
 message RegisterModuleRequest {
   // module_id is the unique identifier of the module (must already exist in database).
   string module_id = 1 [
@@ -53,7 +55,15 @@ message RegisterModuleRequest {
   ];
 }
 
-// HeartbeatRequest is the request message for module health check.
+// RegisterModuleResponse is returned by the registry after successful registration.
+message RegisterModuleResponse {
+  // module is the complete module descriptor.
+  ModuleDescriptor module = 1 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ Heartbeat ════════════════════════════════════ //
+
+// HeartbeatRequest is sent periodically by a module to indicate it is alive.
 message HeartbeatRequest {
   // module_id is the unique identifier of the module.
   string module_id = 1 [
@@ -63,7 +73,18 @@ message HeartbeatRequest {
   ];
 }
 
-// DiscoverSetupsRequest is the request message for discovering available setups (agents/tools).
+// HeartbeatResponse is returned by the registry in response to a heartbeat.
+message HeartbeatResponse {
+  // status is the module status as considered by the registry (ACTIVE, READY, etc.).
+  agentic_mesh_protocol.module.v1.ModuleStatus status = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum.not_in = 0
+  ];
+}
+
+// ════════════════════════════════════ DiscoverSetups ════════════════════════════════════ //
+
+// DiscoverSetupsRequest is used to query available setups in the registry.
 message DiscoverSetupsRequest {
   // organization_id filters by organization identifier.
   string organization_id = 1 [
@@ -89,17 +110,21 @@ message DiscoverSetupsRequest {
     (buf.validate.field).repeated.items.string.min_len = 1
   ];
 
-  // limit is the maximum number of setups to return.
-  int32 limit = 7 [
-    (buf.validate.field).int32.gte = 1,
-    (buf.validate.field).int32.lte = 100
+  // pagination contains pagination settings.
+  agentic_mesh_protocol.pagination.v1.Pagination pagination = 7 [
+    (buf.validate.field).required = true
   ];
-
-  // offset is the number of setups to skip for pagination.
-  int32 offset = 8 [(buf.validate.field).int32.gte = 0];
 }
 
-// DiscoverModulesRequest is the request message for discovering raw modules.
+// DiscoverSetupsResponse is returned with the list of available setups.
+message DiscoverSetupsResponse {
+  // setups is the list of available setup descriptors.
+  repeated SetupDescriptor setups = 1 [(buf.validate.field).repeated.items.required = true];
+}
+
+// ════════════════════════════════════ DiscoverModules ════════════════════════════════════ //
+
+// DiscoverModulesRequest is used to query available modules in the registry.
 message DiscoverModulesRequest {
   // organization_id filters by organization identifier.
   string organization_id = 1 [
@@ -119,17 +144,21 @@ message DiscoverModulesRequest {
   // query is a text search that matches on name or documentation.
   string query = 5 [(buf.validate.field).string.min_len = 1];
 
-  // limit is the maximum number of modules to return.
-  int32 limit = 6 [
-    (buf.validate.field).int32.gte = 1,
-    (buf.validate.field).int32.lte = 100
+  // pagination contains pagination settings.
+  agentic_mesh_protocol.pagination.v1.Pagination pagination = 6 [
+    (buf.validate.field).required = true
   ];
-
-  // offset is the number of modules to skip for pagination.
-  int32 offset = 7 [(buf.validate.field).int32.gte = 0];
 }
 
-// GetSetupRequest is the request message for resolving a setup_id into a complete descriptor.
+// DiscoverModulesResponse is returned with the list of available modules.
+message DiscoverModulesResponse {
+  // modules is the list of available module descriptors.
+  repeated ModuleDescriptor modules = 1 [(buf.validate.field).repeated.items.required = true];
+}
+
+// ════════════════════════════════════ GetSetup ════════════════════════════════════ //
+
+// GetSetupRequest is used to retrieve a specific setup by its identifier.
 message GetSetupRequest {
   // setup_id is the unique identifier of the setup.
   string setup_id = 1 [
@@ -139,7 +168,9 @@ message GetSetupRequest {
   ];
 }
 
-// GetModuleRequest is the request message for resolving a module_id into a complete descriptor.
+// ════════════════════════════════════ GetModule ════════════════════════════════════ //
+
+// GetModuleRequest is used to retrieve a specific module by its identifier.
 message GetModuleRequest {
   // module_id is the unique identifier of the module.
   string module_id = 1 [
@@ -147,33 +178,4 @@ message GetModuleRequest {
     (buf.validate.field).string.prefix = "modules:",
     (buf.validate.field).string.min_len = 1
   ];
-}
-
-// ════════════════════════════════════ Responses ═══════════════════════════════════ //
-
-// RegisterModuleResponse is the response message for module registration.
-message RegisterModuleResponse {
-  // module is the complete module descriptor.
-  ModuleDescriptor module = 1 [(buf.validate.field).required = true];
-}
-
-// HeartbeatResponse is the response message for module health check.
-message HeartbeatResponse {
-  // status is the module status as considered by the registry (ACTIVE, READY, etc.).
-  agentic_mesh_protocol.module.v1.ModuleStatus status = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).enum.not_in = 0
-  ];
-}
-
-// DiscoverSetupsResponse is the response message for setup discovery.
-message DiscoverSetupsResponse {
-  // setups is the list of available setup descriptors.
-  repeated SetupDescriptor setups = 1 [(buf.validate.field).repeated.items.required = true];
-}
-
-// DiscoverModulesResponse is the response message for module discovery.
-message DiscoverModulesResponse {
-  // modules is the list of available module descriptors.
-  repeated ModuleDescriptor modules = 1 [(buf.validate.field).repeated.items.required = true];
 }

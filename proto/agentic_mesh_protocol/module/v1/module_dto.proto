@@ -16,213 +16,160 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.module.v1;
 
-import "agentic_mesh_protocol/setup/v1/setup.proto";
+import "agentic_mesh_protocol/setup/v1/setup_messages.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
 
-// ════════════════════════════════════ Requests ════════════════════════════════════ //
+// ════════════════════════════════════ GetModuleInput ════════════════════════════════════ //
 
-// GetModuleStatusRequest is the request message for retrieving module status.
-message GetModuleStatusRequest {
-  // job_id is the database ID of the job to get status.
-  string job_id = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "jobs:",
-    (buf.validate.field).string.min_len = 1
-  ];
-}
-
-// GetModuleJobsRequest is the request message for retrieving all module jobs.
-message GetModuleJobsRequest {}
-
-// GetModuleInputRequest is the request message for retrieving module input schema.
+// Retrieves the input schema for a given module.
 message GetModuleInputRequest {
-  // module_id is the database ID of the module to get input schema.
   string id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "modules:",
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).string.min_len = 8
   ];
-
-  // llm_format defines if the input schema should be in LLM format or raw pydantic format.
   bool llm_format = 2;
 }
 
-// GetModuleOutputRequest is the request message for retrieving module output schema.
-message GetModuleOutputRequest {
-  // module_id is the database ID of the module to get output schema.
-  string id = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "modules:",
-    (buf.validate.field).string.min_len = 1
-  ];
-
-  // llm_format defines if the output schema should be in LLM format or raw pydantic format.
-  bool llm_format = 2;
-}
-
-// GetModuleSetupRequest is the request message for retrieving module setup schema.
-message GetModuleSetupRequest {
-  // module_id is the database ID of the module to get setup schema.
-  string id = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "modules:",
-    (buf.validate.field).string.min_len = 1
-  ];
-
-  // llm_format defines if the setup schema should be in LLM format or raw pydantic format.
-  bool llm_format = 2;
-}
-
-// GetModuleSecretRequest is the request message for retrieving module secret schema.
-message GetModuleSecretRequest {
-  // module_id is the database ID of the module to get secret schema.
-  string id = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "modules:",
-    (buf.validate.field).string.min_len = 1
-  ];
-
-  // llm_format defines if the secret schema should be in LLM format or raw pydantic format.
-  bool llm_format = 2;
-}
-
-// GetConfigSetupModuleRequest is the request message for retrieving module config setup schema.
-message GetConfigSetupModuleRequest {
-  // module_id is the database ID of the module to get config setup schema.
-  string id = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "modules:",
-    (buf.validate.field).string.min_len = 1
-  ];
-
-  // llm_format defines if the config setup schema should be in LLM format or raw pydantic format.
-  bool llm_format = 2;
-}
-
-// ConfigSetupModuleRequest is the request message for configuring an existing setup version.
-message ConfigSetupModuleRequest {
-  // setup_version is the setup version to configure.
-  agentic_mesh_protocol.setup.v1.SetupVersion setup_version = 1 [(buf.validate.field).required = true];
-
-  // content is the new content to compute and/or configure.
-  google.protobuf.Struct content = 2 [(buf.validate.field).required = true];
-
-  // mission_id is the database ID of the mission.
-  string mission_id = 3 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:",
-    (buf.validate.field).string.min_len = 1
-  ];
-}
-
-// StartModuleRequest is the request message for starting a module.
-message StartModuleRequest {
-  // input is the structured input data for the module.
-  google.protobuf.Struct input = 1 [(buf.validate.field).required = true];
-
-  // setup_id is the database ID of the setup used to start the module.
-  string setup_id = 2 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "setups:",
-    (buf.validate.field).string.min_len = 1
-  ];
-
-  // mission_id is the database ID of the mission.
-  string mission_id = 3 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:",
-    (buf.validate.field).string.min_len = 1
-  ];
-}
-
-// StopModuleRequest is the request message for stopping a module job.
-message StopModuleRequest {
-  // job_id is the database ID of the job to stop.
-  string job_id = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "jobs:",
-    (buf.validate.field).string.min_len = 1
-  ];
-}
-
-// ════════════════════════════════════ Responses ═══════════════════════════════════ //
-
-// GetModuleInputResponse is the response message for module input schema retrieval.
+// Response containing the input schema of the module.
 message GetModuleInputResponse {
-  // success indicates if the input schema request was successful.
   bool success = 1;
-
-  // input_schema is the input schema of the module.
   google.protobuf.Struct input_schema = 2 [(buf.validate.field).required = true];
 }
 
-// GetModuleOutputResponse is the response message for module output schema retrieval.
-message GetModuleOutputResponse {
-  // success indicates if the output schema request was successful.
-  bool success = 1;
+// ════════════════════════════════════ GetModuleOutput ════════════════════════════════════ //
 
-  // output_schema is the output schema of the module.
+// Retrieves the output schema for a given module.
+message GetModuleOutputRequest {
+  string id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.min_len = 8
+  ];
+  bool llm_format = 2;
+}
+
+// Response containing the output schema of the module.
+message GetModuleOutputResponse {
+  bool success = 1;
   google.protobuf.Struct output_schema = 2 [(buf.validate.field).required = true];
 }
 
-// GetModuleSetupResponse is the response message for module setup schema retrieval.
-message GetModuleSetupResponse {
-  // success indicates if the setup schema request was successful.
-  bool success = 1;
+// ════════════════════════════════════ GetModuleSetup ════════════════════════════════════ //
 
-  // setup_schema is the setup schema of the module.
+// Retrieves the setup schema for a given module.
+message GetModuleSetupRequest {
+  string id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.min_len = 8
+  ];
+  bool llm_format = 2;
+}
+
+// Response containing the setup schema of the module.
+message GetModuleSetupResponse {
+  bool success = 1;
   google.protobuf.Struct setup_schema = 2 [(buf.validate.field).required = true];
 }
 
-// GetModuleSecretResponse is the response message for module secret schema retrieval.
-message GetModuleSecretResponse {
-  // success indicates if the secret schema request was successful.
-  bool success = 1;
+// ════════════════════════════════════ GetModuleSecret ════════════════════════════════════ //
 
-  // secret_schema is the secret schema of the module.
+// Retrieves the secret schema for a given module.
+message GetModuleSecretRequest {
+  string id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.min_len = 8
+  ];
+  bool llm_format = 2;
+}
+
+// Response containing the secret schema of the module.
+message GetModuleSecretResponse {
+  bool success = 1;
   google.protobuf.Struct secret_schema = 2 [(buf.validate.field).required = true];
 }
 
-// GetConfigSetupModuleResponse is the response message for module config setup schema retrieval.
-message GetConfigSetupModuleResponse {
-  // success indicates if the config setup schema request was successful.
-  bool success = 1;
+// ════════════════════════════════════ GetConfigSetupModule ════════════════════════════════════ //
 
-  // config_setup_schema is the config setup schema of the module.
+// Retrieves the configuration setup schema for a given module.
+message GetConfigSetupModuleRequest {
+  string id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.min_len = 8
+  ];
+  bool llm_format = 2;
+}
+
+// Response containing the configuration setup schema of the module.
+message GetConfigSetupModuleResponse {
+  bool success = 1;
   google.protobuf.Struct config_setup_schema = 2 [(buf.validate.field).required = true];
 }
 
-// ConfigSetupModuleResponse is the response message for setup configuration.
-message ConfigSetupModuleResponse {
-  // success indicates if the operation was successful.
-  bool success = 1;
+// ════════════════════════════════════ ConfigSetupModule ════════════════════════════════════ //
 
-  // setup_version is the updated setup version entity.
-  agentic_mesh_protocol.setup.v1.SetupVersion setup_version = 2;
-}
-
-// StartModuleResponse is the response message for module start operation.
-message StartModuleResponse {
-  // success indicates if the start request was successful.
-  bool success = 1;
-
-  // output is the structured output data of the started job (streamed).
-  google.protobuf.Struct output = 2 [(buf.validate.field).required = true];
-
-  // job_id is the database ID of the job inside the module.
-  string job_id = 3 [
+// Configures the setup for a given module.
+message ConfigSetupModuleRequest {
+  agentic_mesh_protocol.setup.v1.SetupVersion setup_version = 1 [(buf.validate.field).required = true];
+  google.protobuf.Struct content = 2 [(buf.validate.field).required = true];
+  string mission_id = 3 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "jobs:",
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.min_len = 9
   ];
 }
 
-// StopModuleResponse is the response message for module stop operation.
-message StopModuleResponse {
-  // success indicates if the stop request was successful.
+// Response confirming the configuration of the module setup.
+message ConfigSetupModuleResponse {
   bool success = 1;
+  agentic_mesh_protocol.setup.v1.SetupVersion setup_version = 2;
+}
 
-  // job_id is the database ID of the job that was stopped.
+// ════════════════════════════════════ StartModule ════════════════════════════════════ //
+
+// Starts a module with the provided input and setup.
+message StartModuleRequest {
+  google.protobuf.Struct input = 1 [(buf.validate.field).required = true];
+  string setup_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "setups:",
+    (buf.validate.field).string.min_len = 7
+  ];
+  string mission_id = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).string.min_len = 9
+  ];
+}
+
+// Response containing the output of the started module and job ID.
+message StartModuleResponse {
+  bool success = 1;
+  google.protobuf.Struct output = 2 [(buf.validate.field).required = true];
+  string job_id = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "jobs:",
+    (buf.validate.field).string.min_len = 5
+  ];
+}
+
+// ════════════════════════════════════ StopModule ════════════════════════════════════ //
+
+// Stops a running module by job ID.
+message StopModuleRequest {
+  string job_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "jobs:",
+    (buf.validate.field).string.min_len = 5
+  ];
+}
+
+// Response confirming the stopping of the module.
+message StopModuleResponse {
+  bool success = 1;
   optional string job_id = 2 [(buf.validate.field).string.prefix = "jobs:"];
 }

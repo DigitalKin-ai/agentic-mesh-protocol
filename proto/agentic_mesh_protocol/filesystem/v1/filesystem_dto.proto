@@ -16,11 +16,15 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.filesystem.v1;
 
-import "agentic_mesh_protocol/filesystem/v1/filesystem.proto";
+import "agentic_mesh_protocol/filesystem/v1/filesystem_enums.proto";
+import "agentic_mesh_protocol/filesystem/v1/filesystem_messages.proto";
+import "agentic_mesh_protocol/pagination/v1/pagination.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
 
 // ════════════════════════════════════ GetFile ════════════════════════════════════ //
+
+// GetFileRequest is the request message for retrieving a single file.
 message GetFileRequest {
   // context: Context ID for the file
   string context = 1 [
@@ -35,13 +39,18 @@ message GetFileRequest {
   // include_content: Whether to include file content in response
   bool include_content = 3;
 }
+
+// GetFileResponse is the response message containing the requested file.
 message GetFileResponse {
   // file: The requested file
   File file = 1 [(buf.validate.field).required = true];
   // content: File content (only if requested)
   bytes content = 2;
 }
+
 // ════════════════════════════════════ GetFiles ════════════════════════════════════ //
+
+// GetFilesRequest is the request message for retrieving multiple files.
 message GetFilesRequest {
   // context: Context ID for the files
   string context = 1 [
@@ -50,25 +59,27 @@ message GetFilesRequest {
   ];
   // filters: How to identify the files
   FileFilter filters = 2 [(buf.validate.field).required = true];
-  // limit: Number of files to return per page
-  int32 limit = 3 [
-    (buf.validate.field).int32.gt = 0,
-    (buf.validate.field).int32.lt = 1000
-  ];
-  // offset: Offset of the first file in the list
-  int32 offset = 4 [(buf.validate.field).int32.gte = 0];
   // order: Field to order results by
-  string order = 5;
+  string order = 3;
   // include_content: Whether to include file content in response
-  bool include_content = 6;
+  bool include_content = 4;
+  // pagination contains pagination settings.
+  agentic_mesh_protocol.pagination.v1.Pagination pagination = 5 [
+    (buf.validate.field).required = true
+  ];
 }
+
+// GetFilesResponse is the response message containing the list of files.
 message GetFilesResponse {
   // files: List of files matching the criteria
   repeated File files = 1;
   // total_count: Total number of files matching the criteria
   int32 total_count = 2 [(buf.validate.field).int32.gte = 0];
 }
+
 // ════════════════════════════════════ UploadFiles ════════════════════════════════════ //
+
+// UploadFilesRequest is the request message for uploading multiple files.
 message UploadFilesRequest {
   // files: List of files to upload
   repeated UploadFileData files = 1 [
@@ -76,6 +87,8 @@ message UploadFilesRequest {
     (buf.validate.field).repeated.min_items = 1
   ];
 }
+
+// UploadFilesResponse is the response message for file upload operations.
 message UploadFilesResponse {
   // results: Results for each uploaded file
   repeated FileResult results = 1;
@@ -84,7 +97,10 @@ message UploadFilesResponse {
   // total_failed: Number of failed uploads
   int32 total_failed = 3 [(buf.validate.field).int32.gte = 0];
 }
+
 // ════════════════════════════════════ UpdateFile ════════════════════════════════════ //
+
+// UpdateFileRequest is the request message for updating a file.
 message UpdateFileRequest {
   // context: Context ID for the file
   string context = 1 [
@@ -109,11 +125,16 @@ message UpdateFileRequest {
   // metadata: New metadata (optional, will merge with existing)
   google.protobuf.Struct metadata = 8;
 }
+
+// UpdateFileResponse is the response message for file update operations.
 message UpdateFileResponse {
   // result: Result of the file update operation
   FileResult result = 1;
 }
+
 // ════════════════════════════════════ DeleteFiles ════════════════════════════════════ //
+
+// DeleteFilesRequest is the request message for deleting multiple files.
 message DeleteFilesRequest {
   // context: Context ID for the files
   string context = 1 [
@@ -127,6 +148,8 @@ message DeleteFilesRequest {
   // permanent: Whether to permanently delete (vs mark as deleted)
   bool permanent = 4;
 }
+
+// DeleteFilesResponse is the response message for file deletion operations.
 message DeleteFilesResponse {
   // results: Results for each file deletion attempt
   map<string, bool> results = 1;

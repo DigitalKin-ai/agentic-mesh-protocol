@@ -16,8 +16,9 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.cost.v1;
 
-import "agentic_mesh_protocol/cost/v1/cost.proto";
+import "agentic_mesh_protocol/cost/v1/cost_enums.proto";
 import "agentic_mesh_protocol/cost/v1/cost_messages.proto";
+import "agentic_mesh_protocol/pagination/v1/pagination.proto";
 import "buf/validate/validate.proto";
 
 // ═════════════════════════════════════ Add Cost ════════════════════════════════════ //
@@ -111,14 +112,9 @@ message GetCostsRequest {
   ];
   // filter contains optional filtering criteria.
   CostFilter filter = 2;
-  // limit is the maximum number of costs to return.
-  int32 limit = 3 [
-    (buf.validate.field).int32.gt = 0,
-    (buf.validate.field).int32.lt = 1024
-  ];
-  // offset is the number of costs to skip for pagination.
-  int32 offset = 4 [
-    (buf.validate.field).int32.gte = 0
+  // pagination contains pagination settings.
+  agentic_mesh_protocol.pagination.v1.Pagination pagination = 3 [
+    (buf.validate.field).required = true
   ];
 }
 

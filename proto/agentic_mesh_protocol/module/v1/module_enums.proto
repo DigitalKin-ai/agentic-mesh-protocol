@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       https://www.gnu.org/licenses/gpl-3.0.html
+//     https://www.gnu.org/licenses/gpl-3.0.html
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,16 +14,17 @@
 
 syntax = "proto3";
 
-package agentic_mesh_protocol.registry.v1;
+package agentic_mesh_protocol.module.v1;
 
-// ════════════════════════════════════ Objects ═════════════════════════════════════ //
+// ModuleStatus
+enum ModuleStatus {
+  READY = 0;
+  ACTIVE = 1;
+  ARCHIVED = 2;
+}
 
-// Visibility
-enum Visibility {
-  // Public
-  PUBLIC = 0;
-  // Private
-  PRIVATE = 1;
-  // Internal
-  INTERNAL = 2;
+// ModuleType
+enum ModuleType {
+  ARCHETYPE = 0;
+  TOOL = 1;
 }

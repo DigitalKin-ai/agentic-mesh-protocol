@@ -1,0 +1,37 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.cost.v1;
+
+import "buf/validate/validate.proto";
+
+// ═════════════════════════════════════ Objects ════════════════════════════════════ //
+
+// CostType represents the classification of cost types in the system.
+enum CostType {
+  // TOKEN_INPUT represents token input costs.
+  TOKEN_INPUT = 0;
+  // TOKEN_OUTPUT represents token output costs.
+  TOKEN_OUTPUT = 1;
+  // API_CALL represents API call costs.
+  API_CALL = 2;
+  // STORAGE represents storage costs.
+  STORAGE = 3;
+  // TIME represents time-based costs.
+  TIME = 4;
+  // OTHER represents other types of costs.
+  OTHER = 5;
+}

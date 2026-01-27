@@ -19,30 +19,9 @@ package agentic_mesh_protocol.setup.v1;
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
+import "agentic_mesh_protocol/setup/v1/setup_enums.proto";
 
 // ═════════════════════════════════════ Objects ════════════════════════════════════ //
-
-// SetupStatus represents the status of a setup.
-enum SetupStatus {
-  // DRAFT indicates the setup is a draft.
-  DRAFT = 0;
-  // VALIDATING indicates the setup is being validated.
-  VALIDATING = 1;
-  // READY indicates the setup is ready.
-  READY = 2;
-  // PAUSED indicates the setup is paused.
-  PAUSED = 3;
-  // FAILED indicates the setup failed.
-  FAILED = 4;
-  // ARCHIVED indicates the setup has been archived.
-  ARCHIVED = 5;
-  // NEEDS_CONFIGURATION indicates the setup needs configuration.
-  NEEDS_CONFIGURATION = 6;
-  // CONFIGURATION_FAILED indicates the setup configuration failed.
-  CONFIGURATION_FAILED = 7;
-  // CONFIGURATION_SUCCEEDED indicates the setup configuration succeeded.
-  CONFIGURATION_SUCCEEDED = 8;
-}
 
 // SetupVersion represents a version of a setup's configuration.
 message SetupVersion {
@@ -79,7 +58,7 @@ message Setup {
   // name is the name of the setup.
   string name = 2 [(buf.validate.field).required = true];
 
-  // organisation_id is the unique identifier of the organisation.
+  // organization_id is the unique identifier of the organization.
   string organization_id = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "organizations_id:"

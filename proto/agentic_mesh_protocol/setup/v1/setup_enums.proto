@@ -14,24 +14,17 @@
 
 syntax = "proto3";
 
-package agentic_mesh_protocol.module.v1;
+package agentic_mesh_protocol.setup.v1;
 
-// ═════════════════════════════════════ Objects ════════════════════════════════════ //
-
-// ModuleStatus
-enum ModuleStatus {
-  // Ready
-  READY = 0;
-  // Active
-  ACTIVE = 1;
-  // Archived
-  ARCHIVED = 2;
-}
-
-// ModuleType
-enum ModuleType {
-  // Archetype
-  ARCHETYPE = 0;
-  // Tool
-  TOOL = 1;
+// SetupStatus
+enum SetupStatus {
+  DRAFT = 0;
+  VALIDATING = 1;
+  READY = 2;
+  PAUSED = 3;
+  FAILED = 4;
+  ARCHIVED = 5;
+  NEEDS_CONFIGURATION = 6;
+  CONFIGURATION_FAILED = 7;
+  CONFIGURATION_SUCCEEDED = 8;
 }

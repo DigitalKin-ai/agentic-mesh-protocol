@@ -16,13 +16,15 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.setup.v1;
 
-import "agentic_mesh_protocol/setup/v1/setup.proto";
+import "agentic_mesh_protocol/setup/v1/setup_messages.proto";
+import "agentic_mesh_protocol/setup/v1/setup_enums.proto";
+import "agentic_mesh_protocol/pagination/v1/pagination.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
 
-// ════════════════════════════════════ Requests ════════════════════════════════════ //
+// ════════════════════════════════════ CreateSetup ════════════════════════════════════ //
 
-// CreateSetupRequest is the request message for creating a new setup.
+// Request and Response messages for creating a new Setup.
 message CreateSetupRequest {
   // name is the name of the setup.
   string name = 1 [
@@ -30,7 +32,7 @@ message CreateSetupRequest {
     (buf.validate.field).string.min_len = 1
   ];
 
-  // organization_id is the unique identifier of the organisation.
+  // organization_id is the unique identifier of the organization.
   string organization_id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
@@ -55,7 +57,18 @@ message CreateSetupRequest {
   SetupStatus status = 6 [(buf.validate.field).required = true];
 }
 
-// GetSetupRequest is the request message for retrieving a setup by its unique identifier.
+// Response message for CreateSetup operation.
+message CreateSetupResponse {
+  // success indicates if the operation was successful.
+  bool success = 1;
+
+  // setup is the newly created setup entity.
+  Setup setup = 2;
+}
+
+// ════════════════════════════════════ GetSetup ════════════════════════════════════ //
+
+// Request message for retrieving a Setup by its ID.
 message GetSetupRequest {
   // setup_id is the unique identifier of the setup.
   string setup_id = 1 [
@@ -67,7 +80,18 @@ message GetSetupRequest {
   optional string version = 2;
 }
 
-// UpdateSetupRequest is the request message for updating an existing setup.
+// Response message for GetSetup operation.
+message GetSetupResponse {
+  // setup is the retrieved setup entity.
+  Setup setup = 1;
+
+  // setup_version is the retrieved setup version if it exists.
+  SetupVersion setup_version = 2;
+}
+
+// ════════════════════════════════════ UpdateSetup ════════════════════════════════════ //
+
+// Request and Response messages for updating an existing Setup.
 message UpdateSetupRequest {
   // setup_id is the unique identifier of the setup.
   string setup_id = 1 [
@@ -91,7 +115,18 @@ message UpdateSetupRequest {
   SetupStatus status = 5 [(buf.validate.field).required = true];
 }
 
-// DeleteSetupRequest is the request message for deleting a setup by its unique identifier.
+// Response message for UpdateSetup operation.
+message UpdateSetupResponse {
+  // success indicates if the operation was successful.
+  bool success = 1;
+
+  // setup is the updated setup entity.
+  Setup setup = 2;
+}
+
+// ════════════════════════════════════ DeleteSetup ════════════════════════════════════ //
+
+// Request and Response messages for deleting a Setup.
 message DeleteSetupRequest {
   // setup_id is the unique identifier of the setup.
   string setup_id = 1 [
@@ -100,7 +135,15 @@ message DeleteSetupRequest {
   ];
 }
 
-// CreateSetupVersionRequest is the request message for creating a new setup version.
+// Response message for DeleteSetup operation.
+message DeleteSetupResponse {
+  // success indicates if the operation was successful.
+  bool success = 1;
+}
+
+// ════════════════════════════════════ CreateSetupVersion ════════════════════════════════════ //
+
+// Request and Response messages for creating a new Setup Version.
 message CreateSetupVersionRequest {
   // setup_id is the unique identifier of the parent setup.
   string setup_id = 1 [
@@ -118,13 +161,32 @@ message CreateSetupVersionRequest {
   google.protobuf.Struct content = 3;
 }
 
-// GetSetupVersionRequest is the request message for retrieving a setup version by its unique identifier.
+// Response message for CreateSetupVersion operation.
+message CreateSetupVersionResponse {
+  // success indicates if the operation was successful.
+  bool success = 1;
+
+  // setup_version is the newly created setup version entity.
+  SetupVersion setup_version = 2;
+}
+
+// ════════════════════════════════════ GetSetupVersion ════════════════════════════════════ //
+
+// Request and Response messages for retrieving a Setup Version by its ID.
 message GetSetupVersionRequest {
   // setup_version_id is the unique identifier of the setup version.
   string setup_version_id = 1;
 }
 
-// SearchSetupVersionsRequest is the request message for searching setup versions using filters.
+// Response message for GetSetupVersion operation.
+message GetSetupVersionResponse {
+  // setup_version is the retrieved setup version entity.
+  SetupVersion setup_version = 1;
+}
+
+// ════════════════════════════════════ SearchSetupVersions ════════════════════════════════════ //
+
+// Request and Response messages for searching Setup Versions.
 message SearchSetupVersionsRequest {
   // setup_id is the unique identifier of the parent setup.
   string setup_id = 1;
@@ -133,7 +195,15 @@ message SearchSetupVersionsRequest {
   optional string version = 2;
 }
 
-// UpdateSetupVersionRequest is the request message for updating an existing setup version.
+// Response message for SearchSetupVersions operation.
+message SearchSetupVersionsResponse {
+  // setup_versions is the list of setup versions matching the criteria.
+  repeated SetupVersion setup_versions = 1;
+}
+
+// ════════════════════════════════════ UpdateSetupVersion ════════════════════════════════════ //
+
+// Request and Response messages for updating an existing Setup Version.
 message UpdateSetupVersionRequest {
   // setup_version_id is the unique identifier of the setup version to update.
   string setup_version_id = 1 [
@@ -151,90 +221,7 @@ message UpdateSetupVersionRequest {
   google.protobuf.Struct content = 3 [(buf.validate.field).required = true];
 }
 
-// DeleteSetupVersionRequest is the request message for deleting a setup version by its unique identifier.
-message DeleteSetupVersionRequest {
-  // setup_version_id is the unique identifier of the setup version.
-  string setup_version_id = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
-  ];
-}
-
-// ListSetupsRequest is the request message for listing setups.
-message ListSetupsRequest {
-  // organization_id filters by organisation ID.
-  optional string organization_id = 1;
-
-  // owner_id filters by owner ID.
-  optional string owner_id = 2;
-
-  // limit is the maximum number of setups to return.
-  int32 limit = 3 [
-    (buf.validate.field).int32.gt = 0,
-    (buf.validate.field).int32.lt = 1000
-  ];
-
-  // offset is the number of setups to skip.
-  int32 offset = 4 [(buf.validate.field).int32.gte = 0];
-}
-
-// ════════════════════════════════════ Responses ═══════════════════════════════════ //
-
-// CreateSetupResponse is the response message for setup creation.
-message CreateSetupResponse {
-  // success indicates if the operation was successful.
-  bool success = 1;
-
-  // setup is the newly created setup entity.
-  Setup setup = 2;
-}
-
-// GetSetupResponse is the response message for setup retrieval.
-message GetSetupResponse {
-  // setup is the retrieved setup entity.
-  Setup setup = 1;
-
-  // setup_version is the retrieved setup version if it exists.
-  SetupVersion setup_version = 2;
-}
-
-// UpdateSetupResponse is the response message for setup update.
-message UpdateSetupResponse {
-  // success indicates if the operation was successful.
-  bool success = 1;
-
-  // setup is the updated setup entity.
-  Setup setup = 2;
-}
-
-// DeleteSetupResponse is the response message for setup deletion.
-message DeleteSetupResponse {
-  // success indicates if the operation was successful.
-  bool success = 1;
-}
-
-// CreateSetupVersionResponse is the response message for setup version creation.
-message CreateSetupVersionResponse {
-  // success indicates if the operation was successful.
-  bool success = 1;
-
-  // setup_version is the newly created setup version entity.
-  SetupVersion setup_version = 2;
-}
-
-// GetSetupVersionResponse is the response message for setup version retrieval.
-message GetSetupVersionResponse {
-  // setup_version is the retrieved setup version entity.
-  SetupVersion setup_version = 1;
-}
-
-// SearchSetupVersionsResponse is the response message for setup version search.
-message SearchSetupVersionsResponse {
-  // setup_versions is the list of setup versions matching the criteria.
-  repeated SetupVersion setup_versions = 1;
-}
-
-// UpdateSetupVersionResponse is the response message for setup version update.
+// Response message for UpdateSetupVersion operation.
 message UpdateSetupVersionResponse {
   // success indicates if the operation was successful.
   bool success = 1;
@@ -243,13 +230,40 @@ message UpdateSetupVersionResponse {
   SetupVersion setup_version = 2;
 }
 
-// DeleteSetupVersionResponse is the response message for setup version deletion.
+// ════════════════════════════════════ DeleteSetupVersion ════════════════════════════════════ //
+
+// Request and Response messages for deleting a Setup Version.
+message DeleteSetupVersionRequest {
+  // setup_version_id is the unique identifier of the setup version.
+  string setup_version_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// Response message for DeleteSetupVersion operation.
 message DeleteSetupVersionResponse {
   // success indicates if the operation was successful.
   bool success = 1;
 }
 
-// ListSetupsResponse is the response message for setup listing.
+// ════════════════════════════════════ ListSetups ════════════════════════════════════ //
+
+// Request and Response messages for listing Setups with filtering and pagination.
+message ListSetupsRequest {
+  // organization_id filters by organization ID.
+  optional string organization_id = 1;
+
+  // owner_id filters by owner ID.
+  optional string owner_id = 2;
+
+  // pagination contains pagination settings.
+  agentic_mesh_protocol.pagination.v1.Pagination pagination = 3 [
+    (buf.validate.field).required = true
+  ];
+}
+
+// Response message for ListSetups operation.
 message ListSetupsResponse {
   // setups is the list of setups matching the criteria.
   repeated Setup setups = 1;
