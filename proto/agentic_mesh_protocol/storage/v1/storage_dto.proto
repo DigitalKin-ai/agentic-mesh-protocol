@@ -16,8 +16,8 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.storage.v1;
 
-import "agentic_mesh_protocol/storage/v1/storage_messages.proto";
 import "agentic_mesh_protocol/storage/v1/storage_enums.proto";
+import "agentic_mesh_protocol/storage/v1/storage_messages.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
 
@@ -48,6 +48,8 @@ message StoreRecordRequest {
   // data_type is the category of the data being stored.
   DataType data_type = 5 [(buf.validate.field).required = true];
 }
+
+// Response message for StoreRecord operation.
 message StoreRecordResponse {
   // success indicates if the operation was successful.
   bool success = 1 [(buf.validate.field).required = true];
@@ -55,6 +57,7 @@ message StoreRecordResponse {
   // stored_data is the record that was stored.
   StorageRecord stored_data = 2 [(buf.validate.field).required = true];
 }
+
 // ════════════════════════════════════ ReadRecord ════════════════════════════════════ //
 message ReadRecordRequest {
   // mission_id is the unique identifier of the mission.
@@ -76,6 +79,8 @@ message ReadRecordRequest {
     (buf.validate.field).string.min_len = 1
   ];
 }
+
+// Response message for ReadRecord operation.
 message ReadRecordResponse {
   // success indicates if the operation was successful.
   bool success = 1 [(buf.validate.field).required = true];
@@ -83,6 +88,7 @@ message ReadRecordResponse {
   // stored_data is the retrieved record.
   StorageRecord stored_data = 2 [(buf.validate.field).required = true];
 }
+
 // ════════════════════════════════════ UpdateRecord ════════════════════════════════════ //
 message UpdateRecordRequest {
   // data is the updated JSON object.
@@ -107,6 +113,8 @@ message UpdateRecordRequest {
     (buf.validate.field).string.min_len = 1
   ];
 }
+
+// Response message for UpdateRecord operation.
 message UpdateRecordResponse {
   // success indicates if the operation was successful.
   bool success = 1 [(buf.validate.field).required = true];
@@ -114,6 +122,7 @@ message UpdateRecordResponse {
   // stored_data is the updated record.
   StorageRecord stored_data = 2 [(buf.validate.field).required = true];
 }
+
 // ════════════════════════════════════ RemoveRecord ════════════════════════════════════ //
 message RemoveRecordRequest {
   // mission_id is the unique identifier of the mission.
@@ -135,10 +144,13 @@ message RemoveRecordRequest {
     (buf.validate.field).string.min_len = 1
   ];
 }
+
+// Response message for RemoveRecord operation.
 message RemoveRecordResponse {
   // success indicates if the operation was successful.
   bool success = 1 [(buf.validate.field).required = true];
 }
+
 // ════════════════════════════════════ ListRecords ════════════════════════════════════ //
 message ListRecordsRequest {
   // mission_id is the unique identifier of the mission.
@@ -154,10 +166,13 @@ message ListRecordsRequest {
     (buf.validate.field).string.min_len = 1
   ];
 }
+
+// Response message for ListRecords operation.
 message ListRecordsResponse {
   // records is the list of records found in the collection.
   repeated StorageRecord records = 1 [(buf.validate.field).required = true];
 }
+
 // ════════════════════════════════════ RemoveCollection ════════════════════════════════════ //
 message RemoveCollectionRequest {
   // mission_id is the unique identifier of the mission.
@@ -173,6 +188,8 @@ message RemoveCollectionRequest {
     (buf.validate.field).string.min_len = 1
   ];
 }
+
+// Response message for RemoveCollection operation.
 message RemoveCollectionResponse {
   // success indicates if the operation was successful.
   bool success = 1 [(buf.validate.field).required = true];

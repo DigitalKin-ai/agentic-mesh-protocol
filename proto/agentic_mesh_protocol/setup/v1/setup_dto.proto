@@ -16,9 +16,9 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.setup.v1;
 
-import "agentic_mesh_protocol/setup/v1/setup_messages.proto";
-import "agentic_mesh_protocol/setup/v1/setup_enums.proto";
 import "agentic_mesh_protocol/pagination/v1/pagination.proto";
+import "agentic_mesh_protocol/setup/v1/setup_enums.proto";
+import "agentic_mesh_protocol/setup/v1/setup_messages.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
 
@@ -258,9 +258,7 @@ message ListSetupsRequest {
   optional string owner_id = 2;
 
   // pagination contains pagination settings.
-  agentic_mesh_protocol.pagination.v1.Pagination pagination = 3 [
-    (buf.validate.field).required = true
-  ];
+  agentic_mesh_protocol.pagination.v1.Pagination pagination = 3 [(buf.validate.field).required = true];
 }
 
 // Response message for ListSetups operation.

@@ -16,10 +16,6 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.cost.v1;
 
-import "buf/validate/validate.proto";
-
-// ═════════════════════════════════════ Objects ════════════════════════════════════ //
-
 // CostType represents the classification of cost types in the system.
 enum CostType {
   // TOKEN_INPUT represents token input costs.

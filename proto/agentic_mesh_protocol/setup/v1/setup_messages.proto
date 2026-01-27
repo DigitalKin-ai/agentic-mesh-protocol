@@ -16,10 +16,10 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.setup.v1;
 
+import "agentic_mesh_protocol/setup/v1/setup_enums.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
-import "agentic_mesh_protocol/setup/v1/setup_enums.proto";
 
 // ═════════════════════════════════════ Objects ════════════════════════════════════ //
 

@@ -16,11 +16,16 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.storage.v1;
 
-// DataType
+// Type of data stored in the system.
 enum DataType {
+  // Unspecified data type.
   UNSPECIFIED = 0;
+  // Output data type.
   OUTPUT = 1;
+  // View data type.
   VIEW = 2;
+  // Logs data type.
   LOGS = 3;
+  // Other data type.
   OTHER = 4;
 }

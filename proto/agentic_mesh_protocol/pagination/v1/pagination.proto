@@ -18,6 +18,7 @@ package agentic_mesh_protocol.pagination.v1;
 
 import "buf/validate/validate.proto";
 
+// Pagination represents pagination parameters for listing requests.
 message Pagination {
   // limit is the maximum number of items to return.
   int32 limit = 1 [

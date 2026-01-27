@@ -20,6 +20,8 @@ import "agentic_mesh_protocol/user_profile/v1/user_profile_messages.proto";
 import "buf/validate/validate.proto";
 
 // ════════════════════════════════════ GetUserProfile ════════════════════════════════════ //
+
+// Request message for GetUserProfile operation.
 message GetUserProfileRequest {
   // mission_id is the unique identifier for the mission.
   string mission_id = 1 [
@@ -29,6 +31,7 @@ message GetUserProfileRequest {
   ];
 }
 
+// Response message for GetUserProfile operation.
 message GetUserProfileResponse {
   // success indicates if the operation was successful.
   bool success = 1 [(buf.validate.field).required = true];

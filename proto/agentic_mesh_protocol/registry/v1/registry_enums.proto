@@ -18,7 +18,10 @@ package agentic_mesh_protocol.registry.v1;
 
 // Visibility
 enum Visibility {
+  // Public visibility: accessible to everyone.
   PUBLIC = 0;
+  // Private visibility: accessible only to the owner or module.
   PRIVATE = 1;
+  // Internal visibility: reserved for internal system use.
   INTERNAL = 2;
 }

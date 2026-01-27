@@ -16,15 +16,24 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.setup.v1;
 
-// SetupStatus
+// Status of a setup in the system.
 enum SetupStatus {
+  // The setup is being drafted or edited.
   DRAFT = 0;
+  // The setup is being validated.
   VALIDATING = 1;
+  // The setup is ready for use.
   READY = 2;
+  // The setup is temporarily paused.
   PAUSED = 3;
+  // The setup has failed at some stage.
   FAILED = 4;
+  // The setup is archived and inactive.
   ARCHIVED = 5;
+  // The setup needs additional configuration.
   NEEDS_CONFIGURATION = 6;
+  // The setup configuration failed.
   CONFIGURATION_FAILED = 7;
+  // The setup configuration succeeded.
   CONFIGURATION_SUCCEEDED = 8;
 }

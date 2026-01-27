@@ -16,15 +16,20 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.module.v1;
 
-// ModuleStatus
+// Status of a module in the system.
 enum ModuleStatus {
+  // The module is ready to be used.
   READY = 0;
+  // The module is currently active.
   ACTIVE = 1;
+  // The module is archived and inactive.
   ARCHIVED = 2;
 }
 
-// ModuleType
+// Type of the module in the system.
 enum ModuleType {
+  // The module is an archetype (template or base type).
   ARCHETYPE = 0;
+  // The module is a tool (utility or service).
   TOOL = 1;
 }

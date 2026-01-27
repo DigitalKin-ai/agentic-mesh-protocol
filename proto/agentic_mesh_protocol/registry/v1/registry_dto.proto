@@ -17,11 +17,10 @@ syntax = "proto3";
 package agentic_mesh_protocol.registry.v1;
 
 import "agentic_mesh_protocol/module/v1/module_enums.proto";
+import "agentic_mesh_protocol/pagination/v1/pagination.proto";
 import "agentic_mesh_protocol/registry/v1/registry_enums.proto";
 import "agentic_mesh_protocol/registry/v1/registry_messages.proto";
-import "agentic_mesh_protocol/setup/v1/setup_messages.proto";
 import "agentic_mesh_protocol/setup/v1/setup_enums.proto";
-import "agentic_mesh_protocol/pagination/v1/pagination.proto";
 import "buf/validate/validate.proto";
 
 // ════════════════════════════════════ RegisterModule ════════════════════════════════════ //
@@ -111,9 +110,7 @@ message DiscoverSetupsRequest {
   ];
 
   // pagination contains pagination settings.
-  agentic_mesh_protocol.pagination.v1.Pagination pagination = 7 [
-    (buf.validate.field).required = true
-  ];
+  agentic_mesh_protocol.pagination.v1.Pagination pagination = 7 [(buf.validate.field).required = true];
 }
 
 // DiscoverSetupsResponse is returned with the list of available setups.
@@ -145,9 +142,7 @@ message DiscoverModulesRequest {
   string query = 5 [(buf.validate.field).string.min_len = 1];
 
   // pagination contains pagination settings.
-  agentic_mesh_protocol.pagination.v1.Pagination pagination = 6 [
-    (buf.validate.field).required = true
-  ];
+  agentic_mesh_protocol.pagination.v1.Pagination pagination = 6 [(buf.validate.field).required = true];
 }
 
 // DiscoverModulesResponse is returned with the list of available modules.

@@ -24,17 +24,21 @@ import "google/protobuf/struct.proto";
 
 // Retrieves the input schema for a given module.
 message GetModuleInputRequest {
+  // The unique identifier of the module.
   string id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "modules:",
     (buf.validate.field).string.min_len = 8
   ];
+  // If true, returns the schema in LLM format.
   bool llm_format = 2;
 }
 
 // Response containing the input schema of the module.
 message GetModuleInputResponse {
+  // Indicates if the operation was successful.
   bool success = 1;
+  // The input schema of the module.
   google.protobuf.Struct input_schema = 2 [(buf.validate.field).required = true];
 }
 
@@ -42,17 +46,21 @@ message GetModuleInputResponse {
 
 // Retrieves the output schema for a given module.
 message GetModuleOutputRequest {
+  // The unique identifier of the module.
   string id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "modules:",
     (buf.validate.field).string.min_len = 8
   ];
+  // If true, returns the schema in LLM format.
   bool llm_format = 2;
 }
 
 // Response containing the output schema of the module.
 message GetModuleOutputResponse {
+  // Indicates if the operation was successful.
   bool success = 1;
+  // The output schema of the module.
   google.protobuf.Struct output_schema = 2 [(buf.validate.field).required = true];
 }
 
@@ -60,17 +68,21 @@ message GetModuleOutputResponse {
 
 // Retrieves the setup schema for a given module.
 message GetModuleSetupRequest {
+  // The unique identifier of the module.
   string id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "modules:",
     (buf.validate.field).string.min_len = 8
   ];
+  // If true, returns the schema in LLM format.
   bool llm_format = 2;
 }
 
 // Response containing the setup schema of the module.
 message GetModuleSetupResponse {
+  // Indicates if the operation was successful.
   bool success = 1;
+  // The setup schema of the module.
   google.protobuf.Struct setup_schema = 2 [(buf.validate.field).required = true];
 }
 
@@ -78,17 +90,21 @@ message GetModuleSetupResponse {
 
 // Retrieves the secret schema for a given module.
 message GetModuleSecretRequest {
+  // The unique identifier of the module.
   string id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "modules:",
     (buf.validate.field).string.min_len = 8
   ];
+  // If true, returns the schema in LLM format.
   bool llm_format = 2;
 }
 
 // Response containing the secret schema of the module.
 message GetModuleSecretResponse {
+  // Indicates if the operation was successful.
   bool success = 1;
+  // The secret schema of the module.
   google.protobuf.Struct secret_schema = 2 [(buf.validate.field).required = true];
 }
 
@@ -96,17 +112,21 @@ message GetModuleSecretResponse {
 
 // Retrieves the configuration setup schema for a given module.
 message GetConfigSetupModuleRequest {
+  // The unique identifier of the module.
   string id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "modules:",
     (buf.validate.field).string.min_len = 8
   ];
+  // If true, returns the schema in LLM format.
   bool llm_format = 2;
 }
 
 // Response containing the configuration setup schema of the module.
 message GetConfigSetupModuleResponse {
+  // Indicates if the operation was successful.
   bool success = 1;
+  // The configuration setup schema of the module.
   google.protobuf.Struct config_setup_schema = 2 [(buf.validate.field).required = true];
 }
 
@@ -114,8 +134,11 @@ message GetConfigSetupModuleResponse {
 
 // Configures the setup for a given module.
 message ConfigSetupModuleRequest {
+  // The setup version to configure.
   agentic_mesh_protocol.setup.v1.SetupVersion setup_version = 1 [(buf.validate.field).required = true];
+  // The configuration content for the setup.
   google.protobuf.Struct content = 2 [(buf.validate.field).required = true];
+  // The mission ID associated with the setup.
   string mission_id = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "missions:",
@@ -125,7 +148,9 @@ message ConfigSetupModuleRequest {
 
 // Response confirming the configuration of the module setup.
 message ConfigSetupModuleResponse {
+  // Indicates if the operation was successful.
   bool success = 1;
+  // The configured setup version.
   agentic_mesh_protocol.setup.v1.SetupVersion setup_version = 2;
 }
 
@@ -133,12 +158,15 @@ message ConfigSetupModuleResponse {
 
 // Starts a module with the provided input and setup.
 message StartModuleRequest {
+  // The input data for the module.
   google.protobuf.Struct input = 1 [(buf.validate.field).required = true];
+  // The setup ID to use for the module.
   string setup_id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "setups:",
     (buf.validate.field).string.min_len = 7
   ];
+  // The mission ID associated with the module run.
   string mission_id = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "missions:",
@@ -148,8 +176,11 @@ message StartModuleRequest {
 
 // Response containing the output of the started module and job ID.
 message StartModuleResponse {
+  // Indicates if the operation was successful.
   bool success = 1;
+  // The output data from the module.
   google.protobuf.Struct output = 2 [(buf.validate.field).required = true];
+  // The job ID for the module run.
   string job_id = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "jobs:",
@@ -161,6 +192,7 @@ message StartModuleResponse {
 
 // Stops a running module by job ID.
 message StopModuleRequest {
+  // The job ID to stop.
   string job_id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "jobs:",
@@ -170,6 +202,8 @@ message StopModuleRequest {
 
 // Response confirming the stopping of the module.
 message StopModuleResponse {
+  // Indicates if the operation was successful.
   bool success = 1;
+  // The job ID that was stopped (if available).
   optional string job_id = 2 [(buf.validate.field).string.prefix = "jobs:"];
 }

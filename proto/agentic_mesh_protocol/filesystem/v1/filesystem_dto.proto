@@ -64,9 +64,7 @@ message GetFilesRequest {
   // include_content: Whether to include file content in response
   bool include_content = 4;
   // pagination contains pagination settings.
-  agentic_mesh_protocol.pagination.v1.Pagination pagination = 5 [
-    (buf.validate.field).required = true
-  ];
+  agentic_mesh_protocol.pagination.v1.Pagination pagination = 5 [(buf.validate.field).required = true];
 }
 
 // GetFilesResponse is the response message containing the list of files.

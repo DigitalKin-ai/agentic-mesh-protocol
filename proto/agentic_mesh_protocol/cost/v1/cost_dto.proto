@@ -113,9 +113,7 @@ message GetCostsRequest {
   // filter contains optional filtering criteria.
   CostFilter filter = 2;
   // pagination contains pagination settings.
-  agentic_mesh_protocol.pagination.v1.Pagination pagination = 3 [
-    (buf.validate.field).required = true
-  ];
+  agentic_mesh_protocol.pagination.v1.Pagination pagination = 3 [(buf.validate.field).required = true];
 }
 
 // GetCostsResponse is the response message containing multiple costs.

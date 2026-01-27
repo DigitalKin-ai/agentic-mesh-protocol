@@ -18,7 +18,6 @@ package agentic_mesh_protocol.registry.v1;
 
 import "agentic_mesh_protocol/module/v1/module_enums.proto";
 import "agentic_mesh_protocol/registry/v1/registry_enums.proto";
-import "agentic_mesh_protocol/setup/v1/setup_messages.proto";
 import "agentic_mesh_protocol/setup/v1/setup_enums.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
