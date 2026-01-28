@@ -18,32 +18,36 @@ package agentic_mesh_protocol.filesystem.v1;
 
 // FileType represents the classification of file types in the system.
 enum FileType {
+  // UNTYPED represents an unspecified file type.
+  UNTYPED = 0;
   // DOCUMENT represents document files (PDF, DOC, TXT, etc.).
-  DOCUMENT = 0;
+  DOCUMENT = 1;
   // IMAGE represents image files (PNG, JPG, GIF, etc.).
-  IMAGE = 1;
+  IMAGE = 2;
   // VIDEO represents video files (MP4, AVI, MOV, etc.).
-  VIDEO = 2;
+  VIDEO = 3;
   // AUDIO represents audio files (MP3, WAV, etc.).
-  AUDIO = 3;
+  AUDIO = 4;
   // ARCHIVE represents archive files (ZIP, TAR, etc.).
-  ARCHIVE = 4;
+  ARCHIVE = 5;
   // CODE represents source code files.
-  CODE = 5;
+  CODE = 6;
   // OTHER represents other file types.
-  OTHER = 6;
+  OTHER = 7;
 }
 
 // FileStatus represents the lifecycle status of a file in the system.
 enum FileStatus {
+  //UNSPECIFIED indicates an unspecified file status.
+  UNSPECIFIED = 0;
   // UPLOADING indicates the file is currently being uploaded.
-  UPLOADING = 0;
+  UPLOADING = 1;
   // ACTIVE indicates the file is active and available for use.
-  ACTIVE = 1;
+  ACTIVE = 2;
   // PROCESSING indicates the file is being processed.
-  PROCESSING = 2;
+  PROCESSING = 3;
   // ARCHIVED indicates the file has been archived.
-  ARCHIVED = 3;
+  ARCHIVED = 4;
   // DELETED indicates the file is marked for deletion.
-  DELETED = 4;
+  DELETED = 5;
 }

@@ -29,7 +29,18 @@ message GetFileRequest {
   // context: Context ID for the file
   string context = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^(missions:|setups:).*$"
+    (buf.validate.field).cel = {
+      id: "context_prefix"
+      expression: "this.startsWith('missions:') || this.startsWith('setups:')"
+      message: "context must start with 'mission:' or 'setups:'"
+    },
+    (buf.validate.field).cel = {
+      id: "context_length"
+      expression:
+          "this.startsWith('missions:') ? this.size() >= 10 : true"
+              "|| this.startsWith('setups:') ? this.size() >= 8 : true"
+      message: "context must be at least 1 characters long"
+    }
   ];
   // file_id: File ID
   string id = 2 [
@@ -37,7 +48,7 @@ message GetFileRequest {
     (buf.validate.field).string.uuid = true
   ];
   // include_content: Whether to include file content in response
-  bool include_content = 3;
+  bool include_content = 3 [(buf.validate.field).required = true];
 }
 
 // GetFileResponse is the response message containing the requested file.
@@ -45,7 +56,7 @@ message GetFileResponse {
   // file: The requested file
   File file = 1 [(buf.validate.field).required = true];
   // content: File content (only if requested)
-  bytes content = 2;
+  bytes content = 2 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ GetFiles ════════════════════════════════════ //
@@ -55,14 +66,27 @@ message GetFilesRequest {
   // context: Context ID for the files
   string context = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^(missions:|setups:).*$"
+    (buf.validate.field).cel = {
+      id: "context_prefix"
+      expression: "this.startsWith('missions:') || this.startsWith('setups:')"
+      message: "context must start with 'mission:' or 'setups:'"
+    },
+    (buf.validate.field).cel = {
+      id: "context_length"
+      expression:
+          "this.startsWith('missions:') ? this.size() >= 10 : true"
+              "|| this.startsWith('setups:') ? this.size() >= 8 : true"
+      message: "context must be at least 1 characters long"
+    }
   ];
-  // filters: How to identify the files
-  FileFilter filters = 2 [(buf.validate.field).required = true];
   // order: Field to order results by
-  string order = 3;
+  string order = 2 [
+    (buf.validate.field).required = true
+  ];
   // include_content: Whether to include file content in response
-  bool include_content = 4;
+  bool include_content = 3 [(buf.validate.field).required = true];
+  // filters: How to identify the files
+  FileFilter filters = 4 [(buf.validate.field).required = true];
   // pagination contains pagination settings.
   agentic_mesh_protocol.pagination.v1.Pagination pagination = 5 [(buf.validate.field).required = true];
 }
@@ -70,9 +94,12 @@ message GetFilesRequest {
 // GetFilesResponse is the response message containing the list of files.
 message GetFilesResponse {
   // files: List of files matching the criteria
-  repeated File files = 1;
+  repeated File files = 1 [(buf.validate.field).required = true];
   // total_count: Total number of files matching the criteria
-  int32 total_count = 2 [(buf.validate.field).int32.gte = 0];
+  int32 total_count = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32.gte = 0
+  ];
 }
 
 // ════════════════════════════════════ UploadFiles ════════════════════════════════════ //
@@ -89,11 +116,17 @@ message UploadFilesRequest {
 // UploadFilesResponse is the response message for file upload operations.
 message UploadFilesResponse {
   // results: Results for each uploaded file
-  repeated FileResult results = 1;
+  repeated FileResult results = 1 [(buf.validate.field).required = true];
   // total_uploaded: Number of successfully uploaded files
-  int32 total_uploaded = 2 [(buf.validate.field).int32.gte = 0];
+  int32 total_uploaded = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32.gte = 0
+  ];
   // total_failed: Number of failed uploads
-  int32 total_failed = 3 [(buf.validate.field).int32.gte = 0];
+  int32 total_failed = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32.gte = 0
+  ];
 }
 
 // ════════════════════════════════════ UpdateFile ════════════════════════════════════ //
@@ -103,7 +136,18 @@ message UpdateFileRequest {
   // context: Context ID for the file
   string context = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^(missions:|setups:).*$"
+    (buf.validate.field).cel = {
+      id: "context_prefix"
+      expression: "this.startsWith('missions:') || this.startsWith('setups:')"
+      message: "context must start with 'mission:' or 'setups:'"
+    },
+    (buf.validate.field).cel = {
+      id: "context_length"
+      expression:
+          "this.startsWith('missions:') ? this.size() >= 10 : true"
+              "|| this.startsWith('setups:') ? this.size() >= 8 : true"
+      message: "context must be at least 1 characters long"
+    }
   ];
   // file_id: Current id of the file
   string id = 2 [
@@ -111,23 +155,30 @@ message UpdateFileRequest {
     (buf.validate.field).string.uuid = true
   ];
   // new_name: New name for the file (optional)
-  string new_name = 3 [(buf.validate.field).string.min_len = 1];
-  // file_type: New file type (optional, cannot be UNSPECIFIED)
-  FileType type = 4 [(buf.validate.field).enum.defined_only = true];
+  optional string new_name = 3 [
+    (buf.validate.field).required = false
+  ];
   // content_type: New content type (optional)
-  string content_type = 5 [(buf.validate.field).string.min_len = 1];
+  optional string content_type = 4 [
+    (buf.validate.field).required = false
+  ];
   // content: New file content (optional)
-  bytes content = 6;
+  optional bytes content = 5 [(buf.validate.field).required = false];
   // status: New status of the file
-  FileStatus status = 7 [(buf.validate.field).required = true];
+  FileStatus status = 6 [(buf.validate.field).required = true];
   // metadata: New metadata (optional, will merge with existing)
-  google.protobuf.Struct metadata = 8;
+  optional google.protobuf.Struct metadata = 7 [(buf.validate.field).required = false];
+  // file_type: New file type
+  optional FileType type = 8 [
+    (buf.validate.field).required = false,
+    (buf.validate.field).enum.defined_only = true
+  ];
 }
 
 // UpdateFileResponse is the response message for file update operations.
 message UpdateFileResponse {
   // result: Result of the file update operation
-  FileResult result = 1;
+  FileResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ DeleteFiles ════════════════════════════════════ //
@@ -137,22 +188,39 @@ message DeleteFilesRequest {
   // context: Context ID for the files
   string context = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^(missions:|setups:).*$"
+    (buf.validate.field).cel = {
+      id: "context_prefix"
+      expression: "this.startsWith('missions:') || this.startsWith('setups:')"
+      message: "context must start with 'mission:' or 'setups:'"
+    },
+    (buf.validate.field).cel = {
+      id: "context_length"
+      expression:
+          "this.startsWith('missions:') ? this.size() >= 10 : true"
+              "|| this.startsWith('setups:') ? this.size() >= 8 : true"
+      message: "context must be at least 1 characters long"
+    }
   ];
   // filters: How to identify the files
   FileFilter filters = 2 [(buf.validate.field).required = true];
   // force: Whether to force delete even if file is in use
-  bool force = 3;
+  bool force = 3 [(buf.validate.field).required = true];
   // permanent: Whether to permanently delete (vs mark as deleted)
-  bool permanent = 4;
+  bool permanent = 4 [(buf.validate.field).required = true];
 }
 
 // DeleteFilesResponse is the response message for file deletion operations.
 message DeleteFilesResponse {
   // results: Results for each file deletion attempt
-  map<string, bool> results = 1;
+  map<string, bool> results = 1 [(buf.validate.field).required = true];
   // total_deleted: Number of successfully deleted files
-  int32 total_deleted = 2 [(buf.validate.field).int32.gte = 0];
+  int32 total_deleted = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32.gte = 0
+  ];
   // total_failed: Number of failed deletions
-  int32 total_failed = 3 [(buf.validate.field).int32.gte = 0];
+  int32 total_failed = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32.gte = 0
+  ];
 }
