@@ -18,22 +18,24 @@ package agentic_mesh_protocol.setup.v1;
 
 // Status of a setup in the system.
 enum SetupStatus {
+  // UNSPECIFIED indicates that the status is not set.
+  UNSPECIFIED = 0;
   // The setup is being drafted or edited.
-  DRAFT = 0;
+  DRAFT = 1;
   // The setup is being validated.
-  VALIDATING = 1;
+  VALIDATING = 2;
   // The setup is ready for use.
-  READY = 2;
+  READY = 3;
   // The setup is temporarily paused.
-  PAUSED = 3;
+  PAUSED = 4;
   // The setup has failed at some stage.
-  FAILED = 4;
+  FAILED = 5;
   // The setup is archived and inactive.
-  ARCHIVED = 5;
+  ARCHIVED = 6;
   // The setup needs additional configuration.
-  NEEDS_CONFIGURATION = 6;
+  NEEDS_CONFIGURATION = 7;
   // The setup configuration failed.
-  CONFIGURATION_FAILED = 7;
+  CONFIGURATION_FAILED = 8;
   // The setup configuration succeeded.
-  CONFIGURATION_SUCCEEDED = 8;
+  CONFIGURATION_SUCCEEDED = 9;
 }

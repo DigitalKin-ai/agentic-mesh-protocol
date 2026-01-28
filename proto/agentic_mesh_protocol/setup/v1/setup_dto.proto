@@ -28,30 +28,48 @@ import "google/protobuf/struct.proto";
 message CreateSetupRequest {
   // name is the name of the setup.
   string name = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).required = true
   ];
 
   // organization_id is the unique identifier of the organization.
   string organization_id = 2 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).required = true
   ];
 
   // owner_id is the owner ID of the setup.
   string owner_id = 3 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).cel = {
+      id: "owner_id_prefix"
+      expression: "this.startsWith('users:')"
+      message: "owner_id must start with 'users:'"
+    },
+    (buf.validate.field).cel = {
+      id: "owner_id_length"
+      expression: "this.size() >= 7"
+      message: "owner_id must be at least 1 characters long"
+    }
   ];
 
   // module_id is the module identifier associated with the setup.
   string module_id = 4 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).cel = {
+      id: "module_id_prefix"
+      expression: "this.startsWith('modules:')"
+      message: "module_id must start with 'modules:'"
+    },
+    (buf.validate.field).cel = {
+      id: "module_id_length"
+      expression: "this.size() >= 9"
+      message: "module_id must be at least 1 characters long"
+    }
   ];
 
   // current_setup_version is the active setup version.
-  optional SetupVersion current_setup_version = 5;
+  optional SetupVersion current_setup_version = 5 [
+    (buf.validate.field).required = true
+  ];
 
   // status is the status of the setup.
   SetupStatus status = 6 [(buf.validate.field).required = true];
@@ -60,10 +78,14 @@ message CreateSetupRequest {
 // Response message for CreateSetup operation.
 message CreateSetupResponse {
   // success indicates if the operation was successful.
-  bool success = 1;
+  bool success = 1 [
+    (buf.validate.field).required = true
+  ];
 
   // setup is the newly created setup entity.
-  Setup setup = 2;
+  Setup setup = 2 [
+    (buf.validate.field).required = true
+  ];
 }
 
 // ════════════════════════════════════ GetSetup ════════════════════════════════════ //
@@ -73,20 +95,36 @@ message GetSetupRequest {
   // setup_id is the unique identifier of the setup.
   string setup_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).cel = {
+      id: "setup_id_prefix"
+      expression: "this.startsWith('setups:')"
+      message: "setup_id must start with 'setups:'"
+    },
+    (buf.validate.field).cel = {
+      id: "setup_id_length"
+      expression: "this.size() >= 8"
+      message: "setup_id must be at least 1 characters long"
+    }
   ];
 
   // version is the unique identifier of the active setup version.
-  optional string version = 2;
+  optional string version = 2 [
+    (buf.validate.field).required = false,
+    (buf.validate.field).string.min_len = 1
+  ];
 }
 
 // Response message for GetSetup operation.
 message GetSetupResponse {
   // setup is the retrieved setup entity.
-  Setup setup = 1;
+  Setup setup = 1 [
+    (buf.validate.field).required = true
+  ];
 
   // setup_version is the retrieved setup version if it exists.
-  SetupVersion setup_version = 2;
+  SetupVersion setup_version = 2 [
+    (buf.validate.field).required = false
+  ];
 }
 
 // ════════════════════════════════════ UpdateSetup ════════════════════════════════════ //
@@ -96,32 +134,61 @@ message UpdateSetupRequest {
   // setup_id is the unique identifier of the setup.
   string setup_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).cel = {
+      id: "setup_id_prefix"
+      expression: "this.startsWith('setups:')"
+      message: "setup_id must start with 'setups:'"
+    },
+    (buf.validate.field).cel = {
+      id: "setup_id_length"
+      expression: "this.size() >= 8"
+      message: "setup_id must be at least 1 characters long"
+    }
   ];
 
   // name is the name of the setup.
   string name = 2 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).required = true
   ];
 
   // owner_id is the owner ID of the setup.
-  string owner_id = 3;
+  string owner_id = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "owner_id_prefix"
+      expression: "this.startsWith('users:')"
+      message: "owner_id must start with 'users:'"
+    },
+    (buf.validate.field).cel = {
+      id: "owner_id_length"
+      expression: "this.size() >= 7"
+      message: "owner_id must be at least 1 characters long"
+    }
+  ];
 
   // current_setup_version is the active setup version.
-  SetupVersion current_setup_version = 4;
+  SetupVersion current_setup_version = 4 [
+    (buf.validate.field).required = true
+  ];
 
   // status is the status of the setup.
-  SetupStatus status = 5 [(buf.validate.field).required = true];
+  SetupStatus status = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum.defined_only = true
+  ];
 }
 
 // Response message for UpdateSetup operation.
 message UpdateSetupResponse {
   // success indicates if the operation was successful.
-  bool success = 1;
+  bool success = 1 [
+    (buf.validate.field).required = true
+  ];
 
   // setup is the updated setup entity.
-  Setup setup = 2;
+  Setup setup = 2 [
+    (buf.validate.field).required = true
+  ];
 }
 
 // ════════════════════════════════════ DeleteSetup ════════════════════════════════════ //
@@ -131,14 +198,25 @@ message DeleteSetupRequest {
   // setup_id is the unique identifier of the setup.
   string setup_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).cel = {
+      id: "setup_id_prefix"
+      expression: "this.startsWith('setups:')"
+      message: "setup_id must start with 'setups:'"
+    },
+    (buf.validate.field).cel = {
+      id: "setup_id_length"
+      expression: "this.size() >= 8"
+      message: "setup_id must be at least 1 characters long"
+    }
   ];
 }
 
 // Response message for DeleteSetup operation.
 message DeleteSetupResponse {
   // success indicates if the operation was successful.
-  bool success = 1;
+  bool success = 1 [
+    (buf.validate.field).required = true
+  ];
 }
 
 // ════════════════════════════════════ CreateSetupVersion ════════════════════════════════════ //
@@ -148,26 +226,40 @@ message CreateSetupVersionRequest {
   // setup_id is the unique identifier of the parent setup.
   string setup_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).cel = {
+      id: "setup_id_prefix"
+      expression: "this.startsWith('setups:')"
+      message: "setup_id must start with 'setups:'"
+    },
+    (buf.validate.field).cel = {
+      id: "setup_id_length"
+      expression: "this.size() >= 8"
+      message: "setup_id must be at least 1 characters long"
+    }
   ];
 
   // version is the version label (e.g., "v1", "v2").
   string version = 2 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).required = true
   ];
 
   // content contains key-value pairs for configuration content.
-  google.protobuf.Struct content = 3;
+  google.protobuf.Struct content = 3 [
+    (buf.validate.field).required = true
+  ];
 }
 
 // Response message for CreateSetupVersion operation.
 message CreateSetupVersionResponse {
   // success indicates if the operation was successful.
-  bool success = 1;
+  bool success = 1 [
+    (buf.validate.field).required = true
+  ];
 
   // setup_version is the newly created setup version entity.
-  SetupVersion setup_version = 2;
+  SetupVersion setup_version = 2 [
+    (buf.validate.field).required = true
+  ];
 }
 
 // ════════════════════════════════════ GetSetupVersion ════════════════════════════════════ //
@@ -175,13 +267,27 @@ message CreateSetupVersionResponse {
 // Request and Response messages for retrieving a Setup Version by its ID.
 message GetSetupVersionRequest {
   // setup_version_id is the unique identifier of the setup version.
-  string setup_version_id = 1;
+  string setup_version_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "setup_versions_id_prefix"
+      expression: "this.startsWith('setup_versions:')"
+      message: "setup_versions must start with 'setup_versions:'"
+    },
+    (buf.validate.field).cel = {
+      id: "setup_versions_id_length"
+      expression: "this.size() >= 16"
+      message: "setup_versions must be at least 1 characters long"
+    }
+  ];
 }
 
 // Response message for GetSetupVersion operation.
 message GetSetupVersionResponse {
   // setup_version is the retrieved setup version entity.
-  SetupVersion setup_version = 1;
+  SetupVersion setup_version = 1 [
+    (buf.validate.field).required = true
+  ];
 }
 
 // ════════════════════════════════════ SearchSetupVersions ════════════════════════════════════ //
@@ -189,16 +295,33 @@ message GetSetupVersionResponse {
 // Request and Response messages for searching Setup Versions.
 message SearchSetupVersionsRequest {
   // setup_id is the unique identifier of the parent setup.
-  string setup_id = 1;
+  string setup_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "setup_id_prefix"
+      expression: "this.startsWith('setups:')"
+      message: "setup_id must start with 'setups:'"
+    },
+    (buf.validate.field).cel = {
+      id: "setup_id_length"
+      expression: "this.size() >= 8"
+      message: "setup_id must be at least 1 characters long"
+    }
+  ];
 
   // version is the version label to filter with.
-  optional string version = 2;
+  optional string version = 2 [
+    (buf.validate.field).required = false,
+    (buf.validate.field).string.min_len = 1
+  ];
 }
 
 // Response message for SearchSetupVersions operation.
 message SearchSetupVersionsResponse {
   // setup_versions is the list of setup versions matching the criteria.
-  repeated SetupVersion setup_versions = 1;
+  repeated SetupVersion setup_versions = 1 [
+    (buf.validate.field).required = true
+  ];
 }
 
 // ════════════════════════════════════ UpdateSetupVersion ════════════════════════════════════ //
@@ -208,13 +331,21 @@ message UpdateSetupVersionRequest {
   // setup_version_id is the unique identifier of the setup version to update.
   string setup_version_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).cel = {
+      id: "setup_versions_id_prefix"
+      expression: "this.startsWith('setup_versions:')"
+      message: "setup_versions must start with 'setup_versions:'"
+    },
+    (buf.validate.field).cel = {
+      id: "setup_versions_id_length"
+      expression: "this.size() >= 16"
+      message: "setup_versions must be at least 1 characters long"
+    }
   ];
 
   // version is the version label.
   string version = 2 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).required = true
   ];
 
   // content contains key-value pairs for configuration content.
@@ -224,10 +355,14 @@ message UpdateSetupVersionRequest {
 // Response message for UpdateSetupVersion operation.
 message UpdateSetupVersionResponse {
   // success indicates if the operation was successful.
-  bool success = 1;
+  bool success = 1 [
+    (buf.validate.field).required = true
+  ];
 
   // setup_version is the updated setup version entity.
-  SetupVersion setup_version = 2;
+  SetupVersion setup_version = 2 [
+    (buf.validate.field).required = true
+  ];
 }
 
 // ════════════════════════════════════ DeleteSetupVersion ════════════════════════════════════ //
@@ -237,14 +372,25 @@ message DeleteSetupVersionRequest {
   // setup_version_id is the unique identifier of the setup version.
   string setup_version_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).cel = {
+      id: "setup_versions_id_prefix"
+      expression: "this.startsWith('setup_versions:')"
+      message: "setup_versions must start with 'setup_versions:'"
+    },
+    (buf.validate.field).cel = {
+      id: "setup_versions_id_length"
+      expression: "this.size() >= 16"
+      message: "setup_versions must be at least 1 characters long"
+    }
   ];
 }
 
 // Response message for DeleteSetupVersion operation.
 message DeleteSetupVersionResponse {
   // success indicates if the operation was successful.
-  bool success = 1;
+  bool success = 1 [
+    (buf.validate.field).required = true
+  ];
 }
 
 // ════════════════════════════════════ ListSetups ════════════════════════════════════ //
@@ -252,10 +398,33 @@ message DeleteSetupVersionResponse {
 // Request and Response messages for listing Setups with filtering and pagination.
 message ListSetupsRequest {
   // organization_id filters by organization ID.
-  optional string organization_id = 1;
+  optional string organization_id = 1 [(buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "organization_id_prefix"
+      expression: "this.startsWith('organizations:')"
+      message: "organization_id must start with 'organizations:'"
+    },
+    (buf.validate.field).cel = {
+      id: "organization_id_length"
+      expression: "this.size() >= 15"
+      message: "organization_id must be at least 1 characters long"
+    }
+  ];
 
   // owner_id filters by owner ID.
-  optional string owner_id = 2;
+  optional string owner_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "owner_id_prefix"
+      expression: "this.startsWith('users:')"
+      message: "owner_id must start with 'users:'"
+    },
+    (buf.validate.field).cel = {
+      id: "owner_id_length"
+      expression: "this.size() >= 7"
+      message: "owner_id must be at least 1 characters long"
+    }
+  ];
 
   // pagination contains pagination settings.
   agentic_mesh_protocol.pagination.v1.Pagination pagination = 3 [(buf.validate.field).required = true];
@@ -264,8 +433,13 @@ message ListSetupsRequest {
 // Response message for ListSetups operation.
 message ListSetupsResponse {
   // setups is the list of setups matching the criteria.
-  repeated Setup setups = 1;
+  repeated Setup setups = 1 [
+    (buf.validate.field).required = true
+  ];
 
   // total_count is the total number of setups matching the criteria.
-  int32 total_count = 2 [(buf.validate.field).int32.gt = 0];
+  int32 total_count = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32.gte = 0
+  ];
 }
