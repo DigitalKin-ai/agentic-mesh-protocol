@@ -18,18 +18,22 @@ package agentic_mesh_protocol.module.v1;
 
 // Status of a module in the system.
 enum ModuleStatus {
+  //UNSPECIFIED indicates an unspecified module status.
+  UNSPECIFIED = 0;
   // The module is ready to be used.
-  READY = 0;
+  READY = 1;
   // The module is currently active.
-  ACTIVE = 1;
+  ACTIVE = 2;
   // The module is archived and inactive.
-  ARCHIVED = 2;
+  ARCHIVED = 3;
 }
 
 // Type of the module in the system.
 enum ModuleType {
+  // UNTYPED represents an unspecified module type.
+  UNTYPED = 0;
   // The module is an archetype (template or base type).
-  ARCHETYPE = 0;
+  ARCHETYPE = 1;
   // The module is a tool (utility or service).
-  TOOL = 1;
+  TOOL = 2;
 }
