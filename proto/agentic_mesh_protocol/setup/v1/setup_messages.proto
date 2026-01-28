@@ -56,7 +56,10 @@ message SetupVersion {
   ];
 
   // version is the label for this version (e.g., "v1", "v2").
-  string version = 3 [(buf.validate.field).required = true, (buf.validate.field).string.min_len = 1];
+  string version = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 
   // creation_date is the setup version creation date.
   google.protobuf.Timestamp created_at = 4;
@@ -128,7 +131,10 @@ message Setup {
   ];
 
   // name is the name of the setup.
-  string name = 5 [(buf.validate.field).required = true, (buf.validate.field).string.min_len = 1];
+  string name = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 
   // status is the status of the setup.
   SetupStatus status = 6 [(buf.validate.field).required = true];

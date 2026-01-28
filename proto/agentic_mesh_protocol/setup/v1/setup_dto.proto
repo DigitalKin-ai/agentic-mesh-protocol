@@ -27,7 +27,10 @@ import "google/protobuf/struct.proto";
 // Request and Response messages for creating a new Setup.
 message CreateSetupRequest {
   // organization_id is the unique identifier of the organization.
-  string organization_id = 1 [(buf.validate.field).required = true, (buf.validate.field).string.min_len = 1];
+  string organization_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 
   // owner_id is the owner ID of the setup.
   string owner_id = 2 [
@@ -60,7 +63,10 @@ message CreateSetupRequest {
   ];
 
   // name is the name of the setup.
-  string name = 4 [(buf.validate.field).required = true, (buf.validate.field).string.min_len = 1];
+  string name = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 
   // status is the status of the setup.
   SetupStatus status = 5 [(buf.validate.field).required = true];
@@ -148,7 +154,10 @@ message UpdateSetupRequest {
   ];
 
   // name is the name of the setup.
-  string name = 3 [(buf.validate.field).required = true, (buf.validate.field).string.min_len = 1];
+  string name = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 
   // status is the status of the setup.
   SetupStatus status = 4 [
@@ -215,7 +224,10 @@ message CreateSetupVersionRequest {
   ];
 
   // version is the version label (e.g., "v1", "v2").
-  string version = 2 [(buf.validate.field).required = true, (buf.validate.field).string.min_len = 1];
+  string version = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 
   // content contains key-value pairs for configuration content.
   google.protobuf.Struct content = 3 [(buf.validate.field).required = true];
@@ -308,7 +320,10 @@ message UpdateSetupVersionRequest {
   ];
 
   // version is the version label.
-  string version = 2 [(buf.validate.field).required = true, (buf.validate.field).string.min_len = 1];
+  string version = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 
   // content contains key-value pairs for configuration content.
   google.protobuf.Struct content = 3 [(buf.validate.field).required = true];

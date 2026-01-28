@@ -231,14 +231,14 @@ message DeleteFilesRequest {
 // DeleteFilesResponse is the response message for file deletion operations.
 message DeleteFilesResponse {
   /* TODO:
-  pourquoi avoir une map ici et pas un repeated comme pour upload?
-  si on a l'info de fail, ca suffirait non?
+     pourquoi avoir une map ici et pas un repeated comme pour upload?
+     si on a l'info de fail, ca suffirait non?
   */
 
   // check total_deleted equals number of results with success status
   option (buf.validate.message).cel = {
     id: "total_deleted_matches_successful_results"
-    expression: "this.total_deleted == this.results.filter(r, r.value == true).size()"
+    expression: "this.total_deleted == this.results.filter(k, this.results[k] == true).size()"
     message: "total_deleted must equal the number of successful deletions"
   };
 

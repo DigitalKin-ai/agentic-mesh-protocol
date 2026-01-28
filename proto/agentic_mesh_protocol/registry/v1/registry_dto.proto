@@ -45,11 +45,15 @@ message RegisterModuleRequest {
   // address is the network address to communicate with the module.
   string address = 2 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.uri = true, (buf.validate.field).string.min_len = 1
+    (buf.validate.field).string.uri = true,
+    (buf.validate.field).string.min_len = 1
   ];
 
   // version is the runtime version of the deployed module.
-  string version = 3 [(buf.validate.field).required = true, (buf.validate.field).string.min_len = 1];
+  string version = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 
   // port is the network port to communicate with the module.
   int32 port = 4 [
@@ -116,7 +120,10 @@ message DiscoverSetupsRequest {
   ];
 
   // query is a text search that matches on name or documentation.
-  string query = 2 [(buf.validate.field).required = true, (buf.validate.field).string.min_len = 1];
+  string query = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 
   // pagination contains pagination settings.
   agentic_mesh_protocol.pagination.v1.Pagination pagination = 3 [(buf.validate.field).required = true];
@@ -181,7 +188,10 @@ message DiscoverModulesRequest {
   ];
 
   // query is a text search that matches on name or documentation.
-  string query = 2 [(buf.validate.field).required = true, (buf.validate.field).string.min_len = 1];
+  string query = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 
   // pagination contains pagination settings.
   agentic_mesh_protocol.pagination.v1.Pagination pagination = 3 [(buf.validate.field).required = true];

@@ -79,16 +79,26 @@ message ModuleDescriptor {
     }
   ];
   // Name
-  string name = 4 [(buf.validate.field).required = true, (buf.validate.field).string.min_len = 1];
+  string name = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
   // Version
-  string version = 5 [(buf.validate.field).required = true, (buf.validate.field).string.min_len = 1];
+  string version = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
   // Network endpoint - Address used to communicate with the module
   string address = 6 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.uri = true, (buf.validate.field).string.min_len = 1
+    (buf.validate.field).string.uri = true,
+    (buf.validate.field).string.min_len = 1
   ];
   // Documentation
-  string documentation = 7 [(buf.validate.field).required = true, (buf.validate.field).string.min_len = 1];
+  string documentation = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
   // Port used to communicate with the module
   int32 port = 8 [
     (buf.validate.field).required = true,
@@ -215,11 +225,20 @@ message SetupDescriptor {
     }
   ];
   // Name
-  string name = 7 [(buf.validate.field).required = true, (buf.validate.field).string.min_len = 1];
+  string name = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
   // Documentation
-  string documentation = 8 [(buf.validate.field).required = true, (buf.validate.field).string.min_len = 1];
+  string documentation = 8 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
   // Version
-  string setup_version = 9 [(buf.validate.field).required = true, (buf.validate.field).string.min_len = 1];
+  string setup_version = 9 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
   // Status
   agentic_mesh_protocol.setup.v1.SetupStatus status = 10 [
     (buf.validate.field).required = true,

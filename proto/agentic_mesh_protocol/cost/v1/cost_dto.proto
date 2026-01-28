@@ -124,7 +124,7 @@ message GetCostResponse {
   //check if costs elements equal the total_cost
   option (buf.validate.message).cel = {
     id: "total_cost_equals_sum"
-    expression: "this.total_cost == this.costs.size()"
+    expression: "this.total_cost == double(this.costs.size())"
     message: "total_cost must equal the sum of all cost entries in costs"
   };
 
