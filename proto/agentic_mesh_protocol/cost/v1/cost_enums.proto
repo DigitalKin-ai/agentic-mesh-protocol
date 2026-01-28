@@ -19,17 +19,17 @@ package agentic_mesh_protocol.cost.v1;
 // CostType represents the classification of cost types in the system.
 enum CostType {
   // UNTYPED represents an unspecified cost type.
-  UNTYPED = 0;
+  COST_TYPE_UNSPECIFIED = 0;
   // TOKEN_INPUT represents token input costs.
-  TOKEN_INPUT = 1;
+  COST_TYPE_TOKEN_INPUT = 1;
   // TOKEN_OUTPUT represents token output costs.
-  TOKEN_OUTPUT = 2;
+  COST_TYPE_TOKEN_OUTPUT = 2;
   // API_CALL represents API call costs.
-  API_CALL = 3;
+  COST_TYPE_API_CALL = 3;
   // STORAGE represents storage costs.
-  STORAGE = 4;
+  COST_TYPE_STORAGE = 4;
   // TIME represents time-based costs.
-  TIME = 5;
+  COST_TYPE_TIME = 5;
   // OTHER represents other types of costs.
-  OTHER = 6;
+  COST_TYPE_OTHER = 6;
 }
