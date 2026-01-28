@@ -26,8 +26,16 @@ message GetUserProfileRequest {
   // mission_id is the unique identifier for the mission.
   string mission_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^missions:.+$",
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).cel = {
+      id: "missions_id_prefix"
+      expression: "this.startsWith('missions:')"
+      message: "missions must start with 'mission:'"
+    },
+    (buf.validate.field).cel = {
+      id: "missions_id_length"
+      expression: "this.size() >= 10"
+      message: "missions must be at least 1 characters long"
+    }
   ];
 }
 

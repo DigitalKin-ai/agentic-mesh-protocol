@@ -25,37 +25,76 @@ import "google/protobuf/timestamp.proto";
 // Metadata represents user metadata such as security keys.
 message Metadata {
   // security_key is the security key for the user.
-  string security_key = 1;
+  string security_key = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 }
 
 // Subscription represents user subscription details.
 message Subscription {
+  option (buf.validate.message).cel = {
+    id: "start_after_end"
+    expression: "!has(this.start) || !has(this.end) || this.start < this.end"
+    message: "start must be before end"
+  };
+  option (buf.validate.message).cel = {
+    id: "end_before_start"
+    expression: "!has(this.end) || !has(this.start) || this.end > this.start"
+    message: "end must be after start"
+  };
+
   // tier is the subscription tier level (e.g., "free", "pro").
-  string tier = 1;
+  string tier = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 
   // status is the current subscription status.
-  string status = 2;
+  string status = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 
   // start is the subscription start date.
-  google.protobuf.Timestamp start = 3;
+  google.protobuf.Timestamp start = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).timestamp.gt_now = true
+  ];
 
   // end is the subscription end date.
-  google.protobuf.Timestamp end = 4;
+  google.protobuf.Timestamp end = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).timestamp.gt_now = true
+  ];
 }
 
 // CreditLot represents user credit allocation and usage.
 message CreditLot {
   // source is the source of the credit lot (e.g., "top-up", "subscription").
-  string source = 1;
+  string source = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 
   // total is the total credits allocated in this lot.
-  int64 total = 2;
+  int64 total = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int64.gt = 0
+  ];
 
   // remaining is the number of credits remaining in this lot.
-  double remaining = 3;
+  double remaining = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gte = 0,
+    (buf.validate.field).double.finite = true
+  ];
 
   // timestamp is the last update timestamp for this credit lot.
-  google.protobuf.Timestamp timestamp = 4;
+  google.protobuf.Timestamp timestamp = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).timestamp.lt_now = true
+  ];
 }
 
 // UserProfile represents the full profile of a user in the system.
@@ -63,13 +102,31 @@ message UserProfile {
   // user_id is the unique identifier for the user.
   string user_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^users:.+$"
+    (buf.validate.field).cel = {
+      id: "user_id_prefix"
+      expression: "this.startsWith('users:')"
+      message: "user_id must start with 'users:'"
+    },
+    (buf.validate.field).cel = {
+      id: "user_id_length"
+      expression: "this.size() >= 7"
+      message: "users_id must be at least 1 characters long"
+    }
   ];
 
   // organization_id is the organization ID linked to the user.
   string organization_id = 2 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^organizations:.+$"
+    (buf.validate.field).cel = {
+      id: "organization_id_prefix"
+      expression: "this.startsWith('organizations:')"
+      message: "organization_id must start with 'organizations:'"
+    },
+    (buf.validate.field).cel = {
+      id: "organization_id_length"
+      expression: "this.size() >= 15"
+      message: "organization_id must be at least 1 characters long"
+    }
   ];
 
   // email is the user's email address.
@@ -79,26 +136,47 @@ message UserProfile {
   ];
 
   // first_name is the user's first name.
-  string first_name = 4 [(buf.validate.field).required = true];
+  string first_name = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 2
+  ];
 
   // last_name is the user's last name.
-  string last_name = 5 [(buf.validate.field).required = true];
+  string last_name = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 2
+  ];
 
   // creation_date is the timestamp when the profile was created.
-  google.protobuf.Timestamp created_at = 6 [(buf.validate.field).required = true];
+  google.protobuf.Timestamp created_at = 6 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).timestamp.lt_now = true
+  ];
 
   // update_date is the timestamp when the profile was last updated.
-  google.protobuf.Timestamp updated_at = 7 [(buf.validate.field).required = true];
+  google.protobuf.Timestamp updated_at = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).timestamp.lt_now = true
+  ];
 
   // locale is the user's preferred locale.
-  string locale = 8 [(buf.validate.field).required = true];
+  string locale = 8 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
 
   // subscription contains user subscription information.
-  Subscription subscription = 9;
+  Subscription subscription = 9 [
+    (buf.validate.field).required = true
+  ];
 
   // credits is the list of user credit allocations.
-  repeated CreditLot credits = 10;
+  repeated CreditLot credits = 10 [
+    (buf.validate.field).required = true
+  ];
 
   // metadata contains additional key-value preferences or settings.
-  google.protobuf.Struct metadata = 11;
+  google.protobuf.Struct metadata = 11 [
+    (buf.validate.field).required = true
+  ];
 }
