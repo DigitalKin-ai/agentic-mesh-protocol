@@ -25,34 +25,56 @@ import "google/protobuf/timestamp.proto";
 
 // StorageRecord represents a stored data entry in the system.
 message StorageRecord {
-  // data is the stored JSON object.
-  google.protobuf.Struct data = 1 [(buf.validate.field).required = true];
+  option (buf.validate.message).cel = {
+    id: "created_at_after_updated_at"
+    expression: "!has(this.created_at) || !has(this.updated_at) || this.created_at < this.updated_at"
+    message: "created_at must be before updated_at"
+  };
+  option (buf.validate.message).cel = {
+    id: "updated_at_before_created_at"
+    expression: "!has(this.created_at) || !has(this.updated_at) || this.updated_at > this.created_at"
+    message: "updated_at must be after created_at"
+  };
 
   // mission_id is the unique identifier of the mission.
-  string mission_id = 2 [
+  string mission_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.pattern = "^missions:.+$"
+    (buf.validate.field).cel = {
+      id: "missions_id_prefix"
+      expression: "this.startsWith('missions:')"
+      message: "missions must start with 'mission:'"
+    },
+    (buf.validate.field).cel = {
+      id: "missions_id_length"
+      expression: "this.size() >= 10"
+      message: "missions must be at least 1 characters long"
+    }
   ];
 
   // collection is the name of the group for the records.
-  string collection = 3 [
+  string collection = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
 
   // record_id is the unique identifier for the record.
-  string record_id = 4 [
+  string record_id = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
 
   // creation_date is the timestamp when the record was created.
-  google.protobuf.Timestamp created_at = 5 [(buf.validate.field).required = true];
+  google.protobuf.Timestamp created_at = 4 [(buf.validate.field).required = true];
 
   // update_date is the timestamp when the record was last updated.
-  google.protobuf.Timestamp updated_at = 6 [(buf.validate.field).required = true];
+  google.protobuf.Timestamp updated_at = 5 [(buf.validate.field).required = true];
+
+  // data is the stored JSON object.
+  google.protobuf.Struct data = 6 [(buf.validate.field).required = true];
 
   // data_type is the category of the data.
-  DataType data_type = 7 [(buf.validate.field).required = true];
+  DataType data_type = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum.defined_only = true
+  ];
 }

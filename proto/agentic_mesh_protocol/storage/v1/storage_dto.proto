@@ -23,30 +23,41 @@ import "google/protobuf/struct.proto";
 
 // ════════════════════════════════════ StoreRecord ════════════════════════════════════ //
 message StoreRecordRequest {
-  // data is the JSON object to store.
-  google.protobuf.Struct data = 1 [(buf.validate.field).required = true];
-
   // mission_id is the unique identifier of the mission.
-  string mission_id = 2 [
+  string mission_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^missions:.+$",
-    (buf.validate.field).string.min_len = 9
+    (buf.validate.field).cel = {
+      id: "missions_id_prefix"
+      expression: "this.startsWith('missions:')"
+      message: "missions_id must start with 'missions:'"
+    },
+    (buf.validate.field).cel = {
+      id: "missions_id_length"
+      expression: "this.size() >= 9"
+      message: "missions_id must be at least 1 characters long"
+    }
   ];
 
   // collection is the name of the group for the records.
-  string collection = 3 [
+  string collection = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
 
   // record_id is the unique identifier for the record within the collection.
-  string record_id = 4 [
+  string record_id = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
 
+  // data is the JSON object to store.
+  google.protobuf.Struct data = 4 [(buf.validate.field).required = true];
+
   // data_type is the category of the data being stored.
-  DataType data_type = 5 [(buf.validate.field).required = true];
+  DataType data_type = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum.defined_only = true
+  ];
 }
 
 // Response message for StoreRecord operation.
@@ -63,8 +74,16 @@ message ReadRecordRequest {
   // mission_id is the unique identifier of the mission.
   string mission_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^missions:.+$",
-    (buf.validate.field).string.min_len = 9
+    (buf.validate.field).cel = {
+      id: "missions_id_prefix"
+      expression: "this.startsWith('missions:')"
+      message: "missions_id must start with 'missions:'"
+    },
+    (buf.validate.field).cel = {
+      id: "missions_id_length"
+      expression: "this.size() >= 10"
+      message: "missions_id must be at least 1 characters long"
+    }
   ];
 
   // collection is the name of the group for the records.
@@ -91,27 +110,35 @@ message ReadRecordResponse {
 
 // ════════════════════════════════════ UpdateRecord ════════════════════════════════════ //
 message UpdateRecordRequest {
-  // data is the updated JSON object.
-  google.protobuf.Struct data = 1 [(buf.validate.field).required = true];
-
   // mission_id is the unique identifier of the mission.
-  string mission_id = 2 [
+  string mission_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^missions:.+$",
-    (buf.validate.field).string.min_len = 9
+    (buf.validate.field).cel = {
+      id: "missions_id_prefix"
+      expression: "this.startsWith('missions:')"
+      message: "missions must start with 'mission:'"
+    },
+    (buf.validate.field).cel = {
+      id: "missions_id_length"
+      expression: "this.size() >= 10"
+      message: "missions must be at least 1 characters long"
+    }
   ];
 
   // collection is the name of the group for the records.
-  string collection = 3 [
+  string collection = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
 
   // record_id is the unique identifier for the record.
-  string record_id = 4 [
+  string record_id = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
+
+  // data is the updated JSON object.
+  google.protobuf.Struct data = 4 [(buf.validate.field).required = true];
 }
 
 // Response message for UpdateRecord operation.
@@ -128,8 +155,16 @@ message RemoveRecordRequest {
   // mission_id is the unique identifier of the mission.
   string mission_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^missions:.+$",
-    (buf.validate.field).string.min_len = 9
+    (buf.validate.field).cel = {
+      id: "missions_id_prefix"
+      expression: "this.startsWith('missions:')"
+      message: "missions must start with 'mission:'"
+    },
+    (buf.validate.field).cel = {
+      id: "missions_id_length"
+      expression: "this.size() >= 10"
+      message: "missions must be at least 1 characters long"
+    }
   ];
 
   // collection is the name of the group for the records.
@@ -156,8 +191,16 @@ message ListRecordsRequest {
   // mission_id is the unique identifier of the mission.
   string mission_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^missions:.+$",
-    (buf.validate.field).string.min_len = 9
+    (buf.validate.field).cel = {
+      id: "missions_id_prefix"
+      expression: "this.startsWith('missions:')"
+      message: "missions must start with 'mission:'"
+    },
+    (buf.validate.field).cel = {
+      id: "missions_id_length"
+      expression: "this.size() >= 10"
+      message: "missions must be at least 1 characters long"
+    }
   ];
 
   // collection is the name of the group for the records.
@@ -178,8 +221,16 @@ message RemoveCollectionRequest {
   // mission_id is the unique identifier of the mission.
   string mission_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^missions:.+$",
-    (buf.validate.field).string.min_len = 9
+    (buf.validate.field).cel = {
+      id: "missions_id_prefix"
+      expression: "this.startsWith('missions:')"
+      message: "missions must start with 'mission:'"
+    },
+    (buf.validate.field).cel = {
+      id: "missions_id_length"
+      expression: "this.size() >= 10"
+      message: "missions must be at least 1 characters long"
+    }
   ];
 
   // collection is the name of the collection to remove.
