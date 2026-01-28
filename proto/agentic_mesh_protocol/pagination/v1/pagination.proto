@@ -23,8 +23,10 @@ message Pagination {
   // limit is the maximum number of items to return.
   int32 limit = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).int32.gt = 0,
-    (buf.validate.field).int32.lt = 1024
+    (buf.validate.field).int32 = {
+      gte: 0
+      lt: 100
+    }
   ];
 
   // offset is the number of items to skip before starting to collect the result set.
