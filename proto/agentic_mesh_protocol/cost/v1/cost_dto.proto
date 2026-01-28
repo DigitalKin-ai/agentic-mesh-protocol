@@ -47,8 +47,7 @@ message AddCostRequest {
   ];
   // name is the descriptive name for this cost.
   string name = 3 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).required = true
   ];
   // quantity is the number of units consumed.
   double quantity = 4 [
@@ -58,8 +57,7 @@ message AddCostRequest {
   ];
   // unit is the unit of measurement (e.g., "tokens", "calls", "GB").
   string unit = 5 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).required = true
   ];
   // rate is the cost per unit.
   double rate = 6 [
@@ -114,8 +112,7 @@ message GetCostRequest {
   ];
   // name is the specific cost name to retrieve.
   string name = 2 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).required = true
   ];
 }
 
@@ -128,9 +125,7 @@ message GetCostResponse {
     (buf.validate.field).double.finite = true
   ];
   // costs is the list of cost entries matching the name.
-  repeated Cost costs = 2 [
-    (buf.validate.field).required = true
-  ];
+  repeated Cost costs = 2 [(buf.validate.field).required = true];
 }
 
 // ═════════════════════════════════════ Get Costs (Multiple) ════════════════════════════════════ //
@@ -153,7 +148,7 @@ message GetCostsRequest {
   ];
   // pagination contains pagination settings.
   agentic_mesh_protocol.pagination.v1.Pagination pagination = 2 [(buf.validate.field).required = true];
-  // filter contains optional filtering criteria.
+  // filter contains optional filtering criteria (optional).
   optional CostFilter filter = 3 [(buf.validate.field).required = false];
 }
 
@@ -171,7 +166,5 @@ message GetCostsResponse {
     (buf.validate.field).double.finite = true
   ];
   // costs is the list of matching cost entries.
-  repeated Cost costs = 3 [
-    (buf.validate.field).required = true
-  ];
+  repeated Cost costs = 3 [(buf.validate.field).required = true];
 }

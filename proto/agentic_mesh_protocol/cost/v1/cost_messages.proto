@@ -23,8 +23,7 @@ import "buf/validate/validate.proto";
 message Cost {
   // name is the descriptive name of the cost.
   string name = 3 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).required = true
   ];
   // cost is the total cost value.
   double cost = 1 [
@@ -34,8 +33,7 @@ message Cost {
   ];
   // unit is the unit of measurement for the cost (e.g., "tokens", "calls", "GB").
   string unit = 5 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).required = true
   ];
   // quantity is the number of units consumed.
   double quantity = 8 [
@@ -88,8 +86,7 @@ message Cost {
 message CostFilter {
   // names filters costs by one or more names.
   repeated string names = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).repeated.items.string.min_len = 1
+    (buf.validate.field).required = true
   ];
   // setup_version_ids filters costs by setup version IDs.
   repeated string setup_version_ids = 2 [
