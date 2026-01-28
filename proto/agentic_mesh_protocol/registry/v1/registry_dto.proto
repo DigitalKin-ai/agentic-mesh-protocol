@@ -30,28 +30,35 @@ message RegisterModuleRequest {
   // module_id is the unique identifier of the module (must already exist in database).
   string module_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^modules:.+$",
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).cel = {
+      id: "module_id_prefix"
+      expression: "this.startsWith('modules:')"
+      message: "module_id must start with 'modules:'"
+    },
+    (buf.validate.field).cel = {
+      id: "module_id_length"
+      expression: "this.size() >= 9"
+      message: "module_id must be at least 1 characters long"
+    }
   ];
 
   // address is the network address to communicate with the module.
   string address = 2 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).string.uri = true
   ];
 
   // port is the network port to communicate with the module.
   int32 port = 3 [
     (buf.validate.field).required = true,
-    (buf.validate.field).int32.gte = 1,
-    (buf.validate.field).int32.lte = 65535
+    (buf.validate.field).int32 = {
+      gte: 1
+      lte: 65535
+    }
   ];
 
   // version is the runtime version of the deployed module.
-  string version = 4 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
-  ];
+  string version = 4 [(buf.validate.field).required = true];
 }
 
 // RegisterModuleResponse is returned by the registry after successful registration.
@@ -67,8 +74,16 @@ message HeartbeatRequest {
   // module_id is the unique identifier of the module.
   string module_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^modules:.+$",
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).cel = {
+      id: "module_id_prefix"
+      expression: "this.startsWith('modules:')"
+      message: "module_id must start with 'modules:'"
+    },
+    (buf.validate.field).cel = {
+      id: "module_id_length"
+      expression: "this.size() >= 9"
+      message: "module_id must be at least 1 characters long"
+    }
   ];
 }
 
@@ -77,7 +92,7 @@ message HeartbeatResponse {
   // status is the module status as considered by the registry (ACTIVE, READY, etc.).
   agentic_mesh_protocol.module.v1.ModuleStatus status = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).enum.not_in = 0
+    (buf.validate.field).enum.defined_only = true
   ];
 }
 
@@ -87,30 +102,57 @@ message HeartbeatResponse {
 message DiscoverSetupsRequest {
   // organization_id filters by organization identifier.
   string organization_id = 1 [
-    (buf.validate.field).string.pattern = "^organizations:.+$",
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "organization_id_prefix"
+      expression: "this.startsWith('organizations:')"
+      message: "organization_id must start with 'organizations:'"
+    },
+    (buf.validate.field).cel = {
+      id: "organization_id_length"
+      expression: "this.size() >= 15"
+      message: "organization_id must be at least 1 characters long"
+    }
   ];
 
-  // visibility filters by visibility level.
-  repeated Visibility visibility = 2 [(buf.validate.field).repeated.items.enum.not_in = 0];
-
-  // status filters by setup status (typically READY or CONFIGURATION_SUCCEEDED).
-  repeated agentic_mesh_protocol.setup.v1.SetupStatus status = 3 [(buf.validate.field).repeated.items.enum.not_in = 0];
-
-  // module_types filters by module type (e.g., agent, tool).
-  repeated agentic_mesh_protocol.module.v1.ModuleType module_types = 4 [(buf.validate.field).repeated.items.enum.not_in = 0];
-
   // query is a text search that matches on name or documentation.
-  string query = 5 [(buf.validate.field).string.min_len = 1];
+  string query = 2 [(buf.validate.field).required = true];
 
   // module_ids filters by specific module identifiers.
-  repeated string module_ids = 6 [
-    (buf.validate.field).repeated.items.string.pattern = "^modules:.+$",
-    (buf.validate.field).repeated.items.string.min_len = 1
+  repeated string module_ids = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "module_id_prefix"
+      expression: "this.all(x, x.startsWith('modules:'))"
+      message: "module_id must start with 'modules:'"
+    },
+    (buf.validate.field).cel = {
+      id: "module_id_length"
+      expression: "this.all(x, x.size() >= 9)"
+      message: "module_id must be at least 1 characters long"
+    }
   ];
 
   // pagination contains pagination settings.
-  agentic_mesh_protocol.pagination.v1.Pagination pagination = 7 [(buf.validate.field).required = true];
+  agentic_mesh_protocol.pagination.v1.Pagination pagination = 4 [(buf.validate.field).required = true];
+
+  // visibility filters by visibility level.
+  repeated Visibility visibility = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // status filters by setup status (typically READY or CONFIGURATION_SUCCEEDED).
+  repeated agentic_mesh_protocol.setup.v1.SetupStatus status = 6 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // module_types filters by module type (e.g., agent, tool).
+  repeated agentic_mesh_protocol.module.v1.ModuleType module_types = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
 }
 
 // DiscoverSetupsResponse is returned with the list of available setups.
@@ -125,24 +167,42 @@ message DiscoverSetupsResponse {
 message DiscoverModulesRequest {
   // organization_id filters by organization identifier.
   string organization_id = 1 [
-    (buf.validate.field).string.pattern = "^organizations:.+$",
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "organization_id_prefix"
+      expression: "this.startsWith('organizations:')"
+      message: "organization_id must start with 'organizations:'"
+    },
+    (buf.validate.field).cel = {
+      id: "organization_id_length"
+      expression: "this.size() >= 15"
+      message: "organization_id must be at least 1 characters long"
+    }
+  ];
+
+  // query is a text search that matches on name or documentation.
+  string query = 2 [(buf.validate.field).required = true];
+
+  // pagination contains pagination settings.
+  agentic_mesh_protocol.pagination.v1.Pagination pagination = 3 [(buf.validate.field).required = true];
+
+  // visibility filters by visibility level.
+  repeated Visibility visibility = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.items.enum.defined_only = true
   ];
 
   // module_types filters by module type.
-  repeated agentic_mesh_protocol.module.v1.ModuleType module_types = 2 [(buf.validate.field).repeated.items.enum.not_in = 0];
+  repeated agentic_mesh_protocol.module.v1.ModuleType module_types = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
 
   // status filters by module status.
-  repeated agentic_mesh_protocol.module.v1.ModuleStatus status = 3 [(buf.validate.field).repeated.items.enum.not_in = 0];
-
-  // visibility filters by visibility level.
-  repeated Visibility visibility = 4 [(buf.validate.field).repeated.items.enum.not_in = 0];
-
-  // query is a text search that matches on name or documentation.
-  string query = 5 [(buf.validate.field).string.min_len = 1];
-
-  // pagination contains pagination settings.
-  agentic_mesh_protocol.pagination.v1.Pagination pagination = 6 [(buf.validate.field).required = true];
+  repeated agentic_mesh_protocol.module.v1.ModuleStatus status = 6 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
 }
 
 // DiscoverModulesResponse is returned with the list of available modules.
@@ -158,8 +218,16 @@ message GetSetupRequest {
   // setup_id is the unique identifier of the setup.
   string setup_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^setups:.+$",
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).cel = {
+      id: "setup_id_prefix"
+      expression: "this.startsWith('setups:')"
+      message: "setup_id must start with 'setups:'"
+    },
+    (buf.validate.field).cel = {
+      id: "setup_id_length"
+      expression: "this.size() >= 8"
+      message: "setup_id must be at least 1 characters long"
+    }
   ];
 }
 
@@ -170,7 +238,15 @@ message GetModuleRequest {
   // module_id is the unique identifier of the module.
   string module_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^modules:.+$",
-    (buf.validate.field).string.min_len = 1
+    (buf.validate.field).cel = {
+      id: "module_id_prefix"
+      expression: "this.startsWith('modules:')"
+      message: "module_id must start with 'modules:'"
+    },
+    (buf.validate.field).cel = {
+      id: "module_id_length"
+      expression: "this.size() >= 9"
+      message: "module_id must be at least 1 characters long"
+    }
   ];
 }

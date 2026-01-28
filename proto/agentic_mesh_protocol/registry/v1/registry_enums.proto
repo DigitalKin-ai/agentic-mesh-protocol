@@ -18,10 +18,12 @@ package agentic_mesh_protocol.registry.v1;
 
 // Visibility
 enum Visibility {
+  // UNSPECIFIED visibility: default value, should not be used.
+  UNSPECIFIED = 0;
   // Public visibility: accessible to everyone.
-  PUBLIC = 0;
+  PUBLIC = 1;
   // Private visibility: accessible only to the owner or module.
-  PRIVATE = 1;
+  PRIVATE = 2;
   // Internal visibility: reserved for internal system use.
-  INTERNAL = 2;
+  INTERNAL = 3;
 }
