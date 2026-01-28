@@ -50,7 +50,11 @@ message Cost {
     }
   ];
   // name is the descriptive name of the cost.
-  string name = 3 [(buf.validate.field).required = true];
+  string name = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
   // cost is the total cost value.
   double cost = 4 [
     (buf.validate.field).required = true,
@@ -70,7 +74,10 @@ message Cost {
     (buf.validate.field).double.finite = true
   ];
   // unit is the unit of measurement for the cost (e.g., "tokens", "calls", "GB").
-  string unit = 7 [(buf.validate.field).required = true];
+  string unit = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
   // cost_type is the classification of the cost.
   CostType type = 8 [
     (buf.validate.field).required = true,
@@ -86,7 +93,10 @@ message CostFilter {
     (buf.validate.field).repeated.items.enum.defined_only = true
   ];
   // names filters costs by one or more names.
-  repeated string names = 2 [(buf.validate.field).required = true];
+  repeated string names = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.items.string.min_len = 1
+  ];
   // setup_version_ids filters costs by setup version IDs.
   repeated string setup_version_ids = 3 [
     (buf.validate.field).required = true,

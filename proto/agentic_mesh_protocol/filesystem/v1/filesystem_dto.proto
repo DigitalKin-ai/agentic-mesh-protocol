@@ -45,7 +45,8 @@ message GetFileRequest {
   // file_id: File ID
   string id = 2 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.uuid = true
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).string.min_len = 1
   ];
   // include_content: Whether to include file content in response
   bool include_content = 3 [(buf.validate.field).required = true];
@@ -80,7 +81,10 @@ message GetFilesRequest {
     }
   ];
   // order: Field to order results by
-  string order = 2 [(buf.validate.field).required = true];
+  string order = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
   // include_content: Whether to include file content in response
   bool include_content = 3 [(buf.validate.field).required = true];
   // pagination contains pagination settings.
@@ -150,14 +154,21 @@ message UpdateFileRequest {
   // file_id: Current id of the file
   string id = 2 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.uuid = true
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).string.min_len = 1
   ];
   // content: New file content (optional)
   optional bytes content = 3 [(buf.validate.field).required = false];
   // new_name: New name for the file (optional)
-  optional string new_name = 4 [(buf.validate.field).required = false];
+  optional string new_name = 4 [
+    (buf.validate.field).required = false,
+    (buf.validate.field).string.min_len = 1
+  ];
   // content_type: New content type (optional)
-  optional string content_type = 5 [(buf.validate.field).required = false];
+  optional string content_type = 5 [
+    (buf.validate.field).required = false,
+    (buf.validate.field).string.min_len = 1
+  ];
   // file_type: New file type
   optional FileType type = 6 [
     (buf.validate.field).required = false,

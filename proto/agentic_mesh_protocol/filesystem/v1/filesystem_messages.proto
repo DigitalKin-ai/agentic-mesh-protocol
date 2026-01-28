@@ -31,7 +31,8 @@ message File {
   // file_id: Unique identifier for the file (UUID)
   string id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.uuid = true
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).string.min_len = 1
   ];
   // context: Context ID linked to the file
   string context = 2 [
@@ -50,20 +51,31 @@ message File {
     }
   ];
   // name: Name of the file (unique within context)
-  string name = 3 [(buf.validate.field).required = true];
+  string name = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
   // content_type: MIME type of the file
-  string content_type = 4 [(buf.validate.field).required = true];
+  string content_type = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
   // checksum: SHA-256 checksum of the file content (SHA-256 format)
-  string checksum = 5 [(buf.validate.field).required = true];
+  string checksum = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
   // storage_uri: Internal URI for accessing the file content
   string storage_uri = 6 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.uri_ref = true
+    (buf.validate.field).string.uri_ref = true,
+    (buf.validate.field).string.min_len = 1
   ];
   // file_url: External URL for accessing the file content
   string url = 7 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.uri = true
+    (buf.validate.field).string.uri = true,
+    (buf.validate.field).string.min_len = 1
   ];
   // size_bytes: Size of the file in bytes
   int64 size_bytes = 8 [
@@ -110,9 +122,15 @@ message FileFilter {
   };
 
   // context: Filter by context (required for scoping)
-  string context = 1 [(buf.validate.field).required = true];
+  string context = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
   // content_type_prefix: Filter by content type prefix (e.g., "image/")
-  string content_type_prefix = 2 [(buf.validate.field).required = true];
+  string content_type_prefix = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
   // prefix: Filter by path prefix (e.g., "folder1/")
   string prefix = 3 [
     (buf.validate.field).required = true,
@@ -123,7 +141,10 @@ message FileFilter {
     }
   ];
   // content_type: Filter by content type
-  string content_type = 4 [(buf.validate.field).required = true];
+  string content_type = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
   // min_size_bytes: Filter files with minimum size
   int64 min_size_bytes = 5 [
     (buf.validate.field).required = true,
@@ -148,11 +169,15 @@ message FileFilter {
   // updated_before: Filter files updated before this timestamp
   google.protobuf.Timestamp updated_before = 11 [(buf.validate.field).required = true];
   // names: Filter by file names (exact matches)
-  repeated string names = 12 [(buf.validate.field).required = true];
+  repeated string names = 12 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.items.string.min_len = 1
+  ];
   // file_ids: Filter by file IDs
   repeated string ids = 13 [
     (buf.validate.field).required = true,
-    (buf.validate.field).repeated.items.string.uuid = true
+    (buf.validate.field).repeated.items.string.uuid = true,
+    (buf.validate.field).repeated.items.string.min_len = 1
   ];
   // file_types: Filter by file types
   repeated FileType types = 14 [
@@ -191,9 +216,15 @@ message UploadFileData {
     }
   ];
   // name: Name of the file
-  string name = 2 [(buf.validate.field).required = true];
+  string name = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
   // content_type: MIME type of the file
-  string content_type = 3 [(buf.validate.field).required = true];
+  string content_type = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
   // content: File content
   bytes content = 4 [(buf.validate.field).required = true];
   // replace_if_exists: Whether to replace existing file with same name
