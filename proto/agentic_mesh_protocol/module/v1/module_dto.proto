@@ -218,7 +218,7 @@ message StartModuleRequest {
     },
     (buf.validate.field).cel = {
       id: "setup_id_length"
-      expression: "this.size() >= 9"
+      expression: "this.size() >= 8"
       message: "setup_id must be at least 1 characters long"
     }
   ];
@@ -254,7 +254,7 @@ message StartModuleResponse {
     },
     (buf.validate.field).cel = {
       id: "job_id_length"
-      expression: "this.size() >= 9"
+      expression: "this.size() >= 6"
       message: "job_id must be at least 1 characters long"
     }
   ];
@@ -274,7 +274,7 @@ message StopModuleRequest {
     },
     (buf.validate.field).cel = {
       id: "job_id_length"
-      expression: "this.size() >= 9"
+      expression: "this.size() >= 6"
       message: "job_id must be at least 1 characters long"
     }
   ];
@@ -294,7 +294,7 @@ message StopModuleResponse {
     },
     (buf.validate.field).cel = {
       id: "job_id_length"
-      expression: "this.size() >= 9"
+      expression: "this.size() >= 6"
       message: "job_id must be at least 1 characters long"
     }
   ];

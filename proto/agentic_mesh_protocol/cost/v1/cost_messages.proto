@@ -67,7 +67,7 @@ message Cost {
     },
     (buf.validate.field).cel = {
       id: "setup_versions_id_length"
-      expression: "this.size() >= 10"
+      expression: "this.size() >= 15"
       message: "setup_versions must be at least 1 characters long"
     }
   ];

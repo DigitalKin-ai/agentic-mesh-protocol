@@ -71,7 +71,7 @@ message AddCostRequest {
     },
     (buf.validate.field).cel = {
       id: "setup_verion_id_length"
-      expression: "this.size() >= 10"
+      expression: "this.size() >= 15"
       message: "setup_verions_id must be at least 1 characters long"
     }
   ];
