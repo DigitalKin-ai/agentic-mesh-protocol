@@ -95,6 +95,13 @@ message GetFilesRequest {
 
 // GetFilesResponse is the response message containing the list of files.
 message GetFilesResponse {
+  // check total_count equals number of files in files array
+  option (buf.validate.message).cel = {
+    id: "total_count_matches_files_length"
+    expression: "this.total_count == this.files.size()"
+    message: "total_count must equal the number of files returned"
+  };
+
   // total_count: Total number of files matching the criteria
   int32 total_count = 1 [
     (buf.validate.field).required = true,
@@ -117,6 +124,13 @@ message UploadFilesRequest {
 
 // UploadFilesResponse is the response message for file upload operations.
 message UploadFilesResponse {
+  // check total_uploaded equals length of results with success status
+  option (buf.validate.message).cel = {
+    id: "total_uploaded_matches_successful_results"
+    expression: "this.total_uploaded == this.results.size()"
+    message: "total_uploaded must equal the number of successful uploads"
+  };
+
   // total_uploaded: Number of successfully uploaded files
   int32 total_uploaded = 1 [
     (buf.validate.field).required = true,
@@ -216,6 +230,18 @@ message DeleteFilesRequest {
 
 // DeleteFilesResponse is the response message for file deletion operations.
 message DeleteFilesResponse {
+  /* TODO:
+  pourquoi avoir une map ici et pas un repeated comme pour upload?
+  si on a l'info de fail, ca suffirait non?
+  */
+
+  // check total_deleted equals number of results with success status
+  option (buf.validate.message).cel = {
+    id: "total_deleted_matches_successful_results"
+    expression: "this.total_deleted == this.results.filter(r, r.value == true).size()"
+    message: "total_deleted must equal the number of successful deletions"
+  };
+
   // total_deleted: Number of successfully deleted files
   int32 total_deleted = 1 [
     (buf.validate.field).required = true,

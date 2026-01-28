@@ -121,6 +121,13 @@ message GetCostRequest {
 
 // GetCostResponse is the response message for cost retrieval by name.
 message GetCostResponse {
+  //check if costs elements equal the total_cost
+  option (buf.validate.message).cel = {
+    id: "total_cost_equals_sum"
+    expression: "this.total_cost == this.costs.size()"
+    message: "total_cost must equal the sum of all cost entries in costs"
+  };
+
   // total_cost is the sum of all matching cost values.
   double total_cost = 1 [
     (buf.validate.field).required = true,
@@ -157,6 +164,13 @@ message GetCostsRequest {
 
 // GetCostsResponse is the response message containing multiple costs.
 message GetCostsResponse {
+  // check that total_count matches the length of costs
+  option (buf.validate.message).cel = {
+    id: "total_count_matches_length"
+    expression: "this.total_count == this.costs.size()"
+    message: "total_count must equal the number of cost entries in costs"
+  };
+
   // total_count is the total number of costs matching the criteria.
   int32 total_count = 1 [
     (buf.validate.field).required = true,

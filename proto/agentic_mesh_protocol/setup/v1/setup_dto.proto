@@ -389,6 +389,13 @@ message ListSetupsRequest {
 
 // Response message for ListSetups operation.
 message ListSetupsResponse {
+  //check total_count equals setup list length
+  option (buf.validate.message).cel = {
+    id: "total_count_matches_setups_length"
+    expression: "this.total_count == this.setups.size()"
+    message: "total_count must equal the number of setups returned"
+  };
+
   // total_count is the total number of setups matching the criteria.
   int32 total_count = 1 [
     (buf.validate.field).required = true,
