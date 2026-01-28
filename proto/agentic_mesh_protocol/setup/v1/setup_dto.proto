@@ -27,14 +27,10 @@ import "google/protobuf/struct.proto";
 // Request and Response messages for creating a new Setup.
 message CreateSetupRequest {
   // name is the name of the setup.
-  string name = 1 [
-    (buf.validate.field).required = true
-  ];
+  string name = 1 [(buf.validate.field).required = true];
 
   // organization_id is the unique identifier of the organization.
-  string organization_id = 2 [
-    (buf.validate.field).required = true
-  ];
+  string organization_id = 2 [(buf.validate.field).required = true];
 
   // owner_id is the owner ID of the setup.
   string owner_id = 3 [
@@ -67,9 +63,7 @@ message CreateSetupRequest {
   ];
 
   // current_setup_version is the active setup version.
-  optional SetupVersion current_setup_version = 5 [
-    (buf.validate.field).required = true
-  ];
+  optional SetupVersion current_setup_version = 5 [(buf.validate.field).required = true];
 
   // status is the status of the setup.
   SetupStatus status = 6 [(buf.validate.field).required = true];
@@ -78,14 +72,10 @@ message CreateSetupRequest {
 // Response message for CreateSetup operation.
 message CreateSetupResponse {
   // success indicates if the operation was successful.
-  bool success = 1 [
-    (buf.validate.field).required = true
-  ];
+  bool success = 1 [(buf.validate.field).required = true];
 
   // setup is the newly created setup entity.
-  Setup setup = 2 [
-    (buf.validate.field).required = true
-  ];
+  Setup setup = 2 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ GetSetup ════════════════════════════════════ //
@@ -117,14 +107,10 @@ message GetSetupRequest {
 // Response message for GetSetup operation.
 message GetSetupResponse {
   // setup is the retrieved setup entity.
-  Setup setup = 1 [
-    (buf.validate.field).required = true
-  ];
+  Setup setup = 1 [(buf.validate.field).required = true];
 
   // setup_version is the retrieved setup version if it exists.
-  SetupVersion setup_version = 2 [
-    (buf.validate.field).required = false
-  ];
+  SetupVersion setup_version = 2 [(buf.validate.field).required = false];
 }
 
 // ════════════════════════════════════ UpdateSetup ════════════════════════════════════ //
@@ -147,9 +133,7 @@ message UpdateSetupRequest {
   ];
 
   // name is the name of the setup.
-  string name = 2 [
-    (buf.validate.field).required = true
-  ];
+  string name = 2 [(buf.validate.field).required = true];
 
   // owner_id is the owner ID of the setup.
   string owner_id = 3 [
@@ -167,9 +151,7 @@ message UpdateSetupRequest {
   ];
 
   // current_setup_version is the active setup version.
-  SetupVersion current_setup_version = 4 [
-    (buf.validate.field).required = true
-  ];
+  SetupVersion current_setup_version = 4 [(buf.validate.field).required = true];
 
   // status is the status of the setup.
   SetupStatus status = 5 [
@@ -181,14 +163,10 @@ message UpdateSetupRequest {
 // Response message for UpdateSetup operation.
 message UpdateSetupResponse {
   // success indicates if the operation was successful.
-  bool success = 1 [
-    (buf.validate.field).required = true
-  ];
+  bool success = 1 [(buf.validate.field).required = true];
 
   // setup is the updated setup entity.
-  Setup setup = 2 [
-    (buf.validate.field).required = true
-  ];
+  Setup setup = 2 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ DeleteSetup ════════════════════════════════════ //
@@ -214,9 +192,7 @@ message DeleteSetupRequest {
 // Response message for DeleteSetup operation.
 message DeleteSetupResponse {
   // success indicates if the operation was successful.
-  bool success = 1 [
-    (buf.validate.field).required = true
-  ];
+  bool success = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ CreateSetupVersion ════════════════════════════════════ //
@@ -239,27 +215,19 @@ message CreateSetupVersionRequest {
   ];
 
   // version is the version label (e.g., "v1", "v2").
-  string version = 2 [
-    (buf.validate.field).required = true
-  ];
+  string version = 2 [(buf.validate.field).required = true];
 
   // content contains key-value pairs for configuration content.
-  google.protobuf.Struct content = 3 [
-    (buf.validate.field).required = true
-  ];
+  google.protobuf.Struct content = 3 [(buf.validate.field).required = true];
 }
 
 // Response message for CreateSetupVersion operation.
 message CreateSetupVersionResponse {
   // success indicates if the operation was successful.
-  bool success = 1 [
-    (buf.validate.field).required = true
-  ];
+  bool success = 1 [(buf.validate.field).required = true];
 
   // setup_version is the newly created setup version entity.
-  SetupVersion setup_version = 2 [
-    (buf.validate.field).required = true
-  ];
+  SetupVersion setup_version = 2 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ GetSetupVersion ════════════════════════════════════ //
@@ -285,9 +253,7 @@ message GetSetupVersionRequest {
 // Response message for GetSetupVersion operation.
 message GetSetupVersionResponse {
   // setup_version is the retrieved setup version entity.
-  SetupVersion setup_version = 1 [
-    (buf.validate.field).required = true
-  ];
+  SetupVersion setup_version = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ SearchSetupVersions ════════════════════════════════════ //
@@ -319,9 +285,7 @@ message SearchSetupVersionsRequest {
 // Response message for SearchSetupVersions operation.
 message SearchSetupVersionsResponse {
   // setup_versions is the list of setup versions matching the criteria.
-  repeated SetupVersion setup_versions = 1 [
-    (buf.validate.field).required = true
-  ];
+  repeated SetupVersion setup_versions = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ UpdateSetupVersion ════════════════════════════════════ //
@@ -344,9 +308,7 @@ message UpdateSetupVersionRequest {
   ];
 
   // version is the version label.
-  string version = 2 [
-    (buf.validate.field).required = true
-  ];
+  string version = 2 [(buf.validate.field).required = true];
 
   // content contains key-value pairs for configuration content.
   google.protobuf.Struct content = 3 [(buf.validate.field).required = true];
@@ -355,14 +317,10 @@ message UpdateSetupVersionRequest {
 // Response message for UpdateSetupVersion operation.
 message UpdateSetupVersionResponse {
   // success indicates if the operation was successful.
-  bool success = 1 [
-    (buf.validate.field).required = true
-  ];
+  bool success = 1 [(buf.validate.field).required = true];
 
   // setup_version is the updated setup version entity.
-  SetupVersion setup_version = 2 [
-    (buf.validate.field).required = true
-  ];
+  SetupVersion setup_version = 2 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ DeleteSetupVersion ════════════════════════════════════ //
@@ -388,9 +346,7 @@ message DeleteSetupVersionRequest {
 // Response message for DeleteSetupVersion operation.
 message DeleteSetupVersionResponse {
   // success indicates if the operation was successful.
-  bool success = 1 [
-    (buf.validate.field).required = true
-  ];
+  bool success = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ ListSetups ════════════════════════════════════ //
@@ -398,7 +354,8 @@ message DeleteSetupVersionResponse {
 // Request and Response messages for listing Setups with filtering and pagination.
 message ListSetupsRequest {
   // organization_id filters by organization ID.
-  optional string organization_id = 1 [(buf.validate.field).required = true,
+  optional string organization_id = 1 [
+    (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "organization_id_prefix"
       expression: "this.startsWith('organizations:')"
@@ -433,9 +390,7 @@ message ListSetupsRequest {
 // Response message for ListSetups operation.
 message ListSetupsResponse {
   // setups is the list of setups matching the criteria.
-  repeated Setup setups = 1 [
-    (buf.validate.field).required = true
-  ];
+  repeated Setup setups = 1 [(buf.validate.field).required = true];
 
   // total_count is the total number of setups matching the criteria.
   int32 total_count = 2 [

@@ -131,9 +131,7 @@ message Setup {
   ];
 
   // current_setup_version is the active setup version.
-  optional SetupVersion current_setup_version = 6 [
-    (buf.validate.field).required = false
-  ];
+  optional SetupVersion current_setup_version = 6 [(buf.validate.field).required = false];
 
   // status is the status of the setup.
   SetupStatus status = 7 [(buf.validate.field).required = true];
