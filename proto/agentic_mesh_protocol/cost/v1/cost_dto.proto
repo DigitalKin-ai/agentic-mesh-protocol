@@ -25,14 +25,8 @@ import "buf/validate/validate.proto";
 
 // AddCostRequest is the request message for adding a cost entry.
 message AddCostRequest {
-  // cost is the total cost value.
-  double cost = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).double.gt = 0,
-    (buf.validate.field).double.finite = true
-  ];
   // mission_id is the mission ID to link this cost to.
-  string mission_id = 2 [
+  string mission_id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "mission_id_prefix"
@@ -45,24 +39,8 @@ message AddCostRequest {
       message: "missions must be at least 1 characters long"
     }
   ];
-  // name is the descriptive name for this cost.
-  string name = 3 [(buf.validate.field).required = true];
-  // quantity is the number of units consumed.
-  double quantity = 4 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).double.gt = 0,
-    (buf.validate.field).double.finite = true
-  ];
-  // unit is the unit of measurement (e.g., "tokens", "calls", "GB").
-  string unit = 5 [(buf.validate.field).required = true];
-  // rate is the cost per unit.
-  double rate = 6 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).double.gt = 0,
-    (buf.validate.field).double.finite = true
-  ];
   // setup_version_id is the setup version ID to associate with this cost.
-  string setup_version_id = 7 [
+  string setup_version_id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "setup_verion_id_prefix"
@@ -75,6 +53,28 @@ message AddCostRequest {
       message: "setup_verions_id must be at least 1 characters long"
     }
   ];
+  // name is the descriptive name for this cost.
+  string name = 3 [(buf.validate.field).required = true];
+  // cost is the total cost value.
+  double cost = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gt = 0,
+    (buf.validate.field).double.finite = true
+  ];
+  // quantity is the number of units consumed.
+  double quantity = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gt = 0,
+    (buf.validate.field).double.finite = true
+  ];
+  // rate is the cost per unit.
+  double rate = 6 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gt = 0,
+    (buf.validate.field).double.finite = true
+  ];
+  // unit is the unit of measurement (e.g., "tokens", "calls", "GB").
+  string unit = 7 [(buf.validate.field).required = true];
   // cost_type is the classification of the cost.
   CostType type = 8 [
     (buf.validate.field).required = true,

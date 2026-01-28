@@ -50,31 +50,25 @@ message StorageRecord {
       message: "missions must be at least 1 characters long"
     }
   ];
-
   // collection is the name of the group for the records.
   string collection = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
-
   // record_id is the unique identifier for the record.
   string record_id = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
-
-  // creation_date is the timestamp when the record was created.
-  google.protobuf.Timestamp created_at = 4 [(buf.validate.field).required = true];
-
-  // update_date is the timestamp when the record was last updated.
-  google.protobuf.Timestamp updated_at = 5 [(buf.validate.field).required = true];
-
-  // data is the stored JSON object.
-  google.protobuf.Struct data = 6 [(buf.validate.field).required = true];
-
   // data_type is the category of the data.
-  DataType data_type = 7 [
+  DataType data_type = 4 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];
+  // creation_date is the timestamp when the record was created.
+  google.protobuf.Timestamp created_at = 5 [(buf.validate.field).required = true];
+  // update_date is the timestamp when the record was last updated.
+  google.protobuf.Timestamp updated_at = 6 [(buf.validate.field).required = true];
+  // data is the stored JSON object.
+  google.protobuf.Struct data = 7 [(buf.validate.field).required = true];
 }

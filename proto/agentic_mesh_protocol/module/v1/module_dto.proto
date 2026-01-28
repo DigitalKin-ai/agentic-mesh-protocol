@@ -174,12 +174,8 @@ message GetConfigSetupModuleResponse {
 
 // Configures the setup for a given module.
 message ConfigSetupModuleRequest {
-  // The setup version to configure.
-  agentic_mesh_protocol.setup.v1.SetupVersion setup_version = 1 [(buf.validate.field).required = true];
-  // The configuration content for the setup.
-  google.protobuf.Struct content = 2 [(buf.validate.field).required = true];
   // The mission ID associated with the setup.
-  string mission_id = 3 [
+  string mission_id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "mission_id_prefix"
@@ -192,6 +188,10 @@ message ConfigSetupModuleRequest {
       message: "mission_id must be at least 1 characters long"
     }
   ];
+  // The configuration content for the setup.
+  google.protobuf.Struct content = 2 [(buf.validate.field).required = true];
+  // The setup version to configure.
+  agentic_mesh_protocol.setup.v1.SetupVersion setup_version = 3 [(buf.validate.field).required = true];
 }
 
 // Response confirming the configuration of the module setup.
@@ -206,10 +206,8 @@ message ConfigSetupModuleResponse {
 
 // Starts a module with the provided input and setup.
 message StartModuleRequest {
-  // The input data for the module.
-  google.protobuf.Struct input = 1 [(buf.validate.field).required = true];
   // The setup ID to use for the module.
-  string setup_id = 2 [
+  string setup_id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "setup_id_prefix"
@@ -223,7 +221,7 @@ message StartModuleRequest {
     }
   ];
   // The mission ID associated with the module run.
-  string mission_id = 3 [
+  string mission_id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "mission_id_prefix"
@@ -236,16 +234,14 @@ message StartModuleRequest {
       message: "mission_id must be at least 1 characters long"
     }
   ];
+  // The input data for the module.
+  google.protobuf.Struct input = 3 [(buf.validate.field).required = true];
 }
 
 // Response containing the output of the started module and job ID.
 message StartModuleResponse {
-  // Indicates if the operation was successful.
-  bool success = 1;
-  // The output data from the module.
-  google.protobuf.Struct output = 2 [(buf.validate.field).required = true];
   // The job ID for the module run.
-  string job_id = 3 [
+  string job_id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "job_id_prefix"
@@ -258,6 +254,10 @@ message StartModuleResponse {
       message: "job_id must be at least 1 characters long"
     }
   ];
+  // Indicates if the operation was successful.
+  bool success = 2;
+  // The output data from the module.
+  google.protobuf.Struct output = 3 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ StopModule ════════════════════════════════════ //

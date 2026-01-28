@@ -21,15 +21,15 @@ enum CostType {
   // UNTYPED represents an unspecified cost type.
   COST_TYPE_UNSPECIFIED = 0;
   // TOKEN_INPUT represents token input costs.
-  COST_TYPE_TOKEN_INPUT = 1;
+  TOKEN_INPUT = 1;
   // TOKEN_OUTPUT represents token output costs.
-  COST_TYPE_TOKEN_OUTPUT = 2;
+  TOKEN_OUTPUT = 2;
   // API_CALL represents API call costs.
-  COST_TYPE_API_CALL = 3;
+  API_CALL = 3;
   // STORAGE represents storage costs.
-  COST_TYPE_STORAGE = 4;
+  STORAGE = 4;
   // TIME represents time-based costs.
-  COST_TYPE_TIME = 5;
+  TIME = 5;
   // OTHER represents other types of costs.
-  COST_TYPE_OTHER = 6;
+  OTHER = 6;
 }

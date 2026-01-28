@@ -53,37 +53,37 @@ message File {
   string name = 3 [(buf.validate.field).required = true];
   // content_type: MIME type of the file
   string content_type = 4 [(buf.validate.field).required = true];
-  // size_bytes: Size of the file in bytes
-  int64 size_bytes = 5 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).int64.gt = 0
-  ];
   // checksum: SHA-256 checksum of the file content (SHA-256 format)
-  string checksum = 6 [(buf.validate.field).required = true];
-  // metadata: Flexible metadata for additional file properties
-  google.protobuf.Struct metadata = 7 [(buf.validate.field).required = true];
+  string checksum = 5 [(buf.validate.field).required = true];
   // storage_uri: Internal URI for accessing the file content
-  string storage_uri = 8 [
+  string storage_uri = 6 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.uri_ref = true
   ];
   // file_url: External URL for accessing the file content
-  string url = 9 [
+  string url = 7 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.uri = true
   ];
+  // size_bytes: Size of the file in bytes
+  int64 size_bytes = 8 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int64.gt = 0
+  ];
   // content: The content of the file
-  bytes content = 10 [(buf.validate.field).required = true];
+  bytes content = 9 [(buf.validate.field).required = true];
   // status: Current status of the file
-  FileStatus status = 11 [
+  FileStatus status = 10 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];
   // file_type: Type classification of the file
-  FileType type = 12 [
+  FileType type = 11 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];
+  // metadata: Flexible metadata for additional file properties
+  google.protobuf.Struct metadata = 12 [(buf.validate.field).required = true];
 }
 
 // FileFilter contains criteria for querying and filtering files.
@@ -109,47 +109,12 @@ message FileFilter {
     message: "updated_after must be before updated_before"
   };
 
-  // names: Filter by file names (exact matches)
-  repeated string names = 1 [(buf.validate.field).required = true];
-
-  // file_ids: Filter by file IDs
-  repeated string ids = 2 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).repeated.items.string.uuid = true
-  ];
-
   // context: Filter by context (required for scoping)
-  string context = 3 [(buf.validate.field).required = true];
-
-  // created_after: Filter files created after this timestamp
-  google.protobuf.Timestamp created_after = 4 [(buf.validate.field).required = true];
-
-  // created_before: Filter files created before this timestamp
-  google.protobuf.Timestamp created_before = 5 [(buf.validate.field).required = true];
-
-  // updated_after: Filter files updated after this timestamp
-  google.protobuf.Timestamp updated_after = 6 [(buf.validate.field).required = true];
-
-  // updated_before: Filter files updated before this timestamp
-  google.protobuf.Timestamp updated_before = 7 [(buf.validate.field).required = true];
-
+  string context = 1 [(buf.validate.field).required = true];
   // content_type_prefix: Filter by content type prefix (e.g., "image/")
-  string content_type_prefix = 8 [(buf.validate.field).required = true];
-
-  // min_size_bytes: Filter files with minimum size
-  int64 min_size_bytes = 9 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).int64.gt = 0
-  ];
-
-  // max_size_bytes: Filter files with maximum size
-  int64 max_size_bytes = 10 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).int64.gt = 0
-  ];
-
+  string content_type_prefix = 2 [(buf.validate.field).required = true];
   // prefix: Filter by path prefix (e.g., "folder1/")
-  string prefix = 11 [
+  string prefix = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "prefix_format"
@@ -157,16 +122,38 @@ message FileFilter {
       message: "prefix must be a single path segment or end with '/'"
     }
   ];
-
   // content_type: Filter by content type
-  string content_type = 12 [(buf.validate.field).required = true];
-
+  string content_type = 4 [(buf.validate.field).required = true];
+  // min_size_bytes: Filter files with minimum size
+  int64 min_size_bytes = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int64.gt = 0
+  ];
+  // max_size_bytes: Filter files with maximum size
+  int64 max_size_bytes = 6 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int64.gt = 0
+  ];
   // status: Filter by file status
-  FileStatus status = 13 [
+  FileStatus status = 7 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];
-
+  // created_after: Filter files created after this timestamp
+  google.protobuf.Timestamp created_after = 8 [(buf.validate.field).required = true];
+  // created_before: Filter files created before this timestamp
+  google.protobuf.Timestamp created_before = 9 [(buf.validate.field).required = true];
+  // updated_after: Filter files updated after this timestamp
+  google.protobuf.Timestamp updated_after = 10 [(buf.validate.field).required = true];
+  // updated_before: Filter files updated before this timestamp
+  google.protobuf.Timestamp updated_before = 11 [(buf.validate.field).required = true];
+  // names: Filter by file names (exact matches)
+  repeated string names = 12 [(buf.validate.field).required = true];
+  // file_ids: Filter by file IDs
+  repeated string ids = 13 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.items.string.uuid = true
+  ];
   // file_types: Filter by file types
   repeated FileType types = 14 [
     (buf.validate.field).required = true,
@@ -203,28 +190,21 @@ message UploadFileData {
       message: "context must be at least 1 characters long"
     }
   ];
-
   // name: Name of the file
   string name = 2 [(buf.validate.field).required = true];
-
   // content_type: MIME type of the file
   string content_type = 3 [(buf.validate.field).required = true];
-
   // content: File content
   bytes content = 4 [(buf.validate.field).required = true];
-
-  // metadata: Additional metadata for the file
-  google.protobuf.Struct metadata = 5 [(buf.validate.field).required = true];
-
   // replace_if_exists: Whether to replace existing file with same name
-  bool replace_if_exists = 6 [(buf.validate.field).required = true];
-
+  bool replace_if_exists = 5 [(buf.validate.field).required = true];
   // status: Status of the file
-  FileStatus status = 7 [(buf.validate.field).required = true];
-
+  FileStatus status = 6 [(buf.validate.field).required = true];
   // file_type: Type classification of the file
-  FileType type = 8 [
+  FileType type = 7 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];
+  // metadata: Additional metadata for the file
+  google.protobuf.Struct metadata = 8 [(buf.validate.field).required = true];
 }

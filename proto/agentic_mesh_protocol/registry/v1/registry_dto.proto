@@ -48,17 +48,17 @@ message RegisterModuleRequest {
     (buf.validate.field).string.uri = true
   ];
 
+  // version is the runtime version of the deployed module.
+  string version = 3 [(buf.validate.field).required = true];
+
   // port is the network port to communicate with the module.
-  int32 port = 3 [
+  int32 port = 4 [
     (buf.validate.field).required = true,
     (buf.validate.field).int32 = {
       gte: 1
       lte: 65535
     }
   ];
-
-  // version is the runtime version of the deployed module.
-  string version = 4 [(buf.validate.field).required = true];
 }
 
 // RegisterModuleResponse is returned by the registry after successful registration.
@@ -118,8 +118,11 @@ message DiscoverSetupsRequest {
   // query is a text search that matches on name or documentation.
   string query = 2 [(buf.validate.field).required = true];
 
+  // pagination contains pagination settings.
+  agentic_mesh_protocol.pagination.v1.Pagination pagination = 3 [(buf.validate.field).required = true];
+
   // module_ids filters by specific module identifiers.
-  repeated string module_ids = 3 [
+  repeated string module_ids = 4 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "module_id_prefix"
@@ -132,9 +135,6 @@ message DiscoverSetupsRequest {
       message: "module_id must be at least 1 characters long"
     }
   ];
-
-  // pagination contains pagination settings.
-  agentic_mesh_protocol.pagination.v1.Pagination pagination = 4 [(buf.validate.field).required = true];
 
   // visibility filters by visibility level.
   repeated Visibility visibility = 5 [

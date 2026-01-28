@@ -21,30 +21,8 @@ import "buf/validate/validate.proto";
 
 // Cost represents a cost entry with comprehensive tracking information.
 message Cost {
-  // name is the descriptive name of the cost.
-  string name = 3 [(buf.validate.field).required = true];
-  // cost is the total cost value.
-  double cost = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).double.gt = 0,
-    (buf.validate.field).double.finite = true
-  ];
-  // unit is the unit of measurement for the cost (e.g., "tokens", "calls", "GB").
-  string unit = 5 [(buf.validate.field).required = true];
-  // quantity is the number of units consumed.
-  double quantity = 8 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).double.gt = 0,
-    (buf.validate.field).double.finite = true
-  ];
-  // rate is the cost per unit.
-  double rate = 6 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).double.gt = 0,
-    (buf.validate.field).double.finite = true
-  ];
   // mission_id is the mission ID linked to this cost.
-  string mission_id = 2 [
+  string mission_id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "mission_id_prefix"
@@ -58,7 +36,7 @@ message Cost {
     }
   ];
   // setup_version_id is the setup version ID associated with this cost.
-  string setup_version_id = 7 [
+  string setup_version_id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "setup_versions_id_prefix"
@@ -71,8 +49,30 @@ message Cost {
       message: "setup_versions must be at least 1 characters long"
     }
   ];
+  // name is the descriptive name of the cost.
+  string name = 3 [(buf.validate.field).required = true];
+  // cost is the total cost value.
+  double cost = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gt = 0,
+    (buf.validate.field).double.finite = true
+  ];
+  // quantity is the number of units consumed.
+  double quantity = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gt = 0,
+    (buf.validate.field).double.finite = true
+  ];
+  // rate is the cost per unit.
+  double rate = 6 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gt = 0,
+    (buf.validate.field).double.finite = true
+  ];
+  // unit is the unit of measurement for the cost (e.g., "tokens", "calls", "GB").
+  string unit = 7 [(buf.validate.field).required = true];
   // cost_type is the classification of the cost.
-  CostType type = 4 [
+  CostType type = 8 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];
@@ -80,10 +80,15 @@ message Cost {
 
 // CostFilter contains criteria for filtering cost queries.
 message CostFilter {
+  // cost_types filters costs by cost type classifications.
+  repeated CostType types = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
   // names filters costs by one or more names.
-  repeated string names = 1 [(buf.validate.field).required = true];
+  repeated string names = 2 [(buf.validate.field).required = true];
   // setup_version_ids filters costs by setup version IDs.
-  repeated string setup_version_ids = 2 [
+  repeated string setup_version_ids = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "setup_versions_id_prefix"
@@ -95,10 +100,5 @@ message CostFilter {
       expression: "this.all(x, x.size() >= 16)"
       message: "setup_versions must be at least 1 characters long"
     }
-  ];
-  // cost_types filters costs by cost type classifications.
-  repeated CostType types = 3 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).repeated.items.enum.defined_only = true
   ];
 }

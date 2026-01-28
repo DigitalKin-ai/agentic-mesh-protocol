@@ -50,14 +50,14 @@ message StoreRecordRequest {
     (buf.validate.field).string.min_len = 1
   ];
 
-  // data is the JSON object to store.
-  google.protobuf.Struct data = 4 [(buf.validate.field).required = true];
-
   // data_type is the category of the data being stored.
-  DataType data_type = 5 [
+  DataType data_type = 4 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];
+
+  // data is the JSON object to store.
+  google.protobuf.Struct data = 5 [(buf.validate.field).required = true];
 }
 
 // Response message for StoreRecord operation.

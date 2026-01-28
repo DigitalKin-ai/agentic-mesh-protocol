@@ -50,28 +50,8 @@ message ModuleDescriptor {
       message: "module_id must be at least 1 characters long"
     }
   ]; // SurrealDB module id
-  // Name
-  string name = 2 [(buf.validate.field).required = true];
-  // Version
-  string version = 3 [(buf.validate.field).required = true];
-
-  // Network endpoint
-  // Address used to communicate with the module
-  string address = 4 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.uri = true
-  ];
-  // host or IP
-  // Port used to communicate with the module
-  int32 port = 5 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).int32 = {
-      gte: 1
-      lte: 65535
-    }
-  ];
   // Organization ID
-  string organization_id = 6 [
+  string organization_id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "organization_id_prefix"
@@ -85,7 +65,7 @@ message ModuleDescriptor {
     }
   ];
   // Owner ID
-  string owner_id = 7 [
+  string owner_id = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "user_id_prefix"
@@ -98,42 +78,54 @@ message ModuleDescriptor {
       message: "user_id must be at least 1 characters long"
     }
   ];
-
-  // Schemas for machine introspection
-  // Input schema
-  google.protobuf.Struct input_schema = 8 [(buf.validate.field).required = true];
-  // Output schema
-  google.protobuf.Struct output_schema = 9 [(buf.validate.field).required = true];
-  // Setup schema
-  google.protobuf.Struct setup_schema = 10 [(buf.validate.field).required = true];
-  // Secret schema
-  google.protobuf.Struct secret_schema = 11 [(buf.validate.field).required = true];
-  // Cost schema
-  google.protobuf.Struct cost_schema = 12 [(buf.validate.field).required = true];
-
+  // Name
+  string name = 4 [(buf.validate.field).required = true];
+  // Version
+  string version = 5 [(buf.validate.field).required = true];
+  // Network endpoint - Address used to communicate with the module
+  string address = 6 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.uri = true
+  ];
   // Documentation
-  string documentation = 13 [(buf.validate.field).required = true];
-
-  // Created at
-  google.protobuf.Timestamp created_at = 14 [(buf.validate.field).required = true];
-  // Updated at
-  google.protobuf.Timestamp updated_at = 15 [(buf.validate.field).required = true];
-
+  string documentation = 7 [(buf.validate.field).required = true];
+  // Port used to communicate with the module
+  int32 port = 8 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32 = {
+      gte: 1
+      lte: 65535
+    }
+  ];
   // Module type
-  agentic_mesh_protocol.module.v1.ModuleType type = 16 [
+  agentic_mesh_protocol.module.v1.ModuleType type = 9 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];
   // Status
-  agentic_mesh_protocol.module.v1.ModuleStatus status = 17 [
+  agentic_mesh_protocol.module.v1.ModuleStatus status = 10 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];
   // Visibility
-  Visibility visibility = 18 [
+  Visibility visibility = 11 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];
+  // Created at
+  google.protobuf.Timestamp created_at = 12 [(buf.validate.field).required = true];
+  // Updated at
+  google.protobuf.Timestamp updated_at = 13 [(buf.validate.field).required = true];
+  // Schemas for machine introspection - Input schema
+  google.protobuf.Struct input_schema = 14 [(buf.validate.field).required = true];
+  // Output schema
+  google.protobuf.Struct output_schema = 15 [(buf.validate.field).required = true];
+  // Setup schema
+  google.protobuf.Struct setup_schema = 16 [(buf.validate.field).required = true];
+  // Secret schema
+  google.protobuf.Struct secret_schema = 17 [(buf.validate.field).required = true];
+  // Cost schema
+  google.protobuf.Struct cost_schema = 18 [(buf.validate.field).required = true];
 }
 
 // Represents your "setups" + current "setup_versions"
@@ -152,12 +144,8 @@ message SetupDescriptor {
       message: "setup_id must be at least 1 characters long"
     }
   ];
-  // Name
-  string name = 2 [(buf.validate.field).required = true];
-  // Documentation
-  string documentation = 3 [(buf.validate.field).required = true];
   // Organization ID
-  string organization_id = 4 [
+  string organization_id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "organization_id_prefix"
@@ -171,7 +159,7 @@ message SetupDescriptor {
     }
   ];
   // Owner ID
-  string owner_id = 5 [
+  string owner_id = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "user_id_prefix"
@@ -185,7 +173,7 @@ message SetupDescriptor {
     }
   ];
   // Card ID
-  string card_id = 6 [
+  string card_id = 4 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "card_id_prefix"
@@ -198,9 +186,8 @@ message SetupDescriptor {
       message: "card_id must be at least 1 characters long"
     }
   ];
-
   // Link to the module
-  string module_id = 7 [
+  string module_id = 5 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "module_id_prefix"
@@ -213,10 +200,8 @@ message SetupDescriptor {
       message: "module_id must be at least 1 characters long"
     }
   ];
-
-  // Current version (setup_versions)
-  // ID
-  string setup_version_id = 8 [
+  // Current version (setup_versions) - ID
+  string setup_version_id = 6 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "setup_version_id_prefix"
@@ -229,22 +214,24 @@ message SetupDescriptor {
       message: "setup_version_id must be at least 1 characters long"
     }
   ];
+  // Name
+  string name = 7 [(buf.validate.field).required = true];
+  // Documentation
+  string documentation = 8 [(buf.validate.field).required = true];
   // Version
   string setup_version = 9 [(buf.validate.field).required = true];
-  // Configuration
-  google.protobuf.Struct config = 10 [(buf.validate.field).required = true];
-
-  // Resolved module info (so agents don't need another round-trip)
-  ModuleDescriptor module = 11 [(buf.validate.field).required = true];
-
   // Status
-  agentic_mesh_protocol.setup.v1.SetupStatus status = 12 [
+  agentic_mesh_protocol.setup.v1.SetupStatus status = 10 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];
   // Visibility
-  Visibility visibility = 13 [
+  Visibility visibility = 11 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];
+  // Configuration
+  google.protobuf.Struct config = 12 [(buf.validate.field).required = true];
+  // Resolved module info (so agents don't need another round-trip)
+  ModuleDescriptor module = 13 [(buf.validate.field).required = true];
 }

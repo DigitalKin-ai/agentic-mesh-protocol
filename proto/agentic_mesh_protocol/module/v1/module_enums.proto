@@ -21,11 +21,11 @@ enum ModuleStatus {
   //UNSPECIFIED indicates an unspecified module status.
   MODULE_STATUS_UNSPECIFIED = 0;
   // The module is ready to be used.
-  MODULE_STATUS_READY = 1;
+  READY = 1;
   // The module is currently active.
-  MODULE_STATUS_ACTIVE = 2;
+  ACTIVE = 2;
   // The module is archived and inactive.
-  MODULE_STATUS_ARCHIVED = 3;
+  ARCHIVED = 3;
 }
 
 // Type of the module in the system.
@@ -33,7 +33,7 @@ enum ModuleType {
   // UNTYPED represents an unspecified module type.
   MODULE_TYPE_UNSPECIFIED = 0;
   // The module is an archetype (template or base type).
-  MODULE_TYPE_ARCHETYPE = 1;
+  ARCHETYPE = 1;
   // The module is a tool (utility or service).
-  MODULE_TYPE_TOOL = 2;
+  TOOL = 2;
 }

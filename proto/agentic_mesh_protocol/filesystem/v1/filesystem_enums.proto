@@ -21,19 +21,19 @@ enum FileType {
   // UNTYPED represents an unspecified file type.
   FILE_TYPE_UNSPECIFIED = 0;
   // DOCUMENT represents document files (PDF, DOC, TXT, etc.).
-  FILE_TYPE_DOCUMENT = 1;
+  DOCUMENT = 1;
   // IMAGE represents image files (PNG, JPG, GIF, etc.).
-  FILE_TYPE_IMAGE = 2;
+  IMAGE = 2;
   // VIDEO represents video files (MP4, AVI, MOV, etc.).
-  FILE_TYPE_VIDEO = 3;
+  VIDEO = 3;
   // AUDIO represents audio files (MP3, WAV, etc.).
-  FILE_TYPE_AUDIO = 4;
+  AUDIO = 4;
   // ARCHIVE represents archive files (ZIP, TAR, etc.).
-  FILE_TYPE_ARCHIVE = 5;
+  ARCHIVE = 5;
   // CODE represents source code files.
-  FILE_TYPE_CODE = 6;
+  CODE = 6;
   // OTHER represents other file types.
-  FILE_TYPE_OTHER = 7;
+  OTHER = 7;
 }
 
 // FileStatus represents the lifecycle status of a file in the system.
@@ -41,13 +41,13 @@ enum FileStatus {
   //UNSPECIFIED indicates an unspecified file status.
   FILE_STATUS_UNSPECIFIED = 0;
   // UPLOADING indicates the file is currently being uploaded.
-  FILE_STATUS_UPLOADING = 1;
+  UPLOADING = 1;
   // ACTIVE indicates the file is active and available for use.
-  FILE_STATUS_ACTIVE = 2;
+  ACTIVE = 2;
   // PROCESSING indicates the file is being processed.
-  FILE_STATUS_PROCESSING = 3;
+  PROCESSING = 3;
   // ARCHIVED indicates the file has been archived.
-  FILE_STATUS_ARCHIVED = 4;
+  ARCHIVED = 4;
   // DELETED indicates the file is marked for deletion.
-  FILE_STATUS_DELETED = 5;
+  DELETED = 5;
 }

@@ -21,9 +21,9 @@ enum Visibility {
   // UNSPECIFIED visibility: default value, should not be used.
   VISIBILITY_UNSPECIFIED = 0;
   // Public visibility: accessible to everyone.
-  VISIBILITY_PUBLIC = 1;
+  PUBLIC = 1;
   // Private visibility: accessible only to the owner or module.
-  VISIBILITY_PRIVATE = 2;
+  PRIVATE = 2;
   // Internal visibility: reserved for internal system use.
-  VISIBILITY_INTERNAL = 3;
+  INTERNAL = 3;
 }

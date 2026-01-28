@@ -26,14 +26,11 @@ import "google/protobuf/struct.proto";
 
 // Request and Response messages for creating a new Setup.
 message CreateSetupRequest {
-  // name is the name of the setup.
-  string name = 1 [(buf.validate.field).required = true];
-
   // organization_id is the unique identifier of the organization.
-  string organization_id = 2 [(buf.validate.field).required = true];
+  string organization_id = 1 [(buf.validate.field).required = true];
 
   // owner_id is the owner ID of the setup.
-  string owner_id = 3 [
+  string owner_id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "owner_id_prefix"
@@ -48,7 +45,7 @@ message CreateSetupRequest {
   ];
 
   // module_id is the module identifier associated with the setup.
-  string module_id = 4 [
+  string module_id = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "module_id_prefix"
@@ -62,11 +59,14 @@ message CreateSetupRequest {
     }
   ];
 
-  // current_setup_version is the active setup version.
-  optional SetupVersion current_setup_version = 5 [(buf.validate.field).required = true];
+  // name is the name of the setup.
+  string name = 4 [(buf.validate.field).required = true];
 
   // status is the status of the setup.
-  SetupStatus status = 6 [(buf.validate.field).required = true];
+  SetupStatus status = 5 [(buf.validate.field).required = true];
+
+  // current_setup_version is the active setup version.
+  optional SetupVersion current_setup_version = 6 [(buf.validate.field).required = true];
 }
 
 // Response message for CreateSetup operation.
@@ -132,11 +132,8 @@ message UpdateSetupRequest {
     }
   ];
 
-  // name is the name of the setup.
-  string name = 2 [(buf.validate.field).required = true];
-
   // owner_id is the owner ID of the setup.
-  string owner_id = 3 [
+  string owner_id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "owner_id_prefix"
@@ -150,14 +147,17 @@ message UpdateSetupRequest {
     }
   ];
 
-  // current_setup_version is the active setup version.
-  SetupVersion current_setup_version = 4 [(buf.validate.field).required = true];
+  // name is the name of the setup.
+  string name = 3 [(buf.validate.field).required = true];
 
   // status is the status of the setup.
-  SetupStatus status = 5 [
+  SetupStatus status = 4 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];
+
+  // current_setup_version is the active setup version.
+  SetupVersion current_setup_version = 5 [(buf.validate.field).required = true];
 }
 
 // Response message for UpdateSetup operation.
@@ -389,12 +389,12 @@ message ListSetupsRequest {
 
 // Response message for ListSetups operation.
 message ListSetupsResponse {
-  // setups is the list of setups matching the criteria.
-  repeated Setup setups = 1 [(buf.validate.field).required = true];
-
   // total_count is the total number of setups matching the criteria.
-  int32 total_count = 2 [
+  int32 total_count = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).int32.gte = 0
   ];
+
+  // setups is the list of setups matching the criteria.
+  repeated Setup setups = 2 [(buf.validate.field).required = true];
 }

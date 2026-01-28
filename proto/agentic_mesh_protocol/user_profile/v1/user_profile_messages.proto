@@ -147,36 +147,30 @@ message UserProfile {
     (buf.validate.field).string.min_len = 2
   ];
 
+  // locale is the user's preferred locale.
+  string locale = 6 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
   // creation_date is the timestamp when the profile was created.
-  google.protobuf.Timestamp created_at = 6 [
+  google.protobuf.Timestamp created_at = 7 [
     (buf.validate.field).required = true,
     (buf.validate.field).timestamp.lt_now = true
   ];
 
   // update_date is the timestamp when the profile was last updated.
-  google.protobuf.Timestamp updated_at = 7 [
+  google.protobuf.Timestamp updated_at = 8 [
     (buf.validate.field).required = true,
     (buf.validate.field).timestamp.lt_now = true
   ];
 
-  // locale is the user's preferred locale.
-  string locale = 8 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
-  ];
+  // metadata contains additional key-value preferences or settings.
+  google.protobuf.Struct metadata = 9 [(buf.validate.field).required = true];
 
   // subscription contains user subscription information.
-  Subscription subscription = 9 [
-    (buf.validate.field).required = true
-  ];
+  Subscription subscription = 10 [(buf.validate.field).required = true];
 
   // credits is the list of user credit allocations.
-  repeated CreditLot credits = 10 [
-    (buf.validate.field).required = true
-  ];
-
-  // metadata contains additional key-value preferences or settings.
-  google.protobuf.Struct metadata = 11 [
-    (buf.validate.field).required = true
-  ];
+  repeated CreditLot credits = 11 [(buf.validate.field).required = true];
 }

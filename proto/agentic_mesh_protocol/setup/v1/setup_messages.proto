@@ -58,11 +58,11 @@ message SetupVersion {
   // version is the label for this version (e.g., "v1", "v2").
   string version = 3 [(buf.validate.field).required = true];
 
-  // content contains key-value pairs for configuration content.
-  google.protobuf.Struct content = 4 [(buf.validate.field).required = true];
-
   // creation_date is the setup version creation date.
-  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp created_at = 4;
+
+  // content contains key-value pairs for configuration content.
+  google.protobuf.Struct content = 5 [(buf.validate.field).required = true];
 }
 
 // Setup represents a configuration associated with a mission.
@@ -82,11 +82,8 @@ message Setup {
     }
   ];
 
-  // name is the name of the setup.
-  string name = 2 [(buf.validate.field).required = true];
-
   // organization_id is the unique identifier of the organization.
-  string organization_id = 3 [
+  string organization_id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "organization_id_prefix"
@@ -101,7 +98,7 @@ message Setup {
   ];
 
   // owner_id is the owner ID of the setup.
-  string owner_id = 4 [
+  string owner_id = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "user_id_prefix"
@@ -116,7 +113,7 @@ message Setup {
   ];
 
   // module_id is the module identifier associated with the setup.
-  string module_id = 5 [
+  string module_id = 4 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "module_id_prefix"
@@ -130,9 +127,12 @@ message Setup {
     }
   ];
 
-  // current_setup_version is the active setup version.
-  optional SetupVersion current_setup_version = 6 [(buf.validate.field).required = false];
+  // name is the name of the setup.
+  string name = 5 [(buf.validate.field).required = true];
 
   // status is the status of the setup.
-  SetupStatus status = 7 [(buf.validate.field).required = true];
+  SetupStatus status = 6 [(buf.validate.field).required = true];
+
+  // current_setup_version is the active setup version.
+  optional SetupVersion current_setup_version = 7 [(buf.validate.field).required = false];
 }

@@ -21,11 +21,11 @@ enum DataType {
   // Unspecified data type.
   DATA_TYPE_UNSPECIFIED = 0;
   // Output data type.
-  DATA_TYPE_OUTPUT = 1;
+  OUTPUT = 1;
   // View data type.
-  DATA_TYPE_VIEW = 2;
+  VIEW = 2;
   // Logs data type.
-  DATA_TYPE_LOGS = 3;
+  LOGS = 3;
   // Other data type.
-  DATA_TYPE_OTHER = 4;
+  OTHER = 4;
 }
