@@ -29,7 +29,8 @@ message Cost {
   // cost is the total cost value.
   double cost = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).double.gt = 0
+    (buf.validate.field).double.gt = 0,
+    (buf.validate.field).double.finite = true
   ];
   // unit is the unit of measurement for the cost (e.g., "tokens", "calls", "GB").
   string unit = 5 [
@@ -39,24 +40,42 @@ message Cost {
   // quantity is the number of units consumed.
   double quantity = 8 [
     (buf.validate.field).required = true,
-    (buf.validate.field).double.gt = 0
+    (buf.validate.field).double.gt = 0,
+    (buf.validate.field).double.finite = true
   ];
   // rate is the cost per unit.
   double rate = 6 [
     (buf.validate.field).required = true,
-    (buf.validate.field).double.gt = 0
+    (buf.validate.field).double.gt = 0,
+    (buf.validate.field).double.finite = true
   ];
   // mission_id is the mission ID linked to this cost.
   string mission_id = 2 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^missions:.+$",
-    (buf.validate.field).string.min_len = 9
+    (buf.validate.field).cel = {
+      id: "missions_id_prefix"
+      expression: "this.startsWith('missions:')"
+      message: "missions must start with 'mission:'"
+    },
+    (buf.validate.field).cel = {
+      id: "missions_id_length"
+      expression: "this.size() >= 10"
+      message: "missions must be at least 1 characters long"
+    }
   ];
   // setup_version_id is the setup version ID associated with this cost.
   string setup_version_id = 7 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^setup_versions:.+$",
-    (buf.validate.field).string.min_len = 15
+    (buf.validate.field).cel = {
+      id: "setup_versions_id_prefix"
+      expression: "this.startsWith('setup_versions:')"
+      message: "setup_versions_id must start with 'setup_versions:'"
+    },
+    (buf.validate.field).cel = {
+      id: "setup_versions_id_length"
+      expression: "this.size() >= 10"
+      message: "setup_versions must be at least 1 characters long"
+    }
   ];
   // cost_type is the classification of the cost.
   CostType type = 4 [
@@ -68,12 +87,27 @@ message Cost {
 // CostFilter contains criteria for filtering cost queries.
 message CostFilter {
   // names filters costs by one or more names.
-  repeated string names = 1 [(buf.validate.field).repeated.items.string.min_len = 1];
-  // cost_types filters costs by cost type classifications.
-  repeated CostType types = 2 [(buf.validate.field).repeated.items.enum.defined_only = true];
+  repeated string names = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.items.string.min_len = 1
+  ];
   // setup_version_ids filters costs by setup version IDs.
-  repeated string setup_version_ids = 3 [
-    (buf.validate.field).repeated.items.string.pattern = "^setup_versions:.+$",
-    (buf.validate.field).repeated.items.string.min_len = 15
+  repeated string setup_version_ids = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "setup_versions_id_prefix"
+      expression: "this.startsWith('setup_versions:')"
+      message: "setup_versions must start with 'setup_versions:'"
+    },
+    (buf.validate.field).cel = {
+      id: "setup_versions_id_length"
+      expression: "this.size() >= 10"
+      message: "setup_versions must be at least 1 characters long"
+    }
+  ];
+  // cost_types filters costs by cost type classifications.
+  repeated CostType types = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.items.enum.defined_only = true
   ];
 }
