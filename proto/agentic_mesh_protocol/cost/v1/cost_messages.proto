@@ -22,9 +22,7 @@ import "buf/validate/validate.proto";
 // Cost represents a cost entry with comprehensive tracking information.
 message Cost {
   // name is the descriptive name of the cost.
-  string name = 3 [
-    (buf.validate.field).required = true
-  ];
+  string name = 3 [(buf.validate.field).required = true];
   // cost is the total cost value.
   double cost = 1 [
     (buf.validate.field).required = true,
@@ -32,9 +30,7 @@ message Cost {
     (buf.validate.field).double.finite = true
   ];
   // unit is the unit of measurement for the cost (e.g., "tokens", "calls", "GB").
-  string unit = 5 [
-    (buf.validate.field).required = true
-  ];
+  string unit = 5 [(buf.validate.field).required = true];
   // quantity is the number of units consumed.
   double quantity = 8 [
     (buf.validate.field).required = true,
@@ -51,12 +47,12 @@ message Cost {
   string mission_id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
-      id: "missions_id_prefix"
+      id: "mission_id_prefix"
       expression: "this.startsWith('missions:')"
       message: "missions must start with 'mission:'"
     },
     (buf.validate.field).cel = {
-      id: "missions_id_length"
+      id: "mission_id_length"
       expression: "this.size() >= 10"
       message: "missions must be at least 1 characters long"
     }
@@ -85,20 +81,18 @@ message Cost {
 // CostFilter contains criteria for filtering cost queries.
 message CostFilter {
   // names filters costs by one or more names.
-  repeated string names = 1 [
-    (buf.validate.field).required = true
-  ];
+  repeated string names = 1 [(buf.validate.field).required = true];
   // setup_version_ids filters costs by setup version IDs.
   repeated string setup_version_ids = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
       id: "setup_versions_id_prefix"
-      expression: "this.startsWith('setup_versions:')"
+      expression: "this.all(x, x.startsWith('setup_versions:'))"
       message: "setup_versions must start with 'setup_versions:'"
     },
     (buf.validate.field).cel = {
       id: "setup_versions_id_length"
-      expression: "this.size() >= 10"
+      expression: "this.all(x, x.size() >= 10)"
       message: "setup_versions must be at least 1 characters long"
     }
   ];

@@ -80,9 +80,7 @@ message GetFilesRequest {
     }
   ];
   // order: Field to order results by
-  string order = 2 [
-    (buf.validate.field).required = true
-  ];
+  string order = 2 [(buf.validate.field).required = true];
   // include_content: Whether to include file content in response
   bool include_content = 3 [(buf.validate.field).required = true];
   // filters: How to identify the files
@@ -155,13 +153,9 @@ message UpdateFileRequest {
     (buf.validate.field).string.uuid = true
   ];
   // new_name: New name for the file (optional)
-  optional string new_name = 3 [
-    (buf.validate.field).required = false
-  ];
+  optional string new_name = 3 [(buf.validate.field).required = false];
   // content_type: New content type (optional)
-  optional string content_type = 4 [
-    (buf.validate.field).required = false
-  ];
+  optional string content_type = 4 [(buf.validate.field).required = false];
   // content: New file content (optional)
   optional bytes content = 5 [(buf.validate.field).required = false];
   // status: New status of the file

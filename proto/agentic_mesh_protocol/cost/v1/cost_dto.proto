@@ -35,20 +35,18 @@ message AddCostRequest {
   string mission_id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
-      id: "missions_id_prefix"
+      id: "mission_id_prefix"
       expression: "this.startsWith('missions:')"
       message: "missions must start with 'mission:'"
     },
     (buf.validate.field).cel = {
-      id: "missions_id_length"
+      id: "mission_id_length"
       expression: "this.size() >= 10"
       message: "missions must be at least 1 characters long"
     }
   ];
   // name is the descriptive name for this cost.
-  string name = 3 [
-    (buf.validate.field).required = true
-  ];
+  string name = 3 [(buf.validate.field).required = true];
   // quantity is the number of units consumed.
   double quantity = 4 [
     (buf.validate.field).required = true,
@@ -56,9 +54,7 @@ message AddCostRequest {
     (buf.validate.field).double.finite = true
   ];
   // unit is the unit of measurement (e.g., "tokens", "calls", "GB").
-  string unit = 5 [
-    (buf.validate.field).required = true
-  ];
+  string unit = 5 [(buf.validate.field).required = true];
   // rate is the cost per unit.
   double rate = 6 [
     (buf.validate.field).required = true,
@@ -100,20 +96,18 @@ message GetCostRequest {
   string mission_id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
-      id: "missions_id_prefix"
+      id: "mission_id_prefix"
       expression: "this.startsWith('missions:')"
       message: "missions must start with 'mission:'"
     },
     (buf.validate.field).cel = {
-      id: "missions_id_length"
+      id: "mission_id_length"
       expression: "this.size() >= 10"
       message: "missions must be at least 1 characters long"
     }
   ];
   // name is the specific cost name to retrieve.
-  string name = 2 [
-    (buf.validate.field).required = true
-  ];
+  string name = 2 [(buf.validate.field).required = true];
 }
 
 // GetCostResponse is the response message for cost retrieval by name.
@@ -136,12 +130,12 @@ message GetCostsRequest {
   string mission_id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
-      id: "missions_id_prefix"
+      id: "mission_id_prefix"
       expression: "this.startsWith('missions:')"
       message: "missions must start with 'mission:'"
     },
     (buf.validate.field).cel = {
-      id: "missions_id_length"
+      id: "mission_id_length"
       expression: "this.size() >= 10"
       message: "missions must be at least 1 characters long"
     }
