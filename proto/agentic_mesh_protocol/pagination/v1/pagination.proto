@@ -20,8 +20,14 @@ import "buf/validate/validate.proto";
 
 // Pagination represents pagination parameters for listing requests.
 message Pagination {
+  // order: Field to order results by
+  string order = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
   // limit is the maximum number of items to return.
-  int32 limit = 1 [
+  int32 limit = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).int32 = {
       gte: 0
@@ -30,7 +36,7 @@ message Pagination {
   ];
 
   // offset is the number of items to skip before starting to collect the result set.
-  int32 offset = 2 [
+  int32 offset = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).int32.gte = 0
   ];
