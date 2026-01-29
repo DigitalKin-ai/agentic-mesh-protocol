@@ -14,16 +14,26 @@
 
 syntax = "proto3";
 
-package agentic_mesh_protocol.cost.v1;
+package agentic_mesh_protocol.module.v1;
 
-import "agentic_mesh_protocol/cost/v1/cost_dto.proto";
+// Status of a module in the system.
+enum ModuleStatus {
+  //UNSPECIFIED indicates an unspecified module status.
+  MODULE_STATUS_UNSPECIFIED = 0;
+  // The module is ready to be used.
+  READY = 1;
+  // The module is currently active.
+  ACTIVE = 2;
+  // The module is archived and inactive.
+  ARCHIVED = 3;
+}
 
-// CostService provides operations for tracking and querying operational costs.
-service CostService {
-  // AddCost records a new cost entry for a mission.
-  rpc AddCost(AddCostRequest) returns (AddCostResponse);
-  // GetCost retrieves cost entries by name within a mission.
-  rpc GetCost(GetCostRequest) returns (GetCostResponse);
-  // GetCosts retrieves multiple cost entries with optional filtering and pagination.
-  rpc GetCosts(GetCostsRequest) returns (GetCostsResponse);
+// Type of the module in the system.
+enum ModuleType {
+  // UNTYPED represents an unspecified module type.
+  MODULE_TYPE_UNSPECIFIED = 0;
+  // The module is an archetype (template or base type).
+  ARCHETYPE = 1;
+  // The module is a tool (utility or service).
+  TOOL = 2;
 }

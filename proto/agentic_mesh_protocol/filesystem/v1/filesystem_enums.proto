@@ -1,0 +1,53 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.filesystem.v1;
+
+// FileType represents the classification of file types in the system.
+enum FileType {
+  // UNTYPED represents an unspecified file type.
+  FILE_TYPE_UNSPECIFIED = 0;
+  // DOCUMENT represents document files (PDF, DOC, TXT, etc.).
+  DOCUMENT = 1;
+  // IMAGE represents image files (PNG, JPG, GIF, etc.).
+  IMAGE = 2;
+  // VIDEO represents video files (MP4, AVI, MOV, etc.).
+  VIDEO = 3;
+  // AUDIO represents audio files (MP3, WAV, etc.).
+  AUDIO = 4;
+  // ARCHIVE represents archive files (ZIP, TAR, etc.).
+  ARCHIVE = 5;
+  // CODE represents source code files.
+  CODE = 6;
+  // OTHER represents other file types.
+  OTHER = 7;
+}
+
+// FileStatus represents the lifecycle status of a file in the system.
+enum FileStatus {
+  //UNSPECIFIED indicates an unspecified file status.
+  FILE_STATUS_UNSPECIFIED = 0;
+  // UPLOADING indicates the file is currently being uploaded.
+  UPLOADING = 1;
+  // ACTIVE indicates the file is active and available for use.
+  ACTIVE = 2;
+  // PROCESSING indicates the file is being processed.
+  PROCESSING = 3;
+  // ARCHIVED indicates the file has been archived.
+  ARCHIVED = 4;
+  // DELETED indicates the file is marked for deletion.
+  DELETED = 5;
+}

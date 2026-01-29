@@ -12,6 +12,7 @@
 # Generated code (buf generate output)
 /gen/
 /docs/
+.task/
 
 # Dependencies
 node_modules/

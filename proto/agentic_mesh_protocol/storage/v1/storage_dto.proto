@@ -1,0 +1,247 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.storage.v1;
+
+import "agentic_mesh_protocol/storage/v1/storage_enums.proto";
+import "agentic_mesh_protocol/storage/v1/storage_messages.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
+
+// ════════════════════════════════════ StoreRecord ════════════════════════════════════ //
+message StoreRecordRequest {
+  // mission_id is the unique identifier of the mission.
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "missions_id_prefix"
+      expression: "this.startsWith('missions:')"
+      message: "missions_id must start with 'missions:'"
+    },
+    (buf.validate.field).cel = {
+      id: "missions_id_length"
+      expression: "this.size() >= 9"
+      message: "missions_id must be at least 1 characters long"
+    }
+  ];
+
+  // collection is the name of the group for the records.
+  string collection = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // record_id is the unique identifier for the record within the collection.
+  string record_id = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // data_type is the category of the data being stored.
+  DataType data_type = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // data is the JSON object to store.
+  google.protobuf.Struct data = 5 [(buf.validate.field).required = true];
+}
+
+// Response message for StoreRecord operation.
+message StoreRecordResponse {
+  // success indicates if the operation was successful.
+  bool success = 1 [(buf.validate.field).required = true];
+
+  // stored_data is the record that was stored.
+  StorageRecord stored_data = 2 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ ReadRecord ════════════════════════════════════ //
+message ReadRecordRequest {
+  // mission_id is the unique identifier of the mission.
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "missions_id_prefix"
+      expression: "this.startsWith('missions:')"
+      message: "missions_id must start with 'missions:'"
+    },
+    (buf.validate.field).cel = {
+      id: "missions_id_length"
+      expression: "this.size() >= 10"
+      message: "missions_id must be at least 1 characters long"
+    }
+  ];
+
+  // collection is the name of the group for the records.
+  string collection = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // record_id is the unique identifier for the record.
+  string record_id = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// Response message for ReadRecord operation.
+message ReadRecordResponse {
+  // success indicates if the operation was successful.
+  bool success = 1 [(buf.validate.field).required = true];
+
+  // stored_data is the retrieved record.
+  StorageRecord stored_data = 2 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ UpdateRecord ════════════════════════════════════ //
+message UpdateRecordRequest {
+  // mission_id is the unique identifier of the mission.
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "missions_id_prefix"
+      expression: "this.startsWith('missions:')"
+      message: "missions must start with 'mission:'"
+    },
+    (buf.validate.field).cel = {
+      id: "missions_id_length"
+      expression: "this.size() >= 10"
+      message: "missions must be at least 1 characters long"
+    }
+  ];
+
+  // collection is the name of the group for the records.
+  string collection = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // record_id is the unique identifier for the record.
+  string record_id = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // data is the updated JSON object.
+  google.protobuf.Struct data = 4 [(buf.validate.field).required = true];
+}
+
+// Response message for UpdateRecord operation.
+message UpdateRecordResponse {
+  // success indicates if the operation was successful.
+  bool success = 1 [(buf.validate.field).required = true];
+
+  // stored_data is the updated record.
+  StorageRecord stored_data = 2 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ RemoveRecord ════════════════════════════════════ //
+message RemoveRecordRequest {
+  // mission_id is the unique identifier of the mission.
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "missions_id_prefix"
+      expression: "this.startsWith('missions:')"
+      message: "missions must start with 'mission:'"
+    },
+    (buf.validate.field).cel = {
+      id: "missions_id_length"
+      expression: "this.size() >= 10"
+      message: "missions must be at least 1 characters long"
+    }
+  ];
+
+  // collection is the name of the group for the records.
+  string collection = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // record_id is the unique identifier for the record.
+  string record_id = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// Response message for RemoveRecord operation.
+message RemoveRecordResponse {
+  // success indicates if the operation was successful.
+  bool success = 1 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ ListRecords ════════════════════════════════════ //
+message ListRecordsRequest {
+  // mission_id is the unique identifier of the mission.
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "missions_id_prefix"
+      expression: "this.startsWith('missions:')"
+      message: "missions must start with 'mission:'"
+    },
+    (buf.validate.field).cel = {
+      id: "missions_id_length"
+      expression: "this.size() >= 10"
+      message: "missions must be at least 1 characters long"
+    }
+  ];
+
+  // collection is the name of the group for the records.
+  string collection = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// Response message for ListRecords operation.
+message ListRecordsResponse {
+  // records is the list of records found in the collection.
+  repeated StorageRecord records = 1 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ RemoveCollection ════════════════════════════════════ //
+message RemoveCollectionRequest {
+  // mission_id is the unique identifier of the mission.
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "missions_id_prefix"
+      expression: "this.startsWith('missions:')"
+      message: "missions must start with 'mission:'"
+    },
+    (buf.validate.field).cel = {
+      id: "missions_id_length"
+      expression: "this.size() >= 10"
+      message: "missions must be at least 1 characters long"
+    }
+  ];
+
+  // collection is the name of the collection to remove.
+  string collection = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// Response message for RemoveCollection operation.
+message RemoveCollectionResponse {
+  // success indicates if the operation was successful.
+  bool success = 1 [(buf.validate.field).required = true];
+}

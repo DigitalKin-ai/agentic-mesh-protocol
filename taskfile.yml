@@ -1,0 +1,265 @@
+version: "3"
+
+vars:
+  GEN_DIR: "gen"
+  PROTO_DIR: "proto"
+
+tasks:
+  # =============================================================================
+  # DEFAULT - Show available tasks
+  # =============================================================================
+  default:
+    desc: "Show available tasks"
+    cmds:
+      - task --list
+    silent: true
+
+  # =============================================================================
+  # SETUP - Environment and initial configuration
+  # =============================================================================
+  setup:
+    desc: "Setup complete development environment"
+    cmds:
+      - task: install
+      - echo "Development environment ready!"
+
+  # =============================================================================
+  # INSTALL - Dependencies installation
+  # =============================================================================
+  install:
+    desc: "Install npm dependencies and update buf dependencies"
+    cmds:
+      - task: validate
+      - npm install
+      - npx buf dep update {{.PROTO_DIR}}
+      - echo "✅ All dependencies installed successfully!"
+
+  install:deps:
+    desc: "Update buf dependencies"
+    cmds:
+      - npx buf dep update {{.PROTO_DIR}}
+
+  # =============================================================================
+  # GEN - Code generation tasks
+  # =============================================================================
+  gen:
+    desc: "Generate code (usage: task gen[:proto|:check])"
+    cmds:
+      - task: gen:proto
+
+  gen:proto:
+    desc: "Generate code for all languages (Python)"
+    cmds:
+      - npx buf generate
+    sources:
+      - "{{.PROTO_DIR}}/**/*.proto"
+      - buf.gen.yaml
+    generates:
+      - "{{.GEN_DIR}}/**/*"
+
+  gen:check:
+    desc: "Verify generated code is up to date"
+    cmds:
+      - npx buf generate
+      - |
+        if [ -n "$(git status --porcelain {{.GEN_DIR}}/)" ]; then
+          echo "Error: Generated code is out of date"
+          echo "Run 'task gen:proto' and commit the changes"
+          exit 1
+        fi
+
+  # =============================================================================
+  # LINT - Code quality and formatting
+  # =============================================================================
+  lint:
+    desc: "Run all linting tasks"
+    cmds:
+      - task: lint:check
+
+  lint:check:
+    desc: "Lint proto files with buf"
+    cmds:
+      - npx buf lint {{.PROTO_DIR}}
+    sources:
+      - "{{.PROTO_DIR}}/**/*.proto"
+      - "{{.PROTO_DIR}}/buf.yaml"
+
+  lint:format:
+    desc: "Format proto files with buf"
+    cmds:
+      - npx buf format -w
+    sources:
+      - "{{.PROTO_DIR}}/**/*.proto"
+
+  lint:format:check:
+    desc: "Check if proto files are formatted (no write)"
+    cmds:
+      - npx buf format -d --exit-code
+    sources:
+      - "{{.PROTO_DIR}}/**/*.proto"
+
+  lint:fix:
+    desc: "Format and lint proto files"
+    cmds:
+      - task: lint:format
+      - task: lint:check
+
+  lint:all:
+    desc: "Run all linting checks (format check + lint)"
+    cmds:
+      - task: lint:format:check
+      - task: lint:check
+
+  # =============================================================================
+  # BUILD - Build workflows
+  # =============================================================================
+  build:
+    desc: "Build the project (format, lint, and generate)"
+    cmds:
+      - task: build:package
+
+  build:package:
+    desc: "Full build - format, lint, and generate"
+    cmds:
+      - task: lint:format
+      - task: lint:check
+      - task: gen:proto
+      - echo "✅ Build completed successfully!"
+
+  build:verify:
+    desc: "Verify proto files are syntactically correct"
+    cmds:
+      - npx buf build {{.PROTO_DIR}}
+
+  # =============================================================================
+  # PUBLISH - Buf Schema Registry
+  # =============================================================================
+  publish:
+    desc: "Publish schema (usage: task publish[:prod|:tag])"
+    cmds:
+      - task: publish:prod
+
+  publish:prod:
+    desc: "Push schema to Buf Schema Registry (requires DKIN_CLOUD_TOKEN or BUF_TOKEN)"
+    cmds:
+      - npx buf push {{.PROTO_DIR}}
+    preconditions:
+      - sh: '[ ! -z "$DKIN_CLOUD_TOKEN" ] || [ ! -z "$BUF_TOKEN" ]'
+        msg: "DKIN_CLOUD_TOKEN or BUF_TOKEN environment variable must be set"
+
+  publish:tag:
+    desc: "Push schema with a tag (usage: task publish:tag -- v1.0.0)"
+    cmds:
+      - npx buf push {{.PROTO_DIR}} --tag {{.CLI_ARGS}}
+    preconditions:
+      - sh: '[ ! -z "{{.CLI_ARGS}}" ]'
+        msg: "Tag must be provided (e.g., task publish:tag -- v1.0.0)"
+      - sh: '[ ! -z "$DKIN_CLOUD_TOKEN" ] || [ ! -z "$BUF_TOKEN" ]'
+        msg: "DKIN_CLOUD_TOKEN or BUF_TOKEN environment variable must be set"
+
+  # =============================================================================
+  # VERSION - Breaking changes detection
+  # =============================================================================
+  version:breaking:
+    desc: "Check for breaking changes against main branch"
+    cmds:
+      - npx buf breaking --against '.git#branch=main'
+    sources:
+      - "{{.PROTO_DIR}}/**/*.proto"
+
+  version:breaking:verbose:
+    desc: "Check for breaking changes with verbose output"
+    cmds:
+      - npx buf breaking --against '.git#branch=main' --error-format=json | jq
+
+  # =============================================================================
+  # CLEAN - Cleanup tasks
+  # =============================================================================
+  clean:
+    desc: "Clean build artifacts and cache"
+    cmds:
+      - task: clean:build
+
+  clean:build:
+    desc: "Remove generated files (gen/)"
+    cmds:
+      - rm -rf {{.GEN_DIR}}/
+
+  clean:all:
+    desc: "Deep clean: generated files and node_modules"
+    cmds:
+      - task: clean:build
+      - rm -rf node_modules/
+
+  # =============================================================================
+  # CI - Continuous Integration
+  # =============================================================================
+  ci:
+    desc: "Run full CI pipeline"
+    cmds:
+      - echo "Running CI checks..."
+      - task: lint:format:check
+      - task: lint:check
+      - task: version:breaking
+      - task: gen:check
+      - echo "✅ All CI checks passed!"
+
+  ci:quick:
+    desc: "Quick CI checks (format + lint only)"
+    cmds:
+      - task: lint:format:check
+      - task: lint:check
+
+  # =============================================================================
+  # VALIDATE - Environment validation
+  # =============================================================================
+  validate:
+    desc: "Validate development environment (check required tools)"
+    cmds:
+      - |
+        echo "Checking required tools..."
+        echo ""
+
+        MISSING_REQUIRED=0
+
+        # Check required tools
+        command -v node &> /dev/null && echo "✅ Node.js $(node --version)" || { echo "❌ Node.js - Install from: https://nodejs.org/"; MISSING_REQUIRED=1; }
+        command -v npm &> /dev/null && echo "✅ npm $(npm --version)" || { echo "❌ npm - Install from: https://nodejs.org/"; MISSING_REQUIRED=1; }
+
+        # Check optional tools
+        command -v buf &> /dev/null && echo "✅ buf $(buf --version)" || { npx buf --version &> /dev/null 2>&1 && echo "✅ buf $(npx buf --version) (via npx)" || echo "⚠️  buf - Will use npx (optional: go install github.com/bufbuild/buf/cmd/buf@latest)"; }
+        command -v go &> /dev/null && echo "✅ Go $(go version | awk '{print $3}')" || echo "⚠️  Go (optional) - Install from: https://go.dev/dl/"
+
+        echo ""
+        [ $MISSING_REQUIRED -eq 0 ] && echo "✅ All required tools are installed!" || { echo "❌ Some required tools are missing. Please install them before continuing."; exit 1; }
+
+  validate:check:
+    desc: "Quick health check (validate + lint)"
+    cmds:
+      - task: validate
+      - task: ci:quick
+      - echo "All checks passed!"
+
+  # =============================================================================
+  # RUN - Development helpers
+  # =============================================================================
+  run:watch:
+    desc: "Watch for changes and auto-generate code"
+    cmds:
+      - |
+        echo "Watching for proto file changes..."
+        while true; do
+          inotifywait -e modify,create,delete -r {{.PROTO_DIR}}/ && task gen:proto
+        done
+
+  run:stats:
+    desc: "Show statistics about proto files"
+    cmds:
+      - |
+        echo "Proto File Statistics:"
+        echo "======================"
+        echo "Total proto files: $(find {{.PROTO_DIR}} -name '*.proto' | wc -l)"
+        echo "Total services: $(grep -r 'service ' {{.PROTO_DIR}} --include='*.proto' | wc -l)"
+        echo "Total messages: $(grep -r 'message ' {{.PROTO_DIR}} --include='*.proto' | wc -l)"
+        echo "Total RPCs: $(grep -r 'rpc ' {{.PROTO_DIR}} --include='*.proto' | wc -l)"
+        echo "Lines of proto: $(find {{.PROTO_DIR}} -name '*.proto' -exec wc -l {} + | tail -1)"

@@ -16,7 +16,7 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.storage.v1;
 
-import "agentic_mesh_protocol/storage/v1/data.proto";
+import "agentic_mesh_protocol/storage/v1/storage_dto.proto";
 
 // StorageService: Service for managing structured data storage
 service StorageService {

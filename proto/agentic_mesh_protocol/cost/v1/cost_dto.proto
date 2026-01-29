@@ -1,0 +1,187 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.cost.v1;
+
+import "agentic_mesh_protocol/cost/v1/cost_enums.proto";
+import "agentic_mesh_protocol/cost/v1/cost_messages.proto";
+import "agentic_mesh_protocol/pagination/v1/pagination.proto";
+import "buf/validate/validate.proto";
+
+// ═════════════════════════════════════ Add Cost ════════════════════════════════════ //
+
+// AddCostRequest is the request message for adding a cost entry.
+message AddCostRequest {
+  // mission_id is the mission ID to link this cost to.
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "mission_id_prefix"
+      expression: "this.startsWith('missions:')"
+      message: "missions must start with 'mission:'"
+    },
+    (buf.validate.field).cel = {
+      id: "mission_id_length"
+      expression: "this.size() >= 10"
+      message: "missions must be at least 1 characters long"
+    }
+  ];
+  // setup_version_id is the setup version ID to associate with this cost.
+  string setup_version_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "setup_verion_id_prefix"
+      expression: "this.startsWith('setup_verions:')"
+      message: "setup_verions_id must start with 'setup_verions:'"
+    },
+    (buf.validate.field).cel = {
+      id: "setup_verion_id_length"
+      expression: "this.size() >= 15"
+      message: "setup_verions_id must be at least 1 characters long"
+    }
+  ];
+  // name is the descriptive name for this cost.
+  string name = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+  // cost is the total cost value.
+  double cost = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gt = 0,
+    (buf.validate.field).double.finite = true
+  ];
+  // quantity is the number of units consumed.
+  double quantity = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gt = 0,
+    (buf.validate.field).double.finite = true
+  ];
+  // rate is the cost per unit.
+  double rate = 6 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gt = 0,
+    (buf.validate.field).double.finite = true
+  ];
+  // unit is the unit of measurement (e.g., "tokens", "calls", "GB").
+  string unit = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+  // cost_type is the classification of the cost.
+  CostType type = 8 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum.defined_only = true
+  ];
+}
+
+// AddCostResponse is the response message for adding a cost entry.
+message AddCostResponse {
+  // success indicates whether the cost was successfully added.
+  bool success = 1 [(buf.validate.field).required = true];
+}
+
+// ═════════════════════════════════════ Get Cost (By Name) ════════════════════════════════════ //
+
+// GetCostRequest is the request message for retrieving costs by name.
+message GetCostRequest {
+  // mission_id is the mission ID to query costs for.
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "mission_id_prefix"
+      expression: "this.startsWith('missions:')"
+      message: "missions must start with 'mission:'"
+    },
+    (buf.validate.field).cel = {
+      id: "mission_id_length"
+      expression: "this.size() >= 10"
+      message: "missions must be at least 1 characters long"
+    }
+  ];
+  // name is the specific cost name to retrieve.
+  string name = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// GetCostResponse is the response message for cost retrieval by name.
+message GetCostResponse {
+  //check if costs elements equal the total_cost
+  option (buf.validate.message).cel = {
+    id: "total_cost_equals_sum"
+    expression: "this.total_cost == double(this.costs.size())"
+    message: "total_cost must equal the sum of all cost entries in costs"
+  };
+
+  // total_cost is the sum of all matching cost values.
+  double total_cost = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gte = 0,
+    (buf.validate.field).double.finite = true
+  ];
+  // costs is the list of cost entries matching the name.
+  repeated Cost costs = 2 [(buf.validate.field).required = true];
+}
+
+// ═════════════════════════════════════ Get Costs (Multiple) ════════════════════════════════════ //
+
+// GetCostsRequest is the request message for retrieving multiple costs.
+message GetCostsRequest {
+  // mission_id is the mission ID to query costs for.
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "mission_id_prefix"
+      expression: "this.startsWith('missions:')"
+      message: "missions must start with 'mission:'"
+    },
+    (buf.validate.field).cel = {
+      id: "mission_id_length"
+      expression: "this.size() >= 10"
+      message: "missions must be at least 1 characters long"
+    }
+  ];
+  // pagination contains pagination settings.
+  agentic_mesh_protocol.pagination.v1.Pagination pagination = 2 [(buf.validate.field).required = true];
+  // filter contains optional filtering criteria (optional).
+  optional CostFilter filter = 3 [(buf.validate.field).required = false];
+}
+
+// GetCostsResponse is the response message containing multiple costs.
+message GetCostsResponse {
+  // check that total_count matches the length of costs
+  option (buf.validate.message).cel = {
+    id: "total_count_matches_length"
+    expression: "this.total_count == this.costs.size()"
+    message: "total_count must equal the number of cost entries in costs"
+  };
+
+  // total_count is the total number of costs matching the criteria.
+  int32 total_count = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32.gte = 0
+  ];
+  // total_cost is the sum of all matching cost values.
+  double total_cost = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gte = 0,
+    (buf.validate.field).double.finite = true
+  ];
+  // costs is the list of matching cost entries.
+  repeated Cost costs = 3 [(buf.validate.field).required = true];
+}

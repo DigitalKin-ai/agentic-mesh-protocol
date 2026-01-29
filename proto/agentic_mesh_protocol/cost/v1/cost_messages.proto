@@ -1,0 +1,114 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.cost.v1;
+
+import "agentic_mesh_protocol/cost/v1/cost_enums.proto";
+import "buf/validate/validate.proto";
+
+// Cost represents a cost entry with comprehensive tracking information.
+message Cost {
+  // mission_id is the mission ID linked to this cost.
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "mission_id_prefix"
+      expression: "this.startsWith('missions:')"
+      message: "missions must start with 'mission:'"
+    },
+    (buf.validate.field).cel = {
+      id: "mission_id_length"
+      expression: "this.size() >= 10"
+      message: "missions must be at least 1 characters long"
+    }
+  ];
+  // setup_version_id is the setup version ID associated with this cost.
+  string setup_version_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "setup_versions_id_prefix"
+      expression: "this.startsWith('setup_versions:')"
+      message: "setup_versions_id must start with 'setup_versions:'"
+    },
+    (buf.validate.field).cel = {
+      id: "setup_versions_id_length"
+      expression: "this.size() >= 16"
+      message: "setup_versions must be at least 1 characters long"
+    }
+  ];
+  // name is the descriptive name of the cost.
+  string name = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // cost is the total cost value.
+  double cost = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gt = 0,
+    (buf.validate.field).double.finite = true
+  ];
+  // quantity is the number of units consumed.
+  double quantity = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gt = 0,
+    (buf.validate.field).double.finite = true
+  ];
+  // rate is the cost per unit.
+  double rate = 6 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double.gt = 0,
+    (buf.validate.field).double.finite = true
+  ];
+  // unit is the unit of measurement for the cost (e.g., "tokens", "calls", "GB").
+  string unit = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+  // cost_type is the classification of the cost.
+  CostType type = 8 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum.defined_only = true
+  ];
+}
+
+// CostFilter contains criteria for filtering cost queries.
+message CostFilter {
+  // cost_types filters costs by cost type classifications.
+  repeated CostType types = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+  // names filters costs by one or more names.
+  repeated string names = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.items.string.min_len = 1
+  ];
+  // setup_version_ids filters costs by setup version IDs.
+  repeated string setup_version_ids = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "setup_versions_id_prefix"
+      expression: "this.all(x, x.startsWith('setup_versions:'))"
+      message: "setup_versions must start with 'setup_versions:'"
+    },
+    (buf.validate.field).cel = {
+      id: "setup_versions_id_length"
+      expression: "this.all(x, x.size() >= 16)"
+      message: "setup_versions must be at least 1 characters long"
+    }
+  ];
+}

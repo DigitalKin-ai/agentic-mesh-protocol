@@ -14,16 +14,18 @@
 
 syntax = "proto3";
 
-package agentic_mesh_protocol.cost.v1;
+package agentic_mesh_protocol.storage.v1;
 
-import "agentic_mesh_protocol/cost/v1/cost_dto.proto";
-
-// CostService provides operations for tracking and querying operational costs.
-service CostService {
-  // AddCost records a new cost entry for a mission.
-  rpc AddCost(AddCostRequest) returns (AddCostResponse);
-  // GetCost retrieves cost entries by name within a mission.
-  rpc GetCost(GetCostRequest) returns (GetCostResponse);
-  // GetCosts retrieves multiple cost entries with optional filtering and pagination.
-  rpc GetCosts(GetCostsRequest) returns (GetCostsResponse);
+// Type of data stored in the system.
+enum DataType {
+  // Unspecified data type.
+  DATA_TYPE_UNSPECIFIED = 0;
+  // Output data type.
+  OUTPUT = 1;
+  // View data type.
+  VIEW = 2;
+  // Logs data type.
+  LOGS = 3;
+  // Other data type.
+  OTHER = 4;
 }

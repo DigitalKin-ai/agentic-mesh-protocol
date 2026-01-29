@@ -1,0 +1,262 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.registry.v1;
+
+import "agentic_mesh_protocol/module/v1/module_enums.proto";
+import "agentic_mesh_protocol/pagination/v1/pagination.proto";
+import "agentic_mesh_protocol/registry/v1/registry_enums.proto";
+import "agentic_mesh_protocol/registry/v1/registry_messages.proto";
+import "agentic_mesh_protocol/setup/v1/setup_enums.proto";
+import "buf/validate/validate.proto";
+
+// ════════════════════════════════════ RegisterModule ════════════════════════════════════ //
+
+// RegisterModuleRequest is used by a module to register itself with the registry.
+message RegisterModuleRequest {
+  // module_id is the unique identifier of the module (must already exist in database).
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "module_id_prefix"
+      expression: "this.startsWith('modules:')"
+      message: "module_id must start with 'modules:'"
+    },
+    (buf.validate.field).cel = {
+      id: "module_id_length"
+      expression: "this.size() >= 9"
+      message: "module_id must be at least 1 characters long"
+    }
+  ];
+
+  // address is the network address to communicate with the module.
+  string address = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.uri = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // version is the runtime version of the deployed module.
+  string version = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // port is the network port to communicate with the module.
+  int32 port = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32 = {
+      gte: 1
+      lte: 65535
+    }
+  ];
+}
+
+// RegisterModuleResponse is returned by the registry after successful registration.
+message RegisterModuleResponse {
+  // module is the complete module descriptor.
+  ModuleDescriptor module = 1 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ Heartbeat ════════════════════════════════════ //
+
+// HeartbeatRequest is sent periodically by a module to indicate it is alive.
+message HeartbeatRequest {
+  // module_id is the unique identifier of the module.
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "module_id_prefix"
+      expression: "this.startsWith('modules:')"
+      message: "module_id must start with 'modules:'"
+    },
+    (buf.validate.field).cel = {
+      id: "module_id_length"
+      expression: "this.size() >= 9"
+      message: "module_id must be at least 1 characters long"
+    }
+  ];
+}
+
+// HeartbeatResponse is returned by the registry in response to a heartbeat.
+message HeartbeatResponse {
+  // status is the module status as considered by the registry (ACTIVE, READY, etc.).
+  agentic_mesh_protocol.module.v1.ModuleStatus status = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum.defined_only = true
+  ];
+}
+
+// ════════════════════════════════════ DiscoverSetups ════════════════════════════════════ //
+
+// DiscoverSetupsRequest is used to query available setups in the registry.
+message DiscoverSetupsRequest {
+  // organization_id filters by organization identifier.
+  string organization_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "organization_id_prefix"
+      expression: "this.startsWith('organizations:')"
+      message: "organization_id must start with 'organizations:'"
+    },
+    (buf.validate.field).cel = {
+      id: "organization_id_length"
+      expression: "this.size() >= 15"
+      message: "organization_id must be at least 1 characters long"
+    }
+  ];
+
+  // query is a text search that matches on name or documentation.
+  string query = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // pagination contains pagination settings.
+  agentic_mesh_protocol.pagination.v1.Pagination pagination = 3 [(buf.validate.field).required = true];
+
+  // module_ids filters by specific module identifiers.
+  repeated string module_ids = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "module_id_prefix"
+      expression: "this.all(x, x.startsWith('modules:'))"
+      message: "module_id must start with 'modules:'"
+    },
+    (buf.validate.field).cel = {
+      id: "module_id_length"
+      expression: "this.all(x, x.size() >= 9)"
+      message: "module_id must be at least 1 characters long"
+    }
+  ];
+
+  // visibility filters by visibility level.
+  repeated Visibility visibility = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // status filters by setup status (typically READY or CONFIGURATION_SUCCEEDED).
+  repeated agentic_mesh_protocol.setup.v1.SetupStatus status = 6 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // module_types filters by module type (e.g., agent, tool).
+  repeated agentic_mesh_protocol.module.v1.ModuleType module_types = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+}
+
+// DiscoverSetupsResponse is returned with the list of available setups.
+message DiscoverSetupsResponse {
+  // setups is the list of available setup descriptors.
+  repeated SetupDescriptor setups = 1 [(buf.validate.field).repeated.items.required = true];
+}
+
+// ════════════════════════════════════ DiscoverModules ════════════════════════════════════ //
+
+// DiscoverModulesRequest is used to query available modules in the registry.
+message DiscoverModulesRequest {
+  // organization_id filters by organization identifier.
+  string organization_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "organization_id_prefix"
+      expression: "this.startsWith('organizations:')"
+      message: "organization_id must start with 'organizations:'"
+    },
+    (buf.validate.field).cel = {
+      id: "organization_id_length"
+      expression: "this.size() >= 15"
+      message: "organization_id must be at least 1 characters long"
+    }
+  ];
+
+  // query is a text search that matches on name or documentation.
+  string query = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // pagination contains pagination settings.
+  agentic_mesh_protocol.pagination.v1.Pagination pagination = 3 [(buf.validate.field).required = true];
+
+  // visibility filters by visibility level.
+  repeated Visibility visibility = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // module_types filters by module type.
+  repeated agentic_mesh_protocol.module.v1.ModuleType module_types = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // status filters by module status.
+  repeated agentic_mesh_protocol.module.v1.ModuleStatus status = 6 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+}
+
+// DiscoverModulesResponse is returned with the list of available modules.
+message DiscoverModulesResponse {
+  // modules is the list of available module descriptors.
+  repeated ModuleDescriptor modules = 1 [(buf.validate.field).repeated.items.required = true];
+}
+
+// ════════════════════════════════════ GetSetup ════════════════════════════════════ //
+
+// GetSetupRequest is used to retrieve a specific setup by its identifier.
+message GetSetupRequest {
+  // setup_id is the unique identifier of the setup.
+  string setup_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "setup_id_prefix"
+      expression: "this.startsWith('setups:')"
+      message: "setup_id must start with 'setups:'"
+    },
+    (buf.validate.field).cel = {
+      id: "setup_id_length"
+      expression: "this.size() >= 8"
+      message: "setup_id must be at least 1 characters long"
+    }
+  ];
+}
+
+// ════════════════════════════════════ GetModule ════════════════════════════════════ //
+
+// GetModuleRequest is used to retrieve a specific module by its identifier.
+message GetModuleRequest {
+  // module_id is the unique identifier of the module.
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "module_id_prefix"
+      expression: "this.startsWith('modules:')"
+      message: "module_id must start with 'modules:'"
+    },
+    (buf.validate.field).cel = {
+      id: "module_id_length"
+      expression: "this.size() >= 9"
+      message: "module_id must be at least 1 characters long"
+    }
+  ];
+}
