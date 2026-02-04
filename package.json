@@ -2,27 +2,26 @@
     "name": "@digitalkin/agentic-mesh-protocol",
     "version": "1.0.0",
     "description": "Node.js gRPC interfaces for Agentic Mesh Protocol - Protocol Buffer definitions for multi-agent systems",
-    "type": "module",
+    "type": "commonjs",
     "main": "index.ts",
     "types": "index.ts",
     "files": [
-		"index.ts",
-		"gen/typescript/**/*.ts",
-		"gen/typescript/**/*.js",
-		"gen/typescript/**/*.d.ts",
-		"gen/descriptor.bin",
-		"gen/descriptor.json",
-		"proto/**/*.proto",
-		"buf.yaml",
-		"buf.gen.ts.yaml"
+        "gen/typescript/**/*.ts",
+        "gen/typescript/**/*.js",
+        "gen/typescript/**/*.d.ts",
+        "gen/descriptor.bin",
+        "gen/descriptor.json",
+        "proto/**/*.proto",
+        "buf.gen.ts.yaml"
     ],
     "scripts": {
         "deps:update": "npx buf dep update proto",
-		"generate": "npx buf generate --template buf.gen.ts.yaml && tsc -p tsconfig.gen.json",
-		"generate:reflection": "npx buf build proto -o gen/descriptor.bin && npx buf build proto -o gen/descriptor.json",
+        "build:zod-plugin": "tsc --project ./tools/zod/tsconfig.json",
+        "generate": "npm run build:zod-plugin && npx buf generate --template buf.gen.ts.yaml && tsc -p tsconfig.gen.json",
+        "generate:reflection": "npx buf build proto -o gen/descriptor.bin && npx buf build proto -o gen/descriptor.json",
         "build": "npm run generate",
         "prepare": "npm run generate && npm run generate:reflection",
-        "clean": "rm -rf gen/",
+        "clean": "rm -rf gen/ && rm -rf tools/zod/dist/",
         "prepublishOnly": "npm run build"
     },
     "keywords": [
@@ -45,18 +44,23 @@
     },
     "homepage": "https://github.com/DigitalKin-ai/agentic-mesh-protocol#readme",
     "dependencies": {
-        "@grpc/grpc-js": "^1.14.2",
-        "google-protobuf": "^4.0.1"
+        "@grpc/grpc-js": "^1.14.3",
+        "google-protobuf": "^4.0.1",
+        "zod": "^4.3.6"
     },
     "peerDependencies": {
-        "@bufbuild/protobuf": "^2.0.0"
+        "@bufbuild/protobuf": "^2.11.0",
+        "zod": "^4.3.6"
     },
     "devDependencies": {
-        "@bufbuild/buf": "1.61.0",
+        "@buf/bufbuild_protovalidate.bufbuild_es": "^2.11.0-20251209175733-2a1774d88802.1",
+        "@bufbuild/buf": "1.65.0",
+        "@bufbuild/protobuf": "^2.11.0",
+        "@bufbuild/protoplugin": "^2.11.0",
         "@types/google-protobuf": "^3.15.12",
-        "@types/node": "^24.10.1",
-        "ts-proto": "^2.8.3",
-        "typescript": "^5.8.0"
+        "@types/node": "^25.2.0",
+        "ts-proto": "^2.11.2",
+        "typescript": "^5.9.3"
     },
     "engines": {
         "node": ">=18.0.0"
