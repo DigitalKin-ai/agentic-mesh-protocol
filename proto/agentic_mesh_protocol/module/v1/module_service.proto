@@ -39,6 +39,8 @@ service ModuleService {
   rpc GetModuleJobs(GetModuleJobsRequest) returns (GetModuleJobsResponse);
   // GetModuleInput
   rpc GetModuleInput(GetModuleInputRequest) returns (GetModuleInputResponse);
+  // GetModuleSelectInput
+  rpc GetModuleSelectInput(GetModuleSelectInputRequest) returns (GetModuleSelectInputResponse);
   // GetModuleOutput
   rpc GetModuleOutput(GetModuleOutputRequest) returns (GetModuleOutputResponse);
   // GetModuleSetup
