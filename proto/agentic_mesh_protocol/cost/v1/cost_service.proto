@@ -26,6 +26,12 @@ service CostService {
   // GetCost retrieves cost entries by name within a mission.
   rpc GetCost(GetCostRequest) returns (GetCostResponse);
 
-  // GetCosts retrieves multiple cost entries with optional filtering and pagination.
+  // GetCosts retrieves multiple cost entries with filtering and pagination.
   rpc GetCosts(GetCostsRequest) returns (GetCostsResponse);
+
+  // GetCostConfig retrieves cost configuration for a setup version.
+  rpc GetCostConfig(GetCostConfigRequest) returns (GetCostConfigResponse);
+
+  // SetCostConfig stores cost configuration for a setup version.
+  rpc SetCostConfig(SetCostConfigRequest) returns (SetCostConfigResponse);
 }

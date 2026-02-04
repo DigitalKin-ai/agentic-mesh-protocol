@@ -90,7 +90,6 @@ message StopModuleRequest {
     (buf.validate.field).string.prefix = "jobs:",
     (buf.validate.field).required = true
   ];
-  // TODO ? maybe add a the job id to stop and also the setup id, but it's not clear yet
 }
 
 // StartModuleResponse
