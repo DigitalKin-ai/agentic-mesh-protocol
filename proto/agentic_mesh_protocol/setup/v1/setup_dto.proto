@@ -399,7 +399,7 @@ message ListSetupsRequest {
   ];
 
   // pagination contains pagination settings.
-  agentic_mesh_protocol.pagination.v1.Pagination pagination = 3 [(buf.validate.field).required = true];
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 3 [(buf.validate.field).required = true];
 }
 
 // Response message for ListSetups operation.

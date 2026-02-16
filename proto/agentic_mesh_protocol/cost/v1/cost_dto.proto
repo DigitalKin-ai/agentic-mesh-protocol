@@ -19,6 +19,7 @@ package agentic_mesh_protocol.cost.v1;
 import "agentic_mesh_protocol/cost/v1/cost_enums.proto";
 import "agentic_mesh_protocol/cost/v1/cost_messages.proto";
 import "agentic_mesh_protocol/pagination/v1/pagination.proto";
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
 import "buf/validate/validate.proto";
 
 // ═════════════════════════════════════ Add Cost ════════════════════════════════════ //
@@ -121,21 +122,18 @@ message GetCostRequest {
 
 // GetCostResponse is the response message for cost retrieval by name.
 message GetCostResponse {
-  //check if costs elements equal the total_cost
-  option (buf.validate.message).cel = {
-    id: "total_cost_equals_sum"
-    expression: "this.total_cost == double(this.costs.size())"
-    message: "total_cost must equal the sum of all cost entries in costs"
-  };
+  // ? TODO: pourquoi repeated ? un seul cout par nom non ?
+  //  // total_cost is the sum of all matching cost values.
+  //  double total_cost = 1 [
+  //    (buf.validate.field).required = true,
+  //    (buf.validate.field).double.gte = 0,
+  //    (buf.validate.field).double.finite = true
+  //  ];
+  //  // costs is the list of cost entries matching the name.
+  //  repeated Cost costs = 2 [(buf.validate.field).required = true];
 
-  // total_cost is the sum of all matching cost values.
-  double total_cost = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).double.gte = 0,
-    (buf.validate.field).double.finite = true
-  ];
-  // costs is the list of cost entries matching the name.
-  repeated Cost costs = 2 [(buf.validate.field).required = true];
+  // cost is the cost entry matching the name.
+  optional Cost cost = 1 [(buf.validate.field).required = false];    // * Si le coût n'existe pas, il faut renvoyer NOT_FOUND
 }
 
 // ═════════════════════════════════════ Get Costs (Multiple) ════════════════════════════════════ //
@@ -157,31 +155,19 @@ message GetCostsRequest {
     }
   ];
   // pagination contains pagination settings.
-  agentic_mesh_protocol.pagination.v1.Pagination pagination = 2 [(buf.validate.field).required = true];
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 2 [(buf.validate.field).required = true];
   // filter contains optional filtering criteria (optional).
   optional CostFilter filter = 3 [(buf.validate.field).required = false];
 }
 
 // GetCostsResponse is the response message containing multiple costs.
 message GetCostsResponse {
-  // check that total_count matches the length of costs
-  option (buf.validate.message).cel = {
-    id: "total_count_matches_length"
-    expression: "this.total_count == this.costs.size()"
-    message: "total_count must equal the number of cost entries in costs"
-  };
-
-  // total_count is the total number of costs matching the criteria.
-  int32 total_count = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).int32.gte = 0
-  ];
-  // total_cost is the sum of all matching cost values.
   double total_cost = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).double.gte = 0,
     (buf.validate.field).double.finite = true
   ];
-  // costs is the list of matching cost entries.
-  repeated Cost costs = 3 [(buf.validate.field).required = true];
+  agentic_mesh_protocol.bulk.v1.BulkResponse bulk = 1 [
+    (buf.validate.field).required = true
+  ];
 }

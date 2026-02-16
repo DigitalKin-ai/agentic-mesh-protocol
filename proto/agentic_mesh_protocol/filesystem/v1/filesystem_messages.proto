@@ -186,17 +186,6 @@ message FileFilter {
   ];
 }
 
-// FileResult wraps the result of a file operation which may succeed or fail.
-message FileResult {
-  // result contains either a successfully processed file or error information.
-  oneof result {
-    // file: Successfully processed file
-    File file = 1;
-    // error: Error information if operation failed
-    string error = 2;
-  }
-}
-
 // UploadFileData contains the data required for uploading a single file.
 message UploadFileData {
   // context: Context ID for the file

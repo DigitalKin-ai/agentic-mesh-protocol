@@ -49,7 +49,7 @@ message Cost {
       message: "setup_versions must be at least 1 characters long"
     }
   ];
-  // name is the descriptive name of the cost.
+  // name is llm name of which type of request for llm
   string name = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1

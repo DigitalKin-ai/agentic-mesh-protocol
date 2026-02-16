@@ -19,7 +19,7 @@ package agentic_mesh_protocol.pagination.v1;
 import "buf/validate/validate.proto";
 
 // Pagination represents pagination parameters for listing requests.
-message Pagination {
+message PaginationRequest {
   // order: Field to order results by
   string order = 1 [
     (buf.validate.field).required = true,
@@ -30,13 +30,39 @@ message Pagination {
   int32 limit = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).int32 = {
-      gte: 0
+      gt: 0
       lt: 100
     }
   ];
 
   // offset is the number of items to skip before starting to collect the result set.
   int32 offset = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32.gte = 0
+  ];
+}
+
+message PaginationResponse {
+  // total_count is the total number of items available.
+  int32 total_count = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32.gte = 0
+  ];
+
+  // page is the current page number.
+  int32 page = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32.gte = 0
+  ];
+
+  // per_page is the number of items per page.
+  int32 per_page = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32.gte = 0
+  ];
+
+  // total_pages is the total number of pages available.
+  int32 total_pages = 4 [
     (buf.validate.field).required = true,
     (buf.validate.field).int32.gte = 0
   ];

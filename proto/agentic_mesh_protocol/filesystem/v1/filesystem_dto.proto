@@ -19,6 +19,7 @@ package agentic_mesh_protocol.filesystem.v1;
 import "agentic_mesh_protocol/filesystem/v1/filesystem_enums.proto";
 import "agentic_mesh_protocol/filesystem/v1/filesystem_messages.proto";
 import "agentic_mesh_protocol/pagination/v1/pagination.proto";
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
 
@@ -83,27 +84,14 @@ message GetFilesRequest {
   // include_content: Whether to include file content in response
   bool include_content = 3 [(buf.validate.field).required = true];
   // pagination contains pagination settings.
-  agentic_mesh_protocol.pagination.v1.Pagination pagination = 4 [(buf.validate.field).required = true];
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 4 [(buf.validate.field).required = true];
   // filters: How to identify the files
   FileFilter filters = 5 [(buf.validate.field).required = true];
 }
 
 // GetFilesResponse is the response message containing the list of files.
 message GetFilesResponse {
-  // check total_count equals number of files in files array
-  option (buf.validate.message).cel = {
-    id: "total_count_matches_files_length"
-    expression: "this.total_count == this.files.size()"
-    message: "total_count must equal the number of files returned"
-  };
-
-  // total_count: Total number of files matching the criteria
-  int32 total_count = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).int32.gte = 0
-  ];
-  // files: List of files matching the criteria
-  repeated File files = 2 [(buf.validate.field).required = true];
+  agentic_mesh_protocol.bulk.v1.BulkResponse bulk = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ UploadFiles ════════════════════════════════════ //
@@ -119,25 +107,7 @@ message UploadFilesRequest {
 
 // UploadFilesResponse is the response message for file upload operations.
 message UploadFilesResponse {
-  // check total_uploaded equals length of results with success status
-  option (buf.validate.message).cel = {
-    id: "total_uploaded_matches_successful_results"
-    expression: "this.total_uploaded == this.results.size()"
-    message: "total_uploaded must equal the number of successful uploads"
-  };
-
-  // total_uploaded: Number of successfully uploaded files
-  int32 total_uploaded = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).int32.gte = 0
-  ];
-  // total_failed: Number of failed uploads
-  int32 total_failed = 2 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).int32.gte = 0
-  ];
-  // results: Results for each uploaded file
-  repeated FileResult results = 3 [(buf.validate.field).required = true];
+  agentic_mesh_protocol.bulk.v1.BulkResponse bulk = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ UpdateFile ════════════════════════════════════ //
@@ -192,7 +162,12 @@ message UpdateFileRequest {
 // UpdateFileResponse is the response message for file update operations.
 message UpdateFileResponse {
   // result: Result of the file update operation
-  FileResult result = 1 [(buf.validate.field).required = true];
+  oneof result {
+    // file: Successfully processed file
+    File file = 1;
+    // error: Error information if operation failed
+    string error = 2;
+  }
 }
 
 // ════════════════════════════════════ DeleteFiles ════════════════════════════════════ //
@@ -225,28 +200,5 @@ message DeleteFilesRequest {
 
 // DeleteFilesResponse is the response message for file deletion operations.
 message DeleteFilesResponse {
-  /* TODO:
-     pourquoi avoir une map ici et pas un repeated comme pour upload?
-     si on a l'info de fail, ca suffirait non?
-  */
-
-  // check total_deleted equals number of results with success status
-  option (buf.validate.message).cel = {
-    id: "total_deleted_matches_successful_results"
-    expression: "this.total_deleted == this.results.filter(k, this.results[k] == true).size()"
-    message: "total_deleted must equal the number of successful deletions"
-  };
-
-  // total_deleted: Number of successfully deleted files
-  int32 total_deleted = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).int32.gte = 0
-  ];
-  // total_failed: Number of failed deletions
-  int32 total_failed = 2 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).int32.gte = 0
-  ];
-  // results: Results for each file deletion attempt
-  map<string, bool> results = 3 [(buf.validate.field).required = true];
+  agentic_mesh_protocol.bulk.v1.BulkResponse bulk = 1 [(buf.validate.field).required = true];
 }

@@ -126,7 +126,7 @@ message DiscoverSetupsRequest {
   ];
 
   // pagination contains pagination settings.
-  agentic_mesh_protocol.pagination.v1.Pagination pagination = 3 [(buf.validate.field).required = true];
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 3 [(buf.validate.field).required = true];
 
   // module_ids filters by specific module identifiers.
   repeated string module_ids = 4 [
@@ -194,7 +194,7 @@ message DiscoverModulesRequest {
   ];
 
   // pagination contains pagination settings.
-  agentic_mesh_protocol.pagination.v1.Pagination pagination = 3 [(buf.validate.field).required = true];
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 3 [(buf.validate.field).required = true];
 
   // visibility filters by visibility level.
   repeated Visibility visibility = 4 [

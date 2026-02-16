@@ -1,0 +1,78 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.bulk.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/any.proto";
+
+import "agentic_mesh_protocol/pagination/v1/pagination.proto";
+import "agentic_mesh_protocol/cost/v1/cost_messages.proto";
+import "agentic_mesh_protocol/filesystem/v1/filesystem_messages.proto";
+
+message BulkResponse {
+  //if there is pagination info, total_count must equal the number of items in results
+  option (buf.validate.message).cel = {
+    id: "total_count_matches_items_count"
+    expression: "this.pagination != null ? this.total == this.results.size() : true"
+    message: "total_count must equal the number of cost entries in costs"
+  };
+
+  // total is the total number of items processed in the bulk operation.
+  int32 total_process = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32.gte = 0
+  ];
+
+  // total_failed is the total number of items that failed in the bulk operation.
+  int32 total_failed = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32.gte = 0
+  ];
+
+  optional agentic_mesh_protocol.pagination.v1.PaginationResponse pagination = 3;
+
+  repeated ItemResult results = 4 [
+    (buf.validate.field).required = true
+  ];
+}
+
+message ItemResult {
+  // identifier is the unique identifier for the item being processed
+  string identifier = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // outcome is the result of processing the item.
+  oneof outcom {
+    agentic_mesh_protocol.cost.v1.Cost cost = 2;
+    agentic_mesh_protocol.filesystem.v1.File file = 3;
+    OperationError error = 4;
+  }
+}
+
+message OperationError {
+  string code = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  string message = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+}

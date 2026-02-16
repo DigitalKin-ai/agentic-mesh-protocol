@@ -87,7 +87,7 @@ tasks:
   lint:format:
     desc: "Format proto files with buf"
     cmds:
-      - npx buf format -w
+      - npx buf format -w --exclude-path node_modules
     sources:
       - "{{.PROTO_DIR}}/**/*.proto"
 
