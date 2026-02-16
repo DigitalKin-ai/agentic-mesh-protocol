@@ -18,8 +18,8 @@ package agentic_mesh_protocol.cost.v1;
 
 import "agentic_mesh_protocol/cost/v1/cost_enums.proto";
 import "agentic_mesh_protocol/cost/v1/cost_messages.proto";
-import "agentic_mesh_protocol/pagination/v1/pagination.proto";
 import "agentic_mesh_protocol/pagination/v1/bulk.proto";
+import "agentic_mesh_protocol/pagination/v1/pagination.proto";
 import "buf/validate/validate.proto";
 
 // ═════════════════════════════════════ Add Cost ════════════════════════════════════ //
@@ -133,7 +133,7 @@ message GetCostResponse {
   //  repeated Cost costs = 2 [(buf.validate.field).required = true];
 
   // cost is the cost entry matching the name.
-  optional Cost cost = 1 [(buf.validate.field).required = false];    // * Si le coût n'existe pas, il faut renvoyer NOT_FOUND
+  optional Cost cost = 1 [(buf.validate.field).required = false]; // * Si le coût n'existe pas, il faut renvoyer NOT_FOUND
 }
 
 // ═════════════════════════════════════ Get Costs (Multiple) ════════════════════════════════════ //
@@ -162,12 +162,12 @@ message GetCostsRequest {
 
 // GetCostsResponse is the response message containing multiple costs.
 message GetCostsResponse {
+  // total_cost is the sum of all cost values matching the query.
   double total_cost = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).double.gte = 0,
     (buf.validate.field).double.finite = true
   ];
-  agentic_mesh_protocol.bulk.v1.BulkResponse bulk = 1 [
-    (buf.validate.field).required = true
-  ];
+  // costs is the paginated list of cost entries matching the query.
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 1 [(buf.validate.field).required = true];
 }

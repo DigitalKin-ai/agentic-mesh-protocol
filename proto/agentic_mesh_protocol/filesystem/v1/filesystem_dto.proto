@@ -18,8 +18,8 @@ package agentic_mesh_protocol.filesystem.v1;
 
 import "agentic_mesh_protocol/filesystem/v1/filesystem_enums.proto";
 import "agentic_mesh_protocol/filesystem/v1/filesystem_messages.proto";
-import "agentic_mesh_protocol/pagination/v1/pagination.proto";
 import "agentic_mesh_protocol/pagination/v1/bulk.proto";
+import "agentic_mesh_protocol/pagination/v1/pagination.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
 
@@ -91,7 +91,8 @@ message GetFilesRequest {
 
 // GetFilesResponse is the response message containing the list of files.
 message GetFilesResponse {
-  agentic_mesh_protocol.bulk.v1.BulkResponse bulk = 1 [(buf.validate.field).required = true];
+  // bulk: Bulk response containing the list of files and pagination info
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ UploadFiles ════════════════════════════════════ //
@@ -107,7 +108,8 @@ message UploadFilesRequest {
 
 // UploadFilesResponse is the response message for file upload operations.
 message UploadFilesResponse {
-  agentic_mesh_protocol.bulk.v1.BulkResponse bulk = 1 [(buf.validate.field).required = true];
+  // bulk: Bulk response containing the results of the upload operation
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ UpdateFile ════════════════════════════════════ //
@@ -200,5 +202,6 @@ message DeleteFilesRequest {
 
 // DeleteFilesResponse is the response message for file deletion operations.
 message DeleteFilesResponse {
-  agentic_mesh_protocol.bulk.v1.BulkResponse bulk = 1 [(buf.validate.field).required = true];
+  // bulk: Bulk response containing the results of the delete operation
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 1 [(buf.validate.field).required = true];
 }

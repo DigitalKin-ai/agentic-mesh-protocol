@@ -42,6 +42,7 @@ message PaginationRequest {
   ];
 }
 
+// PaginationResponse represents pagination information for listing responses.
 message PaginationResponse {
   // total_count is the total number of items available.
   int32 total_count = 1 [

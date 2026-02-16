@@ -74,7 +74,7 @@ tasks:
   lint:
     desc: "Run all linting tasks"
     cmds:
-      - task: lint:check
+      - task: lint:all
 
   lint:check:
     desc: "Lint proto files with buf"
@@ -87,14 +87,14 @@ tasks:
   lint:format:
     desc: "Format proto files with buf"
     cmds:
-      - npx buf format -w --exclude-path node_modules
+      - npx buf format -w {{.PROTO_DIR}}
     sources:
       - "{{.PROTO_DIR}}/**/*.proto"
 
   lint:format:check:
     desc: "Check if proto files are formatted (no write)"
     cmds:
-      - npx buf format -d --exit-code
+      - npx buf format -d {{.PROTO_DIR}} --exit-code
     sources:
       - "{{.PROTO_DIR}}/**/*.proto"
 
