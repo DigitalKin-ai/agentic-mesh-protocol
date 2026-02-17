@@ -17,29 +17,74 @@ syntax = "proto3";
 package agentic_mesh_protocol.setup.v1;
 
 import "agentic_mesh_protocol/setup/v1/setup_dto.proto";
+import "google/api/annotations.proto";
 
 // SetupService
 // Provides operations for setups and setup versions.
 service SetupService {
   // CreateSetup creates a new setup.
-  rpc CreateSetup(CreateSetupRequest) returns (CreateSetupResponse);
+  rpc CreateSetup(CreateSetupRequest) returns (CreateSetupResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/setups"
+      body: "*"
+    };
+  }
   // GetSetup retrieves a setup by its unique identifier.
-  rpc GetSetup(GetSetupRequest) returns (GetSetupResponse);
+  rpc GetSetup(GetSetupRequest) returns (GetSetupResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/setups/{setup_id}"
+    };
+  }
   // UpdateSetup updates an existing setup.
-  rpc UpdateSetup(UpdateSetupRequest) returns (UpdateSetupResponse);
+  rpc UpdateSetup(UpdateSetupRequest) returns (UpdateSetupResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/setups/{setup_id}"
+      body: "*"
+    };
+  }
   // DeleteSetup deletes a setup.
-  rpc DeleteSetup(DeleteSetupRequest) returns (DeleteSetupResponse);
+  rpc DeleteSetup(DeleteSetupRequest) returns (DeleteSetupResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/setups/{setup_id}"
+    };
+  }
 
   // CreateSetupVersion creates a new setup version.
-  rpc CreateSetupVersion(CreateSetupVersionRequest) returns (CreateSetupVersionResponse);
+  rpc CreateSetupVersion(CreateSetupVersionRequest) returns (CreateSetupVersionResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/setups/{setup_id}/versions"
+      body: "*"
+    };
+  }
   // GetSetupVersion retrieves a setup version by its unique identifier.
-  rpc GetSetupVersion(GetSetupVersionRequest) returns (GetSetupVersionResponse);
+  rpc GetSetupVersion(GetSetupVersionRequest) returns (GetSetupVersionResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/setup-versions/{setup_version_id}"
+    };
+  }
   // SearchSetupVersions searches for setup versions based on provided filters.
-  rpc SearchSetupVersions(SearchSetupVersionsRequest) returns (SearchSetupVersionsResponse);
+  rpc SearchSetupVersions(SearchSetupVersionsRequest) returns (SearchSetupVersionsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/setups/{setup_id}/versions"
+    };
+  }
   // UpdateSetupVersion updates an existing setup version.
-  rpc UpdateSetupVersion(UpdateSetupVersionRequest) returns (UpdateSetupVersionResponse);
+  rpc UpdateSetupVersion(UpdateSetupVersionRequest) returns (UpdateSetupVersionResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/setup-versions/{setup_version_id}"
+      body: "*"
+    };
+  }
   // DeleteSetupVersion deletes a setup version.
-  rpc DeleteSetupVersion(DeleteSetupVersionRequest) returns (DeleteSetupVersionResponse);
+  rpc DeleteSetupVersion(DeleteSetupVersionRequest) returns (DeleteSetupVersionResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/setup-versions/{setup_version_id}"
+    };
+  }
   // ListSetups retrieves a paginated list of setups, filtered by organization or owner.
-  rpc ListSetups(ListSetupsRequest) returns (ListSetupsResponse);
+  rpc ListSetups(ListSetupsRequest) returns (ListSetupsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/setups"
+    };
+  }
 }

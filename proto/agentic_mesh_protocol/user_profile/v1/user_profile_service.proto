@@ -17,9 +17,14 @@ syntax = "proto3";
 package agentic_mesh_protocol.user_profile.v1;
 
 import "agentic_mesh_protocol/user_profile/v1/user_profile_dto.proto";
+import "google/api/annotations.proto";
 
 // UserProfileService: Service to manage user profiles
 service UserProfileService {
   // GetUserProfile: Get a user profile by user ID
-  rpc GetUserProfile(GetUserProfileRequest) returns (GetUserProfileResponse);
+  rpc GetUserProfile(GetUserProfileRequest) returns (GetUserProfileResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/user-profiles/{mission_id}"
+    };
+  }
 }

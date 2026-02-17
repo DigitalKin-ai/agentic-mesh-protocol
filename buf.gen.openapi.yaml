@@ -1,0 +1,22 @@
+version: v2
+
+managed:
+  enabled: true
+
+inputs:
+  - directory: proto
+  - module: buf.build/googleapis/googleapis
+
+plugins:
+  # ==========================================
+  # OpenAPI v2 (Swagger) Generation
+  # ==========================================
+
+  # Generate OpenAPI v2 (Swagger) documentation from proto files
+  - remote: buf.build/grpc-ecosystem/openapiv2:v2.26.3
+    out: gen/openapi
+    opt:
+      - allow_merge=true
+      - merge_file_name=agentic_mesh_protocol
+      - openapi_naming_strategy=simple
+      - generate_unbound_methods=true

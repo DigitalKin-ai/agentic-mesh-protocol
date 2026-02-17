@@ -17,6 +17,7 @@ syntax = "proto3";
 package agentic_mesh_protocol.filesystem.v1;
 
 import "agentic_mesh_protocol/filesystem/v1/filesystem_dto.proto";
+import "google/api/annotations.proto";
 
 // FilesystemService provides comprehensive file management capabilities including
 // upload, retrieval, update, and deletion operations with metadata support,
@@ -25,26 +26,49 @@ service FilesystemService {
   // UploadFiles allows batch uploading of files with validation and
   // error handling for each individual file. Files are processed
   // atomically - if one fails, others may still succeed.
-  rpc UploadFiles(UploadFilesRequest) returns (UploadFilesResponse);
+  rpc UploadFiles(UploadFilesRequest) returns (UploadFilesResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/files"
+      body: "*"
+    };
+  }
 
   // GetFile fetches detailed information about a single file,
   // with optional content inclusion. Supports lookup by either
   // unique ID or name within a context.
-  rpc GetFile(GetFileRequest) returns (GetFileResponse);
+  rpc GetFile(GetFileRequest) returns (GetFileResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/files/{id}"
+    };
+  }
 
   // GetFiles provides efficient retrieval of multiple files using
   // file IDs, file names, or path prefix, with support for
   // pagination for large result sets, optional content inclusion,
   // and total count of matching files.
-  rpc GetFiles(GetFilesRequest) returns (GetFilesResponse);
+  rpc GetFiles(GetFilesRequest) returns (GetFilesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/files"
+    };
+  }
 
   // UpdateFile allows updating various aspects of a file including
   // renaming files, updating content and content type, modifying metadata,
   // and creating new versions.
-  rpc UpdateFile(UpdateFileRequest) returns (UpdateFileResponse);
+  rpc UpdateFile(UpdateFileRequest) returns (UpdateFileResponse) {
+    option (google.api.http) = {
+      patch: "/api/v1/files/{id}"
+      body: "*"
+    };
+  }
 
   // DeleteFiles supports batch deletion of files with options for
   // soft deletion (marking as deleted), permanent deletion,
   // force deletion of files in use, and individual error reporting per file.
-  rpc DeleteFiles(DeleteFilesRequest) returns (DeleteFilesResponse);
+  rpc DeleteFiles(DeleteFilesRequest) returns (DeleteFilesResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/files"
+      body: "*"
+    };
+  }
 }

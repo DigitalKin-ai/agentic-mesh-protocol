@@ -17,24 +17,51 @@ syntax = "proto3";
 package agentic_mesh_protocol.storage.v1;
 
 import "agentic_mesh_protocol/storage/v1/storage_dto.proto";
+import "google/api/annotations.proto";
 
 // StorageService: Service for managing structured data storage
 service StorageService {
   // StoreRecord: Create a new record in the storage
-  rpc StoreRecord(StoreRecordRequest) returns (StoreRecordResponse);
+  rpc StoreRecord(StoreRecordRequest) returns (StoreRecordResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/missions/{mission_id}/collections/{collection}/records"
+      body: "*"
+    };
+  }
 
   // ReadRecord: Retrieve a single record by ID
-  rpc ReadRecord(ReadRecordRequest) returns (ReadRecordResponse);
+  rpc ReadRecord(ReadRecordRequest) returns (ReadRecordResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/missions/{mission_id}/collections/{collection}/records/{record_id}"
+    };
+  }
 
   // UpdateRecord: Update an existing record
-  rpc UpdateRecord(UpdateRecordRequest) returns (UpdateRecordResponse);
+  rpc UpdateRecord(UpdateRecordRequest) returns (UpdateRecordResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/missions/{mission_id}/collections/{collection}/records/{record_id}"
+      body: "*"
+    };
+  }
 
   // RemoveRecord: Delete a record from storage
-  rpc RemoveRecord(RemoveRecordRequest) returns (RemoveRecordResponse);
+  rpc RemoveRecord(RemoveRecordRequest) returns (RemoveRecordResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/missions/{mission_id}/collections/{collection}/records/{record_id}"
+    };
+  }
 
   // ListRecords: List records with filtering and pagination
-  rpc ListRecords(ListRecordsRequest) returns (ListRecordsResponse);
+  rpc ListRecords(ListRecordsRequest) returns (ListRecordsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/missions/{mission_id}/collections/{collection}/records"
+    };
+  }
 
   // RemoveCollection: Delete all records in a given collection
-  rpc RemoveCollection(RemoveCollectionRequest) returns (RemoveCollectionResponse);
+  rpc RemoveCollection(RemoveCollectionRequest) returns (RemoveCollectionResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/missions/{mission_id}/collections/{collection}"
+    };
+  }
 }

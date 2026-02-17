@@ -17,6 +17,7 @@ syntax = "proto3";
 package agentic_mesh_protocol.module.v1;
 
 import "agentic_mesh_protocol/module/v1/module_dto.proto";
+import "google/api/annotations.proto";
 
 // ModuleService
 // It represents a functional unit within an agent in the multi-agent system (SMA).
@@ -28,19 +29,54 @@ import "agentic_mesh_protocol/module/v1/module_dto.proto";
 // and monitoring the module's status, as well as handling input and output operations.
 service ModuleService {
   // StartModule
-  rpc StartModule(StartModuleRequest) returns (stream StartModuleResponse);
+  rpc StartModule(StartModuleRequest) returns (stream StartModuleResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/modules/start"
+      body: "*"
+    };
+  }
   // StopModule
-  rpc StopModule(StopModuleRequest) returns (StopModuleResponse);
+  rpc StopModule(StopModuleRequest) returns (StopModuleResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/modules/stop"
+      body: "*"
+    };
+  }
   // GetModuleInput
-  rpc GetModuleInput(GetModuleInputRequest) returns (GetModuleInputResponse);
+  rpc GetModuleInput(GetModuleInputRequest) returns (GetModuleInputResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/modules/{id}/input"
+    };
+  }
   // GetModuleOutput
-  rpc GetModuleOutput(GetModuleOutputRequest) returns (GetModuleOutputResponse);
+  rpc GetModuleOutput(GetModuleOutputRequest) returns (GetModuleOutputResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/modules/{id}/output"
+    };
+  }
   // GetModuleSetup
-  rpc GetModuleSetup(GetModuleSetupRequest) returns (GetModuleSetupResponse);
+  rpc GetModuleSetup(GetModuleSetupRequest) returns (GetModuleSetupResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/modules/{id}/setup"
+    };
+  }
   // GetModuleSecret
-  rpc GetModuleSecret(GetModuleSecretRequest) returns (GetModuleSecretResponse);
+  rpc GetModuleSecret(GetModuleSecretRequest) returns (GetModuleSecretResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/modules/{id}/secret"
+    };
+  }
   // GetConfigSetupModule
-  rpc GetConfigSetupModule(GetConfigSetupModuleRequest) returns (GetConfigSetupModuleResponse);
+  rpc GetConfigSetupModule(GetConfigSetupModuleRequest) returns (GetConfigSetupModuleResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/modules/{id}/config-setup"
+    };
+  }
   // ConfigSetupModule
-  rpc ConfigSetupModule(ConfigSetupModuleRequest) returns (ConfigSetupModuleResponse);
+  rpc ConfigSetupModule(ConfigSetupModuleRequest) returns (ConfigSetupModuleResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/modules/config-setup"
+      body: "*"
+    };
+  }
 }

@@ -68,6 +68,17 @@ tasks:
           exit 1
         fi
 
+  gen:openapi:
+    desc: "Generate OpenAPI documentation from proto files"
+    cmds:
+      - npx buf generate --template buf.gen.openapi.yaml
+      - echo "✅ OpenAPI documentation generated in {{.GEN_DIR}}/openapi/"
+    sources:
+      - "{{.PROTO_DIR}}/**/*.proto"
+      - buf.gen.openapi.yaml
+    generates:
+      - "{{.GEN_DIR}}/openapi/**/*"
+
   # =============================================================================
   # LINT - Code quality and formatting
   # =============================================================================

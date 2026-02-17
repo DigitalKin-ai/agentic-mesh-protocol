@@ -17,13 +17,27 @@ syntax = "proto3";
 package agentic_mesh_protocol.cost.v1;
 
 import "agentic_mesh_protocol/cost/v1/cost_dto.proto";
+import "google/api/annotations.proto";
 
 // CostService provides operations for tracking and querying operational costs.
 service CostService {
   // AddCost records a new cost entry for a mission.
-  rpc AddCost(AddCostRequest) returns (AddCostResponse);
+  rpc AddCost(AddCostRequest) returns (AddCostResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/missions/{mission_id}/costs"
+      body: "*"
+    };
+  }
   // GetCost retrieves cost entries by name within a mission.
-  rpc GetCost(GetCostRequest) returns (GetCostResponse);
+  rpc GetCost(GetCostRequest) returns (GetCostResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/missions/{mission_id}/costs/{name}"
+    };
+  }
   // GetCosts retrieves multiple cost entries with optional filtering and pagination.
-  rpc GetCosts(GetCostsRequest) returns (GetCostsResponse);
+  rpc GetCosts(GetCostsRequest) returns (GetCostsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/missions/{mission_id}/costs"
+    };
+  }
 }

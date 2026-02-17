@@ -20,6 +20,7 @@
         "deps:update": "npx buf dep update proto",
 		"generate": "npx buf generate --template buf.gen.ts.yaml && tsc -p tsconfig.gen.json",
 		"generate:reflection": "npx buf build proto -o gen/descriptor.bin && npx buf build proto -o gen/descriptor.json",
+		"generate:openapi": "npx buf generate --template buf.gen.openapi.yaml",
         "build": "npm run generate",
         "prepare": "npm run generate && npm run generate:reflection",
         "clean": "rm -rf gen/",

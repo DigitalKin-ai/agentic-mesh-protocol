@@ -4,6 +4,7 @@ name: buf.build/agentic-mesh-protocol/agentic-mesh-protocol
 
 deps:
   - buf.build/bufbuild/protovalidate
+  - buf.build/googleapis/googleapis
 
 lint:
   use:
