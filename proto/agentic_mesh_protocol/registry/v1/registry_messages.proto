@@ -17,13 +17,14 @@ syntax = "proto3";
 package agentic_mesh_protocol.registry.v1;
 
 import "agentic_mesh_protocol/module/v1/module_enums.proto";
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
 import "agentic_mesh_protocol/registry/v1/registry_enums.proto";
 import "agentic_mesh_protocol/setup/v1/setup_enums.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 
-// Represents your "modules" table as seen by the network.
+// ModuleDescriptor represents a module's complete descriptor as seen by the network.
 message ModuleDescriptor {
   option (buf.validate.message).cel = {
     id: "created_at_after_updated_at"
@@ -36,7 +37,7 @@ message ModuleDescriptor {
     message: "updated_at must be after or equal to created_at"
   };
 
-  // ID
+  // id is the unique identifier of the module (SurrealDB format).
   string id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
@@ -50,7 +51,7 @@ message ModuleDescriptor {
       message: "module_id must be at least 1 characters long"
     }
   ]; // SurrealDB module id
-  // Organization ID
+  // organization_id is the unique identifier of the organization that owns this module.
   string organization_id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
@@ -64,7 +65,7 @@ message ModuleDescriptor {
       message: "organization_id must be at least 1 characters long"
     }
   ];
-  // Owner ID
+  // owner_id is the unique identifier of the user who owns this module.
   string owner_id = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
@@ -78,28 +79,28 @@ message ModuleDescriptor {
       message: "user_id must be at least 1 characters long"
     }
   ];
-  // Name
+  // name is the human-readable name of the module.
   string name = 4 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
-  // Version
+  // version is the runtime version of the deployed module.
   string version = 5 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
-  // Network endpoint - Address used to communicate with the module
+  // address is the network endpoint URI used to communicate with the module.
   string address = 6 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.uri = true,
     (buf.validate.field).string.min_len = 1
   ];
-  // Documentation
+  // documentation is the module's documentation or description.
   string documentation = 7 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
-  // Port used to communicate with the module
+  // port is the network port used to communicate with the module.
   int32 port = 8 [
     (buf.validate.field).required = true,
     (buf.validate.field).int32 = {
@@ -107,40 +108,40 @@ message ModuleDescriptor {
       lte: 65535
     }
   ];
-  // Module type
+  // type is the module type classification (e.g., ARCHETYPE, TOOL).
   agentic_mesh_protocol.module.v1.ModuleType type = 9 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];
-  // Status
+  // status is the current status of the module (e.g., READY, ACTIVE).
   agentic_mesh_protocol.module.v1.ModuleStatus status = 10 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];
-  // Visibility
+  // visibility defines who can access this module (e.g., PUBLIC, PRIVATE).
   Visibility visibility = 11 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];
-  // Created at
+  // created_at is the timestamp when the module was created.
   google.protobuf.Timestamp created_at = 12 [(buf.validate.field).required = true];
-  // Updated at
+  // updated_at is the timestamp when the module was last updated.
   google.protobuf.Timestamp updated_at = 13 [(buf.validate.field).required = true];
-  // Schemas for machine introspection - Input schema
+  // input_schema is the JSON schema defining the module's expected input format.
   google.protobuf.Struct input_schema = 14 [(buf.validate.field).required = true];
-  // Output schema
+  // output_schema is the JSON schema defining the module's output format.
   google.protobuf.Struct output_schema = 15 [(buf.validate.field).required = true];
-  // Setup schema
+  // setup_schema is the JSON schema defining the module's setup configuration.
   google.protobuf.Struct setup_schema = 16 [(buf.validate.field).required = true];
-  // Secret schema
+  // secret_schema is the JSON schema defining the module's secret configuration.
   google.protobuf.Struct secret_schema = 17 [(buf.validate.field).required = true];
-  // Cost schema
+  // cost_schema is the JSON schema defining the module's cost structure.
   google.protobuf.Struct cost_schema = 18 [(buf.validate.field).required = true];
 }
 
-// Represents your "setups" + current "setup_versions"
+// SetupDescriptor represents a setup's complete descriptor including its current version.
 message SetupDescriptor {
-  // ID
+  // id is the unique identifier of the setup.
   string id = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
@@ -154,7 +155,7 @@ message SetupDescriptor {
       message: "setup_id must be at least 1 characters long"
     }
   ];
-  // Organization ID
+  // organization_id is the unique identifier of the organization that owns this setup.
   string organization_id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
@@ -168,7 +169,7 @@ message SetupDescriptor {
       message: "organization_id must be at least 1 characters long"
     }
   ];
-  // Owner ID
+  // owner_id is the unique identifier of the user who owns this setup.
   string owner_id = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
@@ -182,7 +183,7 @@ message SetupDescriptor {
       message: "user_id must be at least 1 characters long"
     }
   ];
-  // Card ID
+  // card_id is the unique identifier of the card associated with this setup.
   string card_id = 4 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
@@ -196,7 +197,7 @@ message SetupDescriptor {
       message: "card_id must be at least 1 characters long"
     }
   ];
-  // Link to the module
+  // module_id is the unique identifier of the module linked to this setup.
   string module_id = 5 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
@@ -210,7 +211,7 @@ message SetupDescriptor {
       message: "module_id must be at least 1 characters long"
     }
   ];
-  // Current version (setup_versions) - ID
+  // setup_version_id is the unique identifier of the current active setup version.
   string setup_version_id = 6 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
@@ -224,33 +225,55 @@ message SetupDescriptor {
       message: "setup_version_id must be at least 1 characters long"
     }
   ];
-  // Name
+  // name is the human-readable name of the setup.
   string name = 7 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
-  // Documentation
+  // documentation is the setup's documentation or description.
   string documentation = 8 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
-  // Version
+  // setup_version is the version label of the current active setup version.
   string setup_version = 9 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
-  // Status
+  // status is the current status of the setup (e.g., READY, DRAFT).
   agentic_mesh_protocol.setup.v1.SetupStatus status = 10 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];
-  // Visibility
+  // visibility defines who can access this setup (e.g., PUBLIC, PRIVATE).
   Visibility visibility = 11 [
     (buf.validate.field).required = true,
     (buf.validate.field).enum.defined_only = true
   ];
-  // Configuration
+  // config contains the configuration key-value pairs for this setup.
   google.protobuf.Struct config = 12 [(buf.validate.field).required = true];
-  // Resolved module info (so agents don't need another round-trip)
+  // module contains the resolved module descriptor for this setup.
   ModuleDescriptor module = 13 [(buf.validate.field).required = true];
+}
+
+// RegistryResult represents the result of a registry operation, including success or error information.
+message RegistryResult {
+  // identifier is the unique identifier for the item being processed
+  string identifier = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // success indicates if the operation was successful (optional for backward compatibility).
+  optional bool success = 2 [(buf.validate.field).required = false];
+
+  // One of the following fields will be set based on the outcome of processing the item.
+  oneof outcom {
+    // module_descriptor is the module descriptor if the operation was successful.
+    ModuleDescriptor module_descriptor = 3;
+    // setup_descriptor is the setup descriptor if the operation was successful.
+    SetupDescriptor setup_descriptor = 4;
+    // error represents the error that occurred while processing the item, if applicable.
+    agentic_mesh_protocol.pagination.v1.OperationError error = 5;
+  }
 }

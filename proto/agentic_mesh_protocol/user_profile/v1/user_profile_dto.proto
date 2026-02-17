@@ -41,9 +41,6 @@ message GetUserProfileRequest {
 
 // Response message for GetUserProfile operation.
 message GetUserProfileResponse {
-  // success indicates if the operation was successful.
-  bool success = 1 [(buf.validate.field).required = true];
-
-  // user_profile is the retrieved user profile entity.
-  UserProfile user_profile = 2 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: UserProfile or OperationError.
+  UserProfileResult result = 1 [(buf.validate.field).required = true];
 }

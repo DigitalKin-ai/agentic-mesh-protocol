@@ -16,6 +16,7 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.setup.v1;
 
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
 import "agentic_mesh_protocol/pagination/v1/pagination.proto";
 import "agentic_mesh_protocol/setup/v1/setup_enums.proto";
 import "agentic_mesh_protocol/setup/v1/setup_messages.proto";
@@ -77,11 +78,8 @@ message CreateSetupRequest {
 
 // Response message for CreateSetup operation.
 message CreateSetupResponse {
-  // success indicates if the operation was successful.
-  bool success = 1 [(buf.validate.field).required = true];
-
-  // setup is the newly created setup entity.
-  Setup setup = 2 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: Setup or OperationError.
+  SetupResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ GetSetup ════════════════════════════════════ //
@@ -112,11 +110,8 @@ message GetSetupRequest {
 
 // Response message for GetSetup operation.
 message GetSetupResponse {
-  // setup is the retrieved setup entity.
-  Setup setup = 1 [(buf.validate.field).required = true];
-
-  // setup_version is the retrieved setup version if it exists.
-  SetupVersion setup_version = 2 [(buf.validate.field).required = false];
+  // Result of the operation. Expected oneof type: Setup or OperationError.
+  SetupResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ UpdateSetup ════════════════════════════════════ //
@@ -171,11 +166,8 @@ message UpdateSetupRequest {
 
 // Response message for UpdateSetup operation.
 message UpdateSetupResponse {
-  // success indicates if the operation was successful.
-  bool success = 1 [(buf.validate.field).required = true];
-
-  // setup is the updated setup entity.
-  Setup setup = 2 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: Setup or OperationError.
+  SetupResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ DeleteSetup ════════════════════════════════════ //
@@ -200,8 +192,8 @@ message DeleteSetupRequest {
 
 // Response message for DeleteSetup operation.
 message DeleteSetupResponse {
-  // success indicates if the operation was successful.
-  bool success = 1 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: Setup or OperationError.
+  SetupResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ CreateSetupVersion ════════════════════════════════════ //
@@ -235,11 +227,8 @@ message CreateSetupVersionRequest {
 
 // Response message for CreateSetupVersion operation.
 message CreateSetupVersionResponse {
-  // success indicates if the operation was successful.
-  bool success = 1 [(buf.validate.field).required = true];
-
-  // setup_version is the newly created setup version entity.
-  SetupVersion setup_version = 2 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: SetupVersion or OperationError.
+  SetupResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ GetSetupVersion ════════════════════════════════════ //
@@ -264,8 +253,8 @@ message GetSetupVersionRequest {
 
 // Response message for GetSetupVersion operation.
 message GetSetupVersionResponse {
-  // setup_version is the retrieved setup version entity.
-  SetupVersion setup_version = 1 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: SetupVersion or OperationError.
+  SetupResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ SearchSetupVersions ════════════════════════════════════ //
@@ -292,12 +281,17 @@ message SearchSetupVersionsRequest {
     (buf.validate.field).required = false,
     (buf.validate.field).string.min_len = 1
   ];
+
+  // pagination contains pagination settings.
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 3 [(buf.validate.field).required = true];
 }
 
 // Response message for SearchSetupVersions operation.
 message SearchSetupVersionsResponse {
-  // setup_versions is the list of setup versions matching the criteria.
-  repeated SetupVersion setup_versions = 1 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: SetupVersion or OperationError.
+  repeated SetupResult result = 1 [(buf.validate.field).required = true];
+  // bulk contains information about the bulk operation and pagination.
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ UpdateSetupVersion ════════════════════════════════════ //
@@ -331,11 +325,8 @@ message UpdateSetupVersionRequest {
 
 // Response message for UpdateSetupVersion operation.
 message UpdateSetupVersionResponse {
-  // success indicates if the operation was successful.
-  bool success = 1 [(buf.validate.field).required = true];
-
-  // setup_version is the updated setup version entity.
-  SetupVersion setup_version = 2 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: SetupVersion or OperationError.
+  SetupResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ DeleteSetupVersion ════════════════════════════════════ //
@@ -360,8 +351,8 @@ message DeleteSetupVersionRequest {
 
 // Response message for DeleteSetupVersion operation.
 message DeleteSetupVersionResponse {
-  // success indicates if the operation was successful.
-  bool success = 1 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: SetupVersion or OperationError.
+  SetupResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ ListSetups ════════════════════════════════════ //
@@ -404,19 +395,8 @@ message ListSetupsRequest {
 
 // Response message for ListSetups operation.
 message ListSetupsResponse {
-  //check total_count equals setup list length
-  option (buf.validate.message).cel = {
-    id: "total_count_matches_setups_length"
-    expression: "this.total_count == this.setups.size()"
-    message: "total_count must equal the number of setups returned"
-  };
-
-  // total_count is the total number of setups matching the criteria.
-  int32 total_count = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).int32.gte = 0
-  ];
-
-  // setups is the list of setups matching the criteria.
-  repeated Setup setups = 2 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: Setup or OperationError.
+  repeated SetupResult result = 1 [(buf.validate.field).required = true];
+  // bulk contains information about the bulk operation, if applicable.
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
 }

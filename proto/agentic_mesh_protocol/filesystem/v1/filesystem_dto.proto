@@ -55,10 +55,8 @@ message GetFileRequest {
 
 // GetFileResponse is the response message containing the requested file.
 message GetFileResponse {
-  // content: File content (only if requested)
-  bytes content = 1 [(buf.validate.field).required = true];
-  // file: The requested file
-  File file = 2 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: File or OperationError.
+  FileResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ GetFiles ════════════════════════════════════ //
@@ -91,8 +89,10 @@ message GetFilesRequest {
 
 // GetFilesResponse is the response message containing the list of files.
 message GetFilesResponse {
+  // Result of the operation. Expected oneof type: File or OperationError.
+  repeated FileResult result = 1 [(buf.validate.field).required = true];
   // bulk: Bulk response containing the list of files and pagination info
-  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 1 [(buf.validate.field).required = true];
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ UploadFiles ════════════════════════════════════ //
@@ -108,8 +108,10 @@ message UploadFilesRequest {
 
 // UploadFilesResponse is the response message for file upload operations.
 message UploadFilesResponse {
+  // Result of the operation. Expected oneof type: File or OperationError.
+  repeated FileResult result = 1 [(buf.validate.field).required = true];
   // bulk: Bulk response containing the results of the upload operation
-  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 1 [(buf.validate.field).required = true];
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ UpdateFile ════════════════════════════════════ //
@@ -163,13 +165,8 @@ message UpdateFileRequest {
 
 // UpdateFileResponse is the response message for file update operations.
 message UpdateFileResponse {
-  // result: Result of the file update operation
-  oneof result {
-    // file: Successfully processed file
-    File file = 1;
-    // error: Error information if operation failed
-    string error = 2;
-  }
+  // Result of the operation. Expected oneof type: File or OperationError.
+  FileResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ DeleteFiles ════════════════════════════════════ //
@@ -202,6 +199,8 @@ message DeleteFilesRequest {
 
 // DeleteFilesResponse is the response message for file deletion operations.
 message DeleteFilesResponse {
+  // Result of the operation. Expected oneof type: File or OperationError.
+  repeated FileResult result = 1 [(buf.validate.field).required = true];
   // bulk: Bulk response containing the results of the delete operation
-  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 1 [(buf.validate.field).required = true];
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
 }

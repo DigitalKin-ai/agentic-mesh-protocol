@@ -17,6 +17,7 @@ syntax = "proto3";
 package agentic_mesh_protocol.cost.v1;
 
 import "agentic_mesh_protocol/cost/v1/cost_enums.proto";
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
 import "buf/validate/validate.proto";
 
 // Cost represents a cost entry with comprehensive tracking information.
@@ -49,7 +50,7 @@ message Cost {
       message: "setup_versions must be at least 1 characters long"
     }
   ];
-  // name is llm name of which type of request for llm
+  // name is the descriptive name for this cost entry (e.g., LLM model name, API endpoint).
   string name = 3 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
@@ -111,4 +112,24 @@ message CostFilter {
       message: "setup_versions must be at least 1 characters long"
     }
   ];
+}
+
+// CostResult represents the result of processing an individual item in the bulk operation.
+message CostResult {
+  // identifier is the unique identifier for the item being processed
+  string identifier = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // success indicates if the operation was successful (optional for backward compatibility).
+  optional bool success = 2 [(buf.validate.field).required = false];
+
+  // One of the following fields will be set based on the outcome of processing the item.
+  oneof outcom {
+    // cost is the cost data if the operation was successful.
+    Cost cost = 3;
+    // error represents the error that occurred while processing the item, if applicable.
+    agentic_mesh_protocol.pagination.v1.OperationError error = 4;
+  }
 }

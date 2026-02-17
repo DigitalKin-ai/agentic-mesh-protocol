@@ -17,6 +17,7 @@ syntax = "proto3";
 package agentic_mesh_protocol.filesystem.v1;
 
 import "agentic_mesh_protocol/filesystem/v1/filesystem_enums.proto";
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
@@ -227,4 +228,27 @@ message UploadFileData {
   ];
   // metadata: Additional metadata for the file
   google.protobuf.Struct metadata = 8 [(buf.validate.field).required = true];
+}
+
+// FileResult represents the result of a file operation, including success or error information.
+message FileResult {
+  // identifier is the unique identifier for the item being processed
+  string identifier = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // success indicates if the operation was successful (optional for backward compatibility).
+  optional bool success = 2 [(buf.validate.field).required = false];
+
+  // content is the raw file content if requested and operation was successful.
+  optional bytes content = 3 [(buf.validate.field).required = false];
+
+  // One of the following fields will be set based on the outcome of processing the item.
+  oneof outcom {
+    // file is the file data if the operation was successful.
+    File file = 4;
+    // error represents the error that occurred while processing the item, if applicable.
+    agentic_mesh_protocol.pagination.v1.OperationError error = 5;
+  }
 }

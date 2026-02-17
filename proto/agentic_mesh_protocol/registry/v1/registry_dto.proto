@@ -17,6 +17,7 @@ syntax = "proto3";
 package agentic_mesh_protocol.registry.v1;
 
 import "agentic_mesh_protocol/module/v1/module_enums.proto";
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
 import "agentic_mesh_protocol/pagination/v1/pagination.proto";
 import "agentic_mesh_protocol/registry/v1/registry_enums.proto";
 import "agentic_mesh_protocol/registry/v1/registry_messages.proto";
@@ -67,8 +68,8 @@ message RegisterModuleRequest {
 
 // RegisterModuleResponse is returned by the registry after successful registration.
 message RegisterModuleResponse {
-  // module is the complete module descriptor.
-  ModuleDescriptor module = 1 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: ModuleDescriptor or OperationError.
+  RegistryResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ Heartbeat ════════════════════════════════════ //
@@ -164,8 +165,10 @@ message DiscoverSetupsRequest {
 
 // DiscoverSetupsResponse is returned with the list of available setups.
 message DiscoverSetupsResponse {
-  // setups is the list of available setup descriptors.
-  repeated SetupDescriptor setups = 1 [(buf.validate.field).repeated.items.required = true];
+  // Result of the operation. Expected oneof type: SetupDescriptor or OperationError.
+  repeated agentic_mesh_protocol.registry.v1.RegistryResult result = 1 [(buf.validate.field).repeated.items.required = true];
+  // bulk contains pagination metadata for the response.
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ DiscoverModules ════════════════════════════════════ //
@@ -217,8 +220,10 @@ message DiscoverModulesRequest {
 
 // DiscoverModulesResponse is returned with the list of available modules.
 message DiscoverModulesResponse {
-  // modules is the list of available module descriptors.
-  repeated ModuleDescriptor modules = 1 [(buf.validate.field).repeated.items.required = true];
+  // Result of the operation. Expected oneof type: ModuleDescriptor or OperationError.
+  repeated RegistryResult result = 1 [(buf.validate.field).repeated.items.required = true];
+  // bulk contains pagination metadata for the response.
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ GetSetup ════════════════════════════════════ //
@@ -241,6 +246,12 @@ message GetSetupRequest {
   ];
 }
 
+// GetSetupResponse is returned with the specific setup.
+message GetSetupResponse {
+  // Result of the operation. Expected oneof type: SetupDescriptor or OperationError.
+  RegistryResult result = 1 [(buf.validate.field).required = true];
+}
+
 // ════════════════════════════════════ GetModule ════════════════════════════════════ //
 
 // GetModuleRequest is used to retrieve a specific module by its identifier.
@@ -259,4 +270,10 @@ message GetModuleRequest {
       message: "module_id must be at least 1 characters long"
     }
   ];
+}
+
+// GetModuleResponse is returned with the specific module.
+message GetModuleResponse {
+  // Result of the operation. Expected oneof type: ModuleDescriptor or OperationError.
+  RegistryResult result = 1 [(buf.validate.field).required = true];
 }

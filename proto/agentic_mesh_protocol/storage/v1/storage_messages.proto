@@ -16,6 +16,7 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.storage.v1;
 
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
 import "agentic_mesh_protocol/storage/v1/storage_enums.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
@@ -71,4 +72,24 @@ message StorageRecord {
   google.protobuf.Timestamp updated_at = 6 [(buf.validate.field).required = true];
   // data is the stored JSON object.
   google.protobuf.Struct data = 7 [(buf.validate.field).required = true];
+}
+
+// StorageResult represents the outcome of a storage operation, including success status and any relevant data or errors.
+message StorageResult {
+  // identifier is the unique identifier for the item being processed
+  string identifier = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // success indicates if the operation was successful (optional for backward compatibility).
+  optional bool success = 2 [(buf.validate.field).required = false];
+
+  // One of the following fields will be set based on the outcome of processing the item.
+  oneof outcom {
+    // record is the storage record if the operation was successful.
+    StorageRecord record = 3;
+    // error represents the error that occurred while processing the item, if applicable.
+    agentic_mesh_protocol.pagination.v1.OperationError error = 4;
+  }
 }

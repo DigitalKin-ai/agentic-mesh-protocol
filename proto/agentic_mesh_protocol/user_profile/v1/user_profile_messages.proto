@@ -16,6 +16,7 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.user_profile.v1;
 
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
@@ -173,4 +174,24 @@ message UserProfile {
 
   // credits is the list of user credit allocations.
   repeated CreditLot credits = 11 [(buf.validate.field).required = true];
+}
+
+// UserProfileResult represents the outcome of a user profile operation, including success status and any relevant data or errors.
+message UserProfileResult {
+  // identifier is the unique identifier for the item being processed
+  string identifier = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // success indicates if the operation was successful (optional for backward compatibility).
+  optional bool success = 2 [(buf.validate.field).required = false];
+
+  // One of the following fields will be set based on the outcome of processing the item.
+  oneof outcom {
+    // profile is the user profile if the operation was successful.
+    UserProfile profile = 3;
+    // error represents the error that occurred while processing the item, if applicable.
+    agentic_mesh_protocol.pagination.v1.OperationError error = 4;
+  }
 }

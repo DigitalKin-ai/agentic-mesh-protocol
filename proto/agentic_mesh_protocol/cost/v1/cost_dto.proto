@@ -44,14 +44,14 @@ message AddCostRequest {
   string setup_version_id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).cel = {
-      id: "setup_verion_id_prefix"
-      expression: "this.startsWith('setup_verions:')"
-      message: "setup_verions_id must start with 'setup_verions:'"
+      id: "setup_version_id_prefix"
+      expression: "this.startsWith('setup_versions:')"
+      message: "setup_version_id must start with 'setup_versions:'"
     },
     (buf.validate.field).cel = {
-      id: "setup_verion_id_length"
-      expression: "this.size() >= 15"
-      message: "setup_verions_id must be at least 1 characters long"
+      id: "setup_version_id_length"
+      expression: "this.size() >= 16"
+      message: "setup_version_id must be at least 16 characters long"
     }
   ];
   // name is the descriptive name for this cost.
@@ -91,8 +91,8 @@ message AddCostRequest {
 
 // AddCostResponse is the response message for adding a cost entry.
 message AddCostResponse {
-  // success indicates whether the cost was successfully added.
-  bool success = 1 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: Cost or OperationError.
+  CostResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ═════════════════════════════════════ Get Cost (By Name) ════════════════════════════════════ //
@@ -122,18 +122,8 @@ message GetCostRequest {
 
 // GetCostResponse is the response message for cost retrieval by name.
 message GetCostResponse {
-  // ? TODO: pourquoi repeated ? un seul cout par nom non ?
-  //  // total_cost is the sum of all matching cost values.
-  //  double total_cost = 1 [
-  //    (buf.validate.field).required = true,
-  //    (buf.validate.field).double.gte = 0,
-  //    (buf.validate.field).double.finite = true
-  //  ];
-  //  // costs is the list of cost entries matching the name.
-  //  repeated Cost costs = 2 [(buf.validate.field).required = true];
-
-  // cost is the cost entry matching the name.
-  optional Cost cost = 1 [(buf.validate.field).required = false]; // * Si le coût n'existe pas, il faut renvoyer NOT_FOUND
+  // Result of the operation. Expected oneof type: Cost or OperationError.
+  CostResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ═════════════════════════════════════ Get Costs (Multiple) ════════════════════════════════════ //
@@ -162,12 +152,8 @@ message GetCostsRequest {
 
 // GetCostsResponse is the response message containing multiple costs.
 message GetCostsResponse {
-  // total_cost is the sum of all cost values matching the query.
-  double total_cost = 2 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).double.gte = 0,
-    (buf.validate.field).double.finite = true
-  ];
-  // costs is the paginated list of cost entries matching the query.
-  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 1 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: Cost or OperationError.
+  repeated CostResult result = 1 [(buf.validate.field).required = true];
+  // bulk contains information about the bulk operation and pagination.
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
 }

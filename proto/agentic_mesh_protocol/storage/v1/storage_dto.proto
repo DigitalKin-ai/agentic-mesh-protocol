@@ -16,6 +16,8 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.storage.v1;
 
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
+import "agentic_mesh_protocol/pagination/v1/pagination.proto";
 import "agentic_mesh_protocol/storage/v1/storage_enums.proto";
 import "agentic_mesh_protocol/storage/v1/storage_messages.proto";
 import "buf/validate/validate.proto";
@@ -62,11 +64,8 @@ message StoreRecordRequest {
 
 // Response message for StoreRecord operation.
 message StoreRecordResponse {
-  // success indicates if the operation was successful.
-  bool success = 1 [(buf.validate.field).required = true];
-
-  // stored_data is the record that was stored.
-  StorageRecord stored_data = 2 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: StorageRecord or OperationError.
+  StorageResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ ReadRecord ════════════════════════════════════ //
@@ -101,11 +100,8 @@ message ReadRecordRequest {
 
 // Response message for ReadRecord operation.
 message ReadRecordResponse {
-  // success indicates if the operation was successful.
-  bool success = 1 [(buf.validate.field).required = true];
-
-  // stored_data is the retrieved record.
-  StorageRecord stored_data = 2 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: StorageRecord or OperationError.
+  StorageResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ UpdateRecord ════════════════════════════════════ //
@@ -143,11 +139,8 @@ message UpdateRecordRequest {
 
 // Response message for UpdateRecord operation.
 message UpdateRecordResponse {
-  // success indicates if the operation was successful.
-  bool success = 1 [(buf.validate.field).required = true];
-
-  // stored_data is the updated record.
-  StorageRecord stored_data = 2 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: StorageRecord or OperationError.
+  StorageResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ RemoveRecord ════════════════════════════════════ //
@@ -182,8 +175,8 @@ message RemoveRecordRequest {
 
 // Response message for RemoveRecord operation.
 message RemoveRecordResponse {
-  // success indicates if the operation was successful.
-  bool success = 1 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: StorageRecord or OperationError.
+  StorageResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ ListRecords ════════════════════════════════════ //
@@ -194,7 +187,7 @@ message ListRecordsRequest {
     (buf.validate.field).cel = {
       id: "missions_id_prefix"
       expression: "this.startsWith('missions:')"
-      message: "missions must start with 'mission:'"
+      message: "missions must start with 'missions:'"
     },
     (buf.validate.field).cel = {
       id: "missions_id_length"
@@ -208,12 +201,17 @@ message ListRecordsRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
+
+  // pagination contains pagination settings.
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 3 [(buf.validate.field).required = true];
 }
 
 // Response message for ListRecords operation.
 message ListRecordsResponse {
-  // records is the list of records found in the collection.
-  repeated StorageRecord records = 1 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: StorageRecord or OperationError.
+  repeated StorageResult result = 1 [(buf.validate.field).required = true];
+  // bulk contains information about the bulk operation and pagination.
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ RemoveCollection ════════════════════════════════════ //
@@ -242,6 +240,6 @@ message RemoveCollectionRequest {
 
 // Response message for RemoveCollection operation.
 message RemoveCollectionResponse {
-  // success indicates if the operation was successful.
-  bool success = 1 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: StorageRecord or OperationError.
+  StorageResult result = 1 [(buf.validate.field).required = true];
 }

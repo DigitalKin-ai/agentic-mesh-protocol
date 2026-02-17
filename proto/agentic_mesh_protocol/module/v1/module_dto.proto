@@ -16,6 +16,7 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.module.v1;
 
+import "agentic_mesh_protocol/module/v1/module_messages.proto";
 import "agentic_mesh_protocol/setup/v1/setup_messages.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
@@ -44,10 +45,8 @@ message GetModuleInputRequest {
 
 // Response containing the input schema of the module.
 message GetModuleInputResponse {
-  // Indicates if the operation was successful.
-  bool success = 1 [(buf.validate.field).required = true];
-  // The input schema of the module.
-  google.protobuf.Struct input_schema = 2 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: input_schema (Struct) or OperationError.
+  ModuleResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ GetModuleOutput ════════════════════════════════════ //
@@ -74,10 +73,8 @@ message GetModuleOutputRequest {
 
 // Response containing the output schema of the module.
 message GetModuleOutputResponse {
-  // Indicates if the operation was successful.
-  bool success = 1 [(buf.validate.field).required = true];
-  // The output schema of the module.
-  google.protobuf.Struct output_schema = 2 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: output_schema (Struct) or OperationError.
+  ModuleResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ GetModuleSetup ════════════════════════════════════ //
@@ -104,10 +101,8 @@ message GetModuleSetupRequest {
 
 // Response containing the setup schema of the module.
 message GetModuleSetupResponse {
-  // Indicates if the operation was successful.
-  bool success = 1 [(buf.validate.field).required = true];
-  // The setup schema of the module.
-  google.protobuf.Struct setup_schema = 2 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: setup_schema (Struct) or OperationError.
+  ModuleResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ GetModuleSecret ════════════════════════════════════ //
@@ -134,10 +129,8 @@ message GetModuleSecretRequest {
 
 // Response containing the secret schema of the module.
 message GetModuleSecretResponse {
-  // Indicates if the operation was successful.
-  bool success = 1 [(buf.validate.field).required = true];
-  // The secret schema of the module.
-  google.protobuf.Struct secret_schema = 2 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: secret_schema (Struct) or OperationError.
+  ModuleResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ GetConfigSetupModule ════════════════════════════════════ //
@@ -164,10 +157,8 @@ message GetConfigSetupModuleRequest {
 
 // Response containing the configuration setup schema of the module.
 message GetConfigSetupModuleResponse {
-  // Indicates if the operation was successful.
-  bool success = 1 [(buf.validate.field).required = true];
-  // The configuration setup schema of the module.
-  google.protobuf.Struct config_setup_schema = 2 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: config_setup_schema (Struct) or OperationError.
+  ModuleResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ ConfigSetupModule ════════════════════════════════════ //
@@ -196,10 +187,8 @@ message ConfigSetupModuleRequest {
 
 // Response confirming the configuration of the module setup.
 message ConfigSetupModuleResponse {
-  // Indicates if the operation was successful.
-  bool success = 1 [(buf.validate.field).required = true];
-  // The configured setup version.
-  agentic_mesh_protocol.setup.v1.SetupVersion setup_version = 2 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: setup_version (SetupVersion) or OperationError.
+  ModuleResult result = 1 [(buf.validate.field).required = true];
 }
 
 // ════════════════════════════════════ StartModule ════════════════════════════════════ //
@@ -238,26 +227,13 @@ message StartModuleRequest {
   google.protobuf.Struct input = 3 [(buf.validate.field).required = true];
 }
 
-// Response containing the output of the started module and job ID.
+// Response containing the result of the started module operation.
 message StartModuleResponse {
-  // The job ID for the module run.
-  string job_id = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).cel = {
-      id: "job_id_prefix"
-      expression: "this.startsWith('jobs:')"
-      message: "job_id must start with 'jobs:'"
-    },
-    (buf.validate.field).cel = {
-      id: "job_id_length"
-      expression: "this.size() >= 6"
-      message: "job_id must be at least 1 characters long"
-    }
-  ];
-  // Indicates if the operation was successful.
-  bool success = 2;
-  // The output data from the module.
-  google.protobuf.Struct output = 3 [(buf.validate.field).required = true];
+  // Result of the operation. Expected oneof type: job_id (string), output (Struct), or OperationError.
+  ModuleResult result = 1 [(buf.validate.field).required = true];
+
+  //  google.protobuf.Struct output = 3 [(buf.validate.field).required = true];
+  //todo a quoi ca sert ???
 }
 
 // ════════════════════════════════════ StopModule ════════════════════════════════════ //
@@ -282,20 +258,6 @@ message StopModuleRequest {
 
 // Response confirming the stopping of the module.
 message StopModuleResponse {
-  // Indicates if the operation was successful.
-  bool success = 1;
-  // The job ID that was stopped (if available).
-  optional string job_id = 2 [
-    (buf.validate.field).required = false,
-    (buf.validate.field).cel = {
-      id: "job_id_prefix"
-      expression: "this.startsWith('jobs:')"
-      message: "job_id must start with 'jobs:'"
-    },
-    (buf.validate.field).cel = {
-      id: "job_id_length"
-      expression: "this.size() >= 6"
-      message: "job_id must be at least 1 characters long"
-    }
-  ];
+  // Result of the operation. Expected oneof type: job_id (string) or OperationError.
+  ModuleResult result = 1 [(buf.validate.field).required = true];
 }

@@ -17,7 +17,6 @@ syntax = "proto3";
 package agentic_mesh_protocol.registry.v1;
 
 import "agentic_mesh_protocol/registry/v1/registry_dto.proto";
-import "agentic_mesh_protocol/registry/v1/registry_messages.proto";
 
 // RegistryService is the entry point for agents and tools
 // to register themselves and discover other resources in the mesh.
@@ -35,8 +34,8 @@ service RegistryService {
   rpc DiscoverModules(DiscoverModulesRequest) returns (DiscoverModulesResponse);
 
   // Resolve a setup_id into a complete descriptor (config + endpoint module).
-  rpc GetSetup(GetSetupRequest) returns (SetupDescriptor);
+  rpc GetSetup(GetSetupRequest) returns (GetSetupResponse);
 
   // Resolve a module_id into a complete descriptor.
-  rpc GetModule(GetModuleRequest) returns (ModuleDescriptor);
+  rpc GetModule(GetModuleRequest) returns (GetModuleResponse);
 }

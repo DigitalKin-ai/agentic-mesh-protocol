@@ -18,17 +18,9 @@ package agentic_mesh_protocol.pagination.v1;
 
 import "agentic_mesh_protocol/pagination/v1/pagination.proto";
 import "buf/validate/validate.proto";
-import "google/protobuf/any.proto";
 
-// BulkRequest represents a request to perform a bulk operation on multiple items.
+// BulkResponse represents the response for a bulk operation on multiple items.
 message BulkResponse {
-  //if there is pagination info, total_count must equal the number of items in results
-  option (buf.validate.message).cel = {
-    id: "total_count_matches_items_count"
-    expression: "this.pagination != null ? this.total_process == this.results.size() : true"
-    message: "total_count must equal the number of cost entries in costs"
-  };
-
   // total is the total number of items processed in the bulk operation.
   int32 total_process = 1 [
     (buf.validate.field).required = true,
@@ -43,26 +35,6 @@ message BulkResponse {
 
   // pagination contains information about the pagination of the results, if applicable.
   optional agentic_mesh_protocol.pagination.v1.PaginationResponse pagination = 3;
-
-  // results is a list of individual item results for the bulk operation.
-  repeated ItemResult results = 4 [(buf.validate.field).required = true];
-}
-
-// ItemResult represents the result of processing an individual item in the bulk operation.
-message ItemResult {
-  // identifier is the unique identifier for the item being processed
-  string identifier = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
-  ];
-
-  // outcome is the result of processing the item.
-  oneof outcom {
-    // item contains the processed item, if the operation was successful.
-    google.protobuf.Any item = 2;
-    // error represents the error that occurred while processing the item, if applicable.
-    OperationError error = 3;
-  }
 }
 
 // OperationError represents an error that occurred while processing an individual item in the bulk operation.

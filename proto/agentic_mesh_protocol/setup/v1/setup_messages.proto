@@ -16,6 +16,7 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.setup.v1;
 
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
 import "agentic_mesh_protocol/setup/v1/setup_enums.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
@@ -141,4 +142,26 @@ message Setup {
 
   // current_setup_version is the active setup version.
   optional SetupVersion current_setup_version = 7 [(buf.validate.field).required = false];
+}
+
+// SetupResult represents the result of processing an individual item in the bulk operation.
+message SetupResult {
+  // identifier is the unique identifier for the item being processed
+  string identifier = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // success indicates if the operation was successful (optional for backward compatibility).
+  optional bool success = 2 [(buf.validate.field).required = false];
+
+  // One of the following fields will be set based on the outcome of processing the item.
+  oneof outcom {
+    // setup is the setup data if the operation was successful.
+    Setup setup = 3;
+    // version is the setup version data if the operation was successful.
+    SetupVersion version = 4;
+    // error represents the error that occurred while processing the item, if applicable.
+    agentic_mesh_protocol.pagination.v1.OperationError error = 5;
+  }
 }
