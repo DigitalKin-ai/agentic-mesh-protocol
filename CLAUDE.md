@@ -15,9 +15,11 @@ agentic-mesh-protocol/
 │   └── agentic_mesh_protocol/
 ├── gen/                      # Generated TypeScript code (build output, not committed)
 │   ├── python/              # Python protobuf + gRPC
-│   └── typescript/          # TypeScript (ts-proto generated)
+│   ├── typescript/          # TypeScript (ts-proto generated)
+│   └── openapi/             # OpenAPI v2 (Swagger) documentation
 ├── index.ts                  # Main barrel export entry point
 ├── buf.gen.yaml             # Code generation configuration
+├── buf.gen.openapi.yaml     # OpenAPI generation configuration
 ├── Taskfile.yml             # Task runner commands
 ├── package.json             # npm package configuration
 └── CLAUDE.md                # This file
@@ -26,6 +28,8 @@ agentic-mesh-protocol/
 **Key Files & Directories:**
 - `proto/` - Source of truth: Protocol Buffer definitions
 - `gen/typescript/` - Generated TypeScript code (via ts-proto, excluded from git)
+- `gen/openapi/` - Generated OpenAPI documentation (via protoc-gen-openapiv2, excluded from git)
+- `buf.gen.openapi.yaml` - Configuration for OpenAPI documentation generation
 - `index.ts` - Handwritten barrel export at root (re-exports all services/types)
 - **TypeScript-only package** - Users' build systems compile the .ts files
 
@@ -89,6 +93,9 @@ task breaking:verbose  # Check with verbose JSON output
 task generate          # Generate code for all languages (Python, TypeScript)
 task generate:check    # Verify generated code is up to date
 
+# OpenAPI documentation
+task gen:openapi       # Generate OpenAPI/Swagger documentation from proto files
+
 # Build workflows
 task build             # Full build - format, lint, and generate
 task build:ci          # CI build - format check, lint, breaking, and generate check
@@ -131,14 +138,18 @@ npx buf breaking --against '.git#branch=main'
 # Generate code from proto files (Python + TypeScript)
 npx buf generate
 
-# Or use npm script
+# Generate OpenAPI documentation
+npx buf generate --template buf.gen.openapi.yaml
+
+# Or use npm scripts
 npm run build  # Runs: npx buf generate
+npm run generate:openapi  # Runs: npx buf generate --template buf.gen.openapi.yaml
 
 # Push schema to Buf Schema Registry (requires DKIN_CLOUD_TOKEN)
 npx buf push proto
 ```
 
-**Note**: The `buf` CLI is installed as an npm dependency. Use `npx buf` to run it, which will use the locally installed version from `node_modules/.bin/`. You must run `npx buf dep update proto` after `npm install` to download Protocol Buffer dependencies (like `buf.build/bufbuild/protovalidate`).
+**Note**: The `buf` CLI is installed as an npm dependency. Use `npx buf` to run it, which will use the locally installed version from `node_modules/.bin/`. You must run `npx buf dep update proto` after `npm install` to download Protocol Buffer dependencies (like `buf.build/bufbuild/protovalidate` and `buf.build/googleapis/googleapis`).
 
 ### Code Generation
 
@@ -153,11 +164,22 @@ npx buf generate     # or: task generate or: npm run build
 - Generates **@grpc/grpc-js** compatible code (Node.js servers)
 - Creates service definitions, message types, and client/server interfaces
 
+#### Generate OpenAPI Documentation
+```bash
+npx buf generate --template buf.gen.openapi.yaml  # or: task gen:openapi or: npm run generate:openapi
+```
+- Uses **protoc-gen-openapiv2** plugin to generate OpenAPI v2 (Swagger) specs
+- Output: `gen/openapi/agentic_mesh_protocol.swagger.json`
+- All services are merged into a single spec file
+- HTTP annotations (`google.api.http`) on each RPC define the REST API mapping
+- The generated spec can be served with Swagger UI or imported into API tools
+
 ### Output Locations
 
 After running `npm run build`:
 - `gen/python/` - Python protobuf + gRPC stubs
 - `gen/typescript/` - Generated TypeScript from proto files (ts-proto)
+- `gen/openapi/` - OpenAPI v2 (Swagger) documentation (after `npm run generate:openapi`)
 - `index.ts` - Main entry point with barrel exports for all services
 
 ## Architecture
@@ -404,5 +426,6 @@ ID prefixes are enforced via buf.validate:
 
 ### Build Process
 1. **Generate**: `buf generate` creates TypeScript from proto files in `gen/typescript/`
-2. **Publish**: TypeScript files (`index.ts` + `gen/typescript/`) are published to npm
-3. **Compile**: Users' build systems compile the TypeScript (not pre-compiled)
+2. **Generate OpenAPI**: `buf generate --template buf.gen.openapi.yaml` creates OpenAPI spec in `gen/openapi/`
+3. **Publish**: TypeScript files (`index.ts` + `gen/typescript/`) are published to npm
+4. **Compile**: Users' build systems compile the TypeScript (not pre-compiled)

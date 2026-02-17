@@ -67,7 +67,7 @@ service FilesystemService {
   // force deletion of files in use, and individual error reporting per file.
   rpc DeleteFiles(DeleteFilesRequest) returns (DeleteFilesResponse) {
     option (google.api.http) = {
-      delete: "/api/v1/files"
+      post: "/api/v1/files:batchDelete"
       body: "*"
     };
   }
