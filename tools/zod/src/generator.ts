@@ -9,7 +9,7 @@ import {
   isFieldOptional,
   type TypeMapperContext,
 } from "./type-mapper.js";
-import { getValidationChain, isFieldRequired } from "./validation-mapper.js";
+import { getValidationChain, isFieldRequired } from "./validation/index.js";
 import { toCamelCase, toSchemaName, getRelativeImportPath, toScreamingSnakeCase, stripEnumPrefix } from "./utils.js";
 
 export interface PluginOptions {
