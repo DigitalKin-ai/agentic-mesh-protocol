@@ -27,15 +27,10 @@ service FilesystemService {
   // atomically - if one fails, others may still succeed.
   rpc UploadFiles(UploadFilesRequest) returns (UploadFilesResponse);
 
-  // GetFile fetches detailed information about a single file,
-  // with optional content inclusion. Supports lookup by either
-  // unique ID or name within a context.
+  // DEPRECATED: GetFile — unused in SDK, no callers.
   rpc GetFile(GetFileRequest) returns (GetFileResponse);
 
-  // GetFiles provides efficient retrieval of multiple files using
-  // file IDs, file names, or path prefix, with support for
-  // pagination for large result sets, optional content inclusion,
-  // and total count of matching files.
+  // DEPRECATED: GetFiles — unused in SDK, no callers.
   rpc GetFiles(GetFilesRequest) returns (GetFilesResponse);
 
   // UpdateFile allows updating various aspects of a file including

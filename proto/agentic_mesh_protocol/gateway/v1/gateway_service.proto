@@ -1,0 +1,60 @@
+// Copyright 2026 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.gateway.v1;
+
+import "agentic_mesh_protocol/gateway/v1/gateway.proto";
+
+// GatewayService
+// External surface for consumers of a producer module.
+// The Gateway exposes only what external clients need:
+//
+//   1. AssociateTask — mint + register a sub-task under a running parent.
+//   2. StartStream   — kick off a task; returns ACK immediately.
+//   3. Stream        — BiDi: read output, send upstream input.
+//   4. SendSignal    — out-of-band control (CANCEL, INVALIDATE_*)
+service GatewayService {
+  // AssociateTask: generate + register a sub-task_id linked to a running
+  // parent task (and its mission), before it is started. Returns the new
+  // task_id, which is then passed to StartStream to dispatch the producer.
+  rpc AssociateTask(AssociateTaskRequest) returns (AssociateTaskResponse);
+
+  // StartStream: register a task and dispatch the producer via Redis.
+  // Returns ACK + task_id; output flows over Stream.
+  rpc StartStream(StartStreamRequest) returns (StartStreamResponse);
+
+  // Stream: BiDi between client (UI / caller module) and Gateway.
+  //
+  // Flow:
+  //   1. Server emits StreamServer{module_start_info} immediately
+  //      (seeded by StartStream into Redis at seq=1).
+  //   2. Client sends StreamClient{task_id, from_seq, data=<query>}.
+  //      The data Struct carries the query, delivered to the SDK module
+  //      as its first input. task_id + from_seq identify the stream and
+  //      its resume point.
+  //   3. Server yields StreamServer{seq, data} per Redis entry as the
+  //      module produces output.
+  //   4. Client may send more StreamClient{data} messages for additional
+  //      upstream input (task_id and from_seq ignored after the first).
+  //   5. Server emits StreamServer{end_of_stream} and closes cleanly.
+  //
+  // Errors flow as in-band sentinels in StreamServer.data.root.protocol —
+  // never via gRPC status on Stream.
+  rpc Stream(stream StreamServer) returns (stream StreamClient);
+
+  // SendSignal: out-of-band control
+  rpc SendSignal(ClientSignalRequest) returns (ClientSignalResponse);
+}

@@ -23,10 +23,10 @@ service CostService {
   // AddCost records a new cost entry for a mission.
   rpc AddCost(AddCostRequest) returns (AddCostResponse);
 
-  // GetCost retrieves cost entries by name within a mission.
+  // DEPRECATED: GetCost — unused in SDK, no callers.
   rpc GetCost(GetCostRequest) returns (GetCostResponse);
 
-  // GetCosts retrieves multiple cost entries with filtering and pagination.
+  // DEPRECATED: GetCosts — unused in SDK, no callers.
   rpc GetCosts(GetCostsRequest) returns (GetCostsResponse);
 
   // GetCostConfig retrieves cost configuration for a setup version.

@@ -131,10 +131,10 @@ message RemoveRecordRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.pattern = "^(missions|setup_versions):.+"
   ];
-  // collection: Name of a group of records (unique by context)
-  string collection = 3 [(buf.validate.field).required = true];
+  // collection: Name of a group of records (unique by mission_id)
+  string collection = 2 [(buf.validate.field).required = true];
   // record_id: Unique identifier for the record within collection
-  string record_id = 4 [(buf.validate.field).required = true];
+  string record_id = 3 [(buf.validate.field).required = true];
 }
 
 // RemoveRecordResponse: Response to removed record
@@ -148,7 +148,7 @@ message ListRecordsRequest {
   // context: Mission ID linked to the data
   string context = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^(missions|setup_versions):.+"
+    (buf.validate.field).string.pattern = "^(missions|setup_versions|users|organizations):.+"
   ];
   // collection: Name of a group of records (unique by context)
   string collection = 2 [(buf.validate.field).required = true];

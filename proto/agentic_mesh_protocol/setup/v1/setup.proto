@@ -34,24 +34,24 @@ import "google/protobuf/timestamp.proto";
 // - CONFIGURATION_FAILED: Setup configuration failed
 // - CONFIGURATION_SUCCEEDED: Setup configuration succeeded
 enum SetupStatus {
-    // DRAFT: Setup is a draft
-    DRAFT = 0;
-    // VALIDATING: Setup is being validated
-    VALIDATING = 1;
-    // READY: Setup is ready
-    READY = 2;
-    // PAUSED: Setup is paused
-    PAUSED = 4;
-    // FAILED: Setup failed
-    FAILED = 5;
-    // ARCHIVED: Setup has been archived
-    ARCHIVED = 6;
-    // NEEDS_CONFIGURATION: Setup needs configuration
-    NEEDS_CONFIGURATION = 7;
-    // CONFIGURATION_FAILED: Setup configuration failed
-    CONFIGURATION_FAILED = 8;
-    // CONFIGURATION_SUCCEEDED: Setup configuration succeeded
-    CONFIGURATION_SUCCEEDED = 9;    
+  // DRAFT: Setup is a draft
+  DRAFT = 0;
+  // VALIDATING: Setup is being validated
+  VALIDATING = 1;
+  // READY: Setup is ready
+  READY = 2;
+  // PAUSED: Setup is paused
+  PAUSED = 4;
+  // FAILED: Setup failed
+  FAILED = 5;
+  // ARCHIVED: Setup has been archived
+  ARCHIVED = 6;
+  // NEEDS_CONFIGURATION: Setup needs configuration
+  NEEDS_CONFIGURATION = 7;
+  // CONFIGURATION_FAILED: Setup configuration failed
+  CONFIGURATION_FAILED = 8;
+  // CONFIGURATION_SUCCEEDED: Setup configuration succeeded
+  CONFIGURATION_SUCCEEDED = 9;
 }
 
 // SetupVersion

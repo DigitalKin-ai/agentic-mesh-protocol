@@ -22,4 +22,15 @@ import "agentic_mesh_protocol/user_profile/v1/user_profile.proto";
 service UserProfileService {
   // GetUserProfile: Get a user profile by user ID
   rpc GetUserProfile(GetUserProfileRequest) returns (GetUserProfileResponse);
+
+  // GetSetupSecret resolves the secret object attached to a setup, conforming to the module's secret_schema.
+  rpc GetSetupSecret(GetSetupSecretRequest) returns (GetSetupSecretResponse);
+
+  // GetSetupUserInfo retrieves the user information attached to a setup, needed for a kin to run.
+  rpc GetSetupUserInfo(GetSetupUserInfoRequest) returns (GetSetupUserInfoResponse);
+
+  // CheckResourceAccess checks whether the calling task (resolved from the request
+  // metadata) is authorized to access the given resource. Access is returned as a
+  // boolean flag with an OK status; non-OK statuses signal failures, not denials.
+  rpc CheckResourceAccess(CheckResourceAccessRequest) returns (CheckResourceAccessResponse);
 }

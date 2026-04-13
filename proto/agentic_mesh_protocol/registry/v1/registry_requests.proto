@@ -18,7 +18,6 @@ package agentic_mesh_protocol.registry.v1;
 
 import "agentic_mesh_protocol/registry/v1/registry_enums.proto";
 import "agentic_mesh_protocol/registry/v1/registry_models.proto";
-
 import "buf/validate/validate.proto";
 
 // -------------------------
@@ -55,9 +54,7 @@ message RegisterModuleRequest {
 // RegisterModuleResponse
 message RegisterModuleResponse {
   // Module descriptor
-  ModuleDescriptor module = 1 [
-    (buf.validate.field).required = true
-  ];
+  ModuleDescriptor module = 1 [(buf.validate.field).required = true];
 }
 
 // HeartbeatRequest
@@ -92,23 +89,15 @@ message DiscoverSetupsRequest {
     (buf.validate.field).string.min_len = 1
   ];
   // Visibility
-  repeated Visibility visibility = 2 [
-    (buf.validate.field).repeated.items.enum.not_in = 0
-  ];
+  repeated Visibility visibility = 2 [(buf.validate.field).repeated.items.enum.not_in = 0];
   // Status
-  repeated SetupStatus status = 3 [
-    (buf.validate.field).repeated.items.enum.not_in = 0
-  ]; // typically READY / CONFIGURATION_SUCCEEDED
+  repeated SetupStatus status = 3 [(buf.validate.field).repeated.items.enum.not_in = 0]; // typically READY / CONFIGURATION_SUCCEEDED
 
   // e.g. agent, tool
-  repeated ModuleType module_types = 4 [
-    (buf.validate.field).repeated.items.enum.not_in = 0
-  ];
+  repeated ModuleType module_types = 4 [(buf.validate.field).repeated.items.enum.not_in = 0];
 
   // Simple text search
-  string query = 5 [
-    (buf.validate.field).string.min_len = 1
-  ]; // matches on name / documentation depending on implementation
+  string query = 5 [(buf.validate.field).string.min_len = 1]; // matches on name / documentation depending on implementation
 
   // Filter on specific modules if needed
   repeated string module_ids = 6 [
@@ -123,17 +112,13 @@ message DiscoverSetupsRequest {
     (buf.validate.field).int32.lte = 100
   ];
   // Offset
-  int32 offset = 8 [
-    (buf.validate.field).int32.gte = 0
-  ];
+  int32 offset = 8 [(buf.validate.field).int32.gte = 0];
 }
 
 // DiscoverSetupsResponse
 message DiscoverSetupsResponse {
   // Setups
-  repeated SetupDescriptor setups = 1 [
-    (buf.validate.field).repeated.items.required = true
-  ];
+  repeated SetupDescriptor setups = 1;
 }
 
 // Discover raw modules (rarely used by agents directly).
@@ -144,22 +129,14 @@ message DiscoverModulesRequest {
     (buf.validate.field).string.min_len = 1
   ];
   // Module types
-  repeated ModuleType module_types = 2 [
-    (buf.validate.field).repeated.items.enum.not_in = 0
-  ];
+  repeated ModuleType module_types = 2 [(buf.validate.field).repeated.items.enum.not_in = 0];
   // Status
-  repeated ModuleStatus status = 3 [
-    (buf.validate.field).repeated.items.enum.not_in = 0
-  ];
+  repeated ModuleStatus status = 3 [(buf.validate.field).repeated.items.enum.not_in = 0];
   // Visibility
-  repeated Visibility visibility = 4 [
-    (buf.validate.field).repeated.items.enum.not_in = 0
-  ];
+  repeated Visibility visibility = 4 [(buf.validate.field).repeated.items.enum.not_in = 0];
 
   // Simple text search
-  string query = 5 [
-    (buf.validate.field).string.min_len = 1
-  ]; // matches on name / documentation
+  string query = 5 [(buf.validate.field).string.min_len = 1]; // matches on name / documentation
 
   // Pagination
   // Limit
@@ -168,17 +145,13 @@ message DiscoverModulesRequest {
     (buf.validate.field).int32.lte = 100
   ];
   // Offset
-  int32 offset = 7 [
-    (buf.validate.field).int32.gte = 0
-  ];
+  int32 offset = 7 [(buf.validate.field).int32.gte = 0];
 }
 
 // DiscoverModulesResponse
 message DiscoverModulesResponse {
   // Modules
-  repeated ModuleDescriptor modules = 1 [
-    (buf.validate.field).repeated.items.required = true
-  ];
+  repeated ModuleDescriptor modules = 1;
 }
 
 // -------------------------
