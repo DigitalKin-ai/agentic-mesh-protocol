@@ -36,12 +36,7 @@ message GetModuleInputRequest {
   bool llm_format = 2;
 }
 
-// GetModuleSelectSchemaRequest
-//
-// Fields:
-//
-// - module_id: Database ID of the Module to get select schema
-// - llm_format: Define if the select schema should be in LLM format or raw pydantic format
+// GetModuleSelectInputRequest
 message GetModuleSelectInputRequest {
   // module_id: Database ID of the Module to get select input schema
   string module_id = 1 [
@@ -115,16 +110,11 @@ message GetModuleInputResponse {
   google.protobuf.Struct input_schema = 2 [(buf.validate.field).required = true];
 }
 
-// GetModuleInputSelectResponse
-//
-// Returns:
-//
-// - success: Flag to indicate if the input schema request was successful
-// - input_schema: Input schema of the Module
+// GetModuleSelectInputResponse
 message GetModuleSelectInputResponse {
-  // success: Flag to indicate if the input schema request was successful
+  // success: Flag to indicate if the select input schema request was successful
   bool success = 1;
-  // input_schema: Input schema of the Module
+  // select_input_schema: Select input schema of the Module
   google.protobuf.Struct select_input_schema = 2 [(buf.validate.field).required = true];
 }
 

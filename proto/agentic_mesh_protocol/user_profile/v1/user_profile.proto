@@ -57,7 +57,7 @@ message UserProfile {
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "users:"
   ];
-  // organisation_id: Organisation ID linked to the user
+  // organisation_id: Organization ID linked to the user
   string organisation_id = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.prefix = "organisations:"

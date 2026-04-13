@@ -36,7 +36,7 @@ service RegistryService {
   // 2. DISCOVERY
   // -----------------------
 
-  // Discover setups that are available (agents / tools).
+  // DEPRECATED: DiscoverSetups — unused in SDK, no callers.
   rpc DiscoverSetups(DiscoverSetupsRequest) returns (DiscoverSetupsResponse);
 
   // Discover raw modules (rarely used by agents directly).

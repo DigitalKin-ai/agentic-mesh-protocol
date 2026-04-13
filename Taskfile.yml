@@ -171,6 +171,7 @@ tasks:
     cmds:
       - task: clean
       - rm -rf node_modules/
+      - rm -rf .task
 
   # Validation
   validate:

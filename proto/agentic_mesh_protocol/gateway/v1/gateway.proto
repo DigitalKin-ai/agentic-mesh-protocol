@@ -1,0 +1,187 @@
+// Copyright 2026 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.gateway.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
+
+// SignalAction
+// Control signals for tasks and server-wide cache invalidation.
+enum SignalAction {
+  // Default unspecified value.
+  UNSPECIFIED = 0;
+  // Cancel a running task (requires task_id).
+  CANCEL = 1;
+  // ── SDK / Infrastructure cache invalidation (server-wide) ──
+  // Wipe all caches (combines all INVALIDATE_* below).
+  INVALIDATE_ALL = 2;
+  // Clear gRPC channel pool, stubs, CircuitBreaker, Bulkhead.
+  INVALIDATE_CHANNELS = 3;
+  // Clear Pydantic model class cache (schema filtering).
+  INVALIDATE_MODELS = 4;
+  // ── Runtime / Archetype cache invalidation (server-wide) ──
+  // Clear setup JSON cache fetched from services-provider.
+  INVALIDATE_SETUP = 5;
+  // Clear resolved tool definitions cache.
+  INVALIDATE_TOOLS = 6;
+  // Clear BaseModule._shared (litellm, toolkits, user_profile, etc.).
+  INVALIDATE_SHARED = 7;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// StartStream — unary: consumer asks Gateway to dispatch a task
+// ═══════════════════════════════════════════════════════════════════
+
+// StartStreamRequest
+// Consumer asks the Gateway to start the producer.
+// The Gateway resolves the setup, dispatches the producer, and returns ACK.
+// module_start_info is injected by the Gateway as the first entry.
+message StartStreamRequest {
+  // Unique identifier for the task being started.
+  string task_id = 1 [(buf.validate.field).required = true];
+  // Setup ID resolved for the producer (prefixed "setups:").
+  string setup_id = 2 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.prefix = "setups:",
+    (buf.validate.field).required = true
+  ];
+  // Mission ID for multi-tenant isolation (prefixed "missions:").
+  string mission_id = 3 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.prefix = "missions:",
+    (buf.validate.field).required = true
+  ];
+}
+
+// StartStreamResponse
+// ACK only. module_start_info arrives via Stream (seq=1).
+message StartStreamResponse {
+  // Whether the Gateway accepted the start request.
+  bool accepted = 1;
+  // Task ID that was started (echoed from the request).
+  string task_id = 2;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Stream — BiDi: consumer ↔ Gateway
+// ═══════════════════════════════════════════════════════════════════
+
+// StreamClient
+// Client (UI / caller module) → Gateway → SDK module.
+//
+// FIRST MESSAGE — initiates the stream and carries the query:
+//   task_id  = required, identifies the running task
+//   from_seq = resume point (see modes below); 0 means "from the start"
+//   data     = required, the query payload delivered to the SDK module
+//              as its first input
+//
+// SUBSEQUENT MESSAGES — additional upstream input (optional):
+//   data     = required, forwarded to the SDK module
+//   task_id  = ignored (bound on the first message)
+//   from_seq = ignored
+//
+// ── Two client profiles for the resume contract ──
+//
+// STATELESS (external UI / web clients with no Redis/seq tracking):
+//   - On every connection: send from_seq = 0.
+//   - Server replays the full stream from seq=1 to end_of_stream.
+//   - Ignore the seq field on StreamServer.
+//   - On disconnect mid-task: reconnect with from_seq=0 and re-receive
+//     everything from the beginning (server delivers duplicates from
+//     the client's point of view; that's the explicit cost of being
+//     stateless).
+//
+//   Pseudo-code:
+//     stub.Stream(iter([StreamClient(task_id=tid, from_seq=0, data=query)]))
+//     for out in stream:
+//         handle(out.data)        // ignore out.seq
+//
+// STATEFUL (clients that resume cleanly across disconnects):
+//   - Track highest_seq = max seq received from StreamServer.
+//   - On reconnect: send from_seq = highest_seq (data may be empty if
+//     the query was already delivered before disconnect).
+//   - Server delivers entries with seq > from_seq only — no duplicates.
+//   - Optional gap detection: if next_seq != prev_seq + 1, the stream
+//     was truncated upstream (Redis stream trim, server-side overflow);
+//     the client decides whether to abort, alert, or accept the gap.
+//
+// Resume window: bounded by Redis stream retention (XADD + MAXLEN). If
+// the client's from_seq predates the oldest retained entry, the server
+// delivers from the oldest available entry — the client detects the
+// gap via the seq jump.
+message StreamClient {
+  // Resume point on first message. Two valid modes:
+  //   0   — STATELESS / fresh: replay the entire stream from seq=1.
+  //   N>0 — STATEFUL / resume: deliver only entries with seq > N.
+  // Ignored on subsequent (upstream-data) messages.
+  uint64 from_seq = 1;
+  // Required on first message. Identifies the task being consumed.
+  string task_id = 2 [(buf.validate.field).required = true];
+  // Upstream payload. On the first message: the query, delivered to
+  // the SDK module as its first input. On subsequent messages: any
+  // additional upstream input (e.g. follow-up turn).
+  google.protobuf.Struct data = 3;
+}
+
+// StreamServer
+// Gateway → client. One per Redis stream entry, in seq order.
+//
+// LIFECYCLE — encoded as sentinels in data.root.protocol:
+//   - First entry: { "root": { "protocol": "stream.start", ... } }
+//     (a.k.a. module_start_info — task/setup/mission IDs).
+//   - Last entry:  { "root": { "protocol": "stream.end",   ... } }
+//   - Errors:      { "root": { "protocol": "stream.error",
+//                      code, message, fatal } }
+//                  followed by stream.end if fatal=true.
+//   - Clean stream close follows stream.end.
+//
+// Errors NEVER surface as gRPC status codes on the Stream RPC — they
+// are in-band sentinels so clients see one uniform observation surface.
+message StreamServer {
+  // Monotonic from 1, assigned by the Gateway on Redis persist.
+  // STATEFUL clients track this and send the highest value back as
+  // StreamClient.from_seq on reconnection. STATELESS clients can
+  // ignore it — the server emits it unconditionally.
+  uint64 seq = 1;
+  // Required on first message. Identifies the task being consumed.
+  string task_id = 2 [(buf.validate.field).required = true];
+  // Output payload from the SDK module (or a lifecycle sentinel).
+  // The "protocol" field inside disambiguates payload type.
+  google.protobuf.Struct data = 3 [(buf.validate.field).required = true];
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SendSignal — unary: control signal via Redis pub/sub
+// ═══════════════════════════════════════════════════════════════════
+
+// ClientSignalRequest
+// Control signal: per-task (CANCEL) or server-wide (INVALIDATE_*).
+message ClientSignalRequest {
+  // Task ID (required for CANCEL, ignored for INVALIDATE_*).
+  string task_id = 1;
+  // Control action to dispatch.
+  SignalAction action = 2 [(buf.validate.field).required = true];
+}
+
+// ClientSignalResponse
+// Acknowledges that the Gateway published the control signal.
+message ClientSignalResponse {
+  // Whether the signal was successfully published.
+  bool success = 1;
+  // Task ID the signal was published for (echoed from the request).
+  string task_id = 2;
+}

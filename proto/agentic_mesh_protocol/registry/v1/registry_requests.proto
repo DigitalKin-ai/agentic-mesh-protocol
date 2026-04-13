@@ -131,9 +131,7 @@ message DiscoverSetupsRequest {
 // DiscoverSetupsResponse
 message DiscoverSetupsResponse {
   // Setups
-  repeated SetupDescriptor setups = 1 [
-    (buf.validate.field).repeated.items.required = true
-  ];
+  repeated SetupDescriptor setups = 1;
 }
 
 // Discover raw modules (rarely used by agents directly).
@@ -176,9 +174,7 @@ message DiscoverModulesRequest {
 // DiscoverModulesResponse
 message DiscoverModulesResponse {
   // Modules
-  repeated ModuleDescriptor modules = 1 [
-    (buf.validate.field).repeated.items.required = true
-  ];
+  repeated ModuleDescriptor modules = 1;
 }
 
 // -------------------------
