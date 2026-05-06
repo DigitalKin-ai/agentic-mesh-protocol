@@ -38,12 +38,12 @@ enum DataType {
 message StorageRecord {
   // data: JSON Object to store
   google.protobuf.Struct data = 1 [(buf.validate.field).required = true];
-  // mission_id: Mission ID linked to the data
-  string mission_id = 2 [
+  // context: Mission ID linked to the data
+  string context = 2 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:"
+    (buf.validate.field).string.pattern = "^(missions|setup_versions):.+"
   ];
-  // collection: Name of a group of records (unique by mission_id)
+  // collection: Name of a group of records (unique by context)
   string collection = 3 [(buf.validate.field).required = true];
   // record_id: Unique identifier for the record within collection
   string record_id = 4 [(buf.validate.field).required = true];
@@ -59,12 +59,12 @@ message StorageRecord {
 message StoreRecordRequest {
   // data: Data to store or to retrieve
   google.protobuf.Struct data = 1 [(buf.validate.field).required = true];
-  // mission_id: Mission ID linked to the data
-  string mission_id = 2 [
+  // context: Mission ID linked to the data
+  string context = 2 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:"
+    (buf.validate.field).string.pattern = "^(missions|setup_versions):.+"
   ];
-  // collection: Name of a group of records (unique by mission_id)
+  // collection: Name of a group of records (unique by context)
   string collection = 3 [(buf.validate.field).required = true];
   // record_id: Unique identifier for the record within collection
   string record_id = 4 [(buf.validate.field).required = true];
@@ -82,12 +82,12 @@ message StoreRecordResponse {
 
 // ReadRecordRequest: Request to read a record
 message ReadRecordRequest {
-  // mission_id: Mission ID linked to the data
-  string mission_id = 1 [
+  // context: Mission ID linked to the data
+  string context = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:"
+    (buf.validate.field).string.pattern = "^(missions|setup_versions):.+"
   ];
-  // collection: Name of a group of records (unique by mission_id)
+  // collection: Name of a group of records (unique by context)
   string collection = 2 [(buf.validate.field).required = true];
   // record_id: Unique identifier for the record within collection
   string record_id = 3 [(buf.validate.field).required = true];
@@ -105,12 +105,12 @@ message ReadRecordResponse {
 message UpdateRecordRequest {
   // data: Data to store or to retrieve
   google.protobuf.Struct data = 1 [(buf.validate.field).required = true];
-  // mission_id: Mission ID linked to the data
-  string mission_id = 2 [
+  // context: Mission ID linked to the data
+  string context = 2 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:"
+    (buf.validate.field).string.pattern = "^(missions|setup_versions):.+"
   ];
-  // collection: Name of a group of records (unique by mission_id)
+  // collection: Name of a group of records (unique by context)
   string collection = 3 [(buf.validate.field).required = true];
   // record_id: Unique identifier for the record within collection
   string record_id = 4 [(buf.validate.field).required = true];
@@ -126,12 +126,12 @@ message UpdateRecordResponse {
 
 // RemoveRecordRequest: Request to remove a record
 message RemoveRecordRequest {
-  // mission_id: Mission ID linked to the data
-  string mission_id = 1 [
+  // context: Mission ID linked to the data
+  string context = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:"
+    (buf.validate.field).string.pattern = "^(missions|setup_versions):.+"
   ];
-  // collection: Name of a group of records (unique by mission_id)
+  // collection: Name of a group of records (unique by context)
   string collection = 3 [(buf.validate.field).required = true];
   // record_id: Unique identifier for the record within collection
   string record_id = 4 [(buf.validate.field).required = true];
@@ -145,12 +145,12 @@ message RemoveRecordResponse {
 
 // ListRecordsRequest: Request to list all records in a given collection
 message ListRecordsRequest {
-  // mission_id: Mission ID linked to the data
-  string mission_id = 1 [
+  // context: Mission ID linked to the data
+  string context = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:"
+    (buf.validate.field).string.pattern = "^(missions|setup_versions):.+"
   ];
-  // collection: Name of a group of records (unique by mission_id)
+  // collection: Name of a group of records (unique by context)
   string collection = 2 [(buf.validate.field).required = true];
 }
 
@@ -162,12 +162,12 @@ message ListRecordsResponse {
 
 // RemoveCollectionRequest: Request to remove a collection
 message RemoveCollectionRequest {
-  // mission_id: Mission ID linked to the data
-  string mission_id = 1 [
+  // context: Mission ID linked to the data
+  string context = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "missions:"
+    (buf.validate.field).string.pattern = "^(missions|setup_versions):.+"
   ];
-  // collection: Name of a group of records (unique by mission_id)
+  // collection: Name of a group of records (unique by context)
   string collection = 2 [(buf.validate.field).required = true];
 }
 
