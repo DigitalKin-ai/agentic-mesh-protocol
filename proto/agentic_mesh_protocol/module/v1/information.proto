@@ -97,6 +97,23 @@ message GetModuleSecretRequest {
   bool llm_format = 2;
 }
 
+// GetModuleUserInfoRequest
+//
+// Fields:
+//
+// - module_id: Database ID of the Module to get secret schema
+// - llm_format: Define if the secret schema should be in LLM format or raw pydantic format
+message GetModuleUserInfoRequest {
+  // module_id: Database ID of the Module to get secret schema
+  string module_id = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).required = true
+  ];
+  // llm_format: Define if the secret schema should be in LLM format or raw pydantic format
+  bool llm_format = 2;
+}
+
 // GetModuleInputResponse
 //
 // Returns:
@@ -155,6 +172,19 @@ message GetModuleSecretResponse {
   bool success = 1;
   // secret_schema: Secret schema of the Module
   google.protobuf.Struct secret_schema = 2 [(buf.validate.field).required = true];
+}
+
+// GetModuleUserInfoResponse
+//
+// Returns:
+//
+// - success: Flag to indicate if the user info schema request was successful
+// - user_info_schema: User info schema of the Module
+message GetModuleUserInfoResponse {
+  // success: Flag to indicate if the user info schema request was successful
+  bool success = 1;
+  // user_info_schema: User info schema of the Module
+  google.protobuf.Struct user_info_schema = 2 [(buf.validate.field).required = true];
 }
 
 // GetConfigSetupModuleRequest

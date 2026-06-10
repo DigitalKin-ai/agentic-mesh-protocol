@@ -105,3 +105,64 @@ message GetUserProfileResponse {
   // user_profile: Retrieved user profile
   UserProfile user_profile = 2 [(buf.validate.field).required = true];
 }
+
+// GetSetupSecretRequest
+// This request is used to resolve the secret object attached to a setup,
+// for the user resolved from the mission.
+//
+// Fields:
+// - setup_id: The unique identifier of the setup whose secrets are resolved.
+// - mission_id: The mission scope used to resolve the user the secrets belong to.
+message GetSetupSecretRequest {
+  // setup_id: The unique identifier of the setup.
+  string setup_id = 1 [(buf.validate.field).required = true];
+  // mission_id: The mission scope used to resolve the user the secrets belong to.
+  string mission_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:"
+  ];
+}
+
+// GetSetupSecretResponse
+// Returns the resolved secret object, conforming to the secret_schema of the
+// setup's module (see module.v1 ModuleService.GetModuleSecret).
+//
+// Fields:
+// - success: description flag of the operation.
+// - secret: The secret values as a structured object matching the secret_schema.
+message GetSetupSecretResponse {
+  // success: description flag of the operation.
+  bool success = 1;
+  // secret: The secret values as a structured object matching the secret_schema.
+  google.protobuf.Struct secret = 2 [(buf.validate.field).required = true];
+}
+
+// GetSetupUserInfoRequest
+// This request is used to retrieve the user information attached to a setup,
+// for the user resolved from the mission, needed for a kin to run.
+//
+// Fields:
+// - setup_id: The unique identifier of the setup whose user info is resolved.
+// - mission_id: The mission scope used to resolve the user.
+message GetSetupUserInfoRequest {
+  // setup_id: The unique identifier of the setup.
+  string setup_id = 1 [(buf.validate.field).required = true];
+  // mission_id: The mission scope used to resolve the user.
+  string mission_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "missions:"
+  ];
+}
+
+// GetSetupUserInfoResponse
+// Returns the user information associated with the setup owner.
+//
+// Fields:
+// - success: description flag of the operation.
+// - user_info: The user profile information needed for the kin to run.
+message GetSetupUserInfoResponse {
+  // success: description flag of the operation.
+  bool success = 1;
+  // secret: The secret values as a structured object matching the secret_schema.
+  google.protobuf.Struct secret = 2 [(buf.validate.field).required = true];
+}

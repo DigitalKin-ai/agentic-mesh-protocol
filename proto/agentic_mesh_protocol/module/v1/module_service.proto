@@ -42,6 +42,8 @@ service ModuleService {
   rpc GetModuleSetup(GetModuleSetupRequest) returns (GetModuleSetupResponse);
   // GetModuleSecret
   rpc GetModuleSecret(GetModuleSecretRequest) returns (GetModuleSecretResponse);
+  // GetModuleUserInfo
+  rpc GetModuleUserInfo(GetModuleUserInfoRequest) returns (GetModuleUserInfoResponse);
   // GetConfigSetupModule
   rpc GetConfigSetupModule(GetConfigSetupModuleRequest) returns (GetConfigSetupModuleResponse);
   // ConfigSetupModule
