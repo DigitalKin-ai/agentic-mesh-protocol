@@ -72,13 +72,9 @@ message UserProfile {
   // last_name: User last name
   string last_name = 5 [(buf.validate.field).required = true];
   // creation_date: Profile creation date
-  google.protobuf.Timestamp creation_date = 6 [
-    (buf.validate.field).required = true
-  ];
+  google.protobuf.Timestamp creation_date = 6 [(buf.validate.field).required = true];
   // update_date: Profile last update date
-  google.protobuf.Timestamp update_date = 7 [
-    (buf.validate.field).required = true
-  ];
+  google.protobuf.Timestamp update_date = 7 [(buf.validate.field).required = true];
   // locale: User locale preference
   string locale = 8 [(buf.validate.field).required = true];
   // subscription: User subscription information
@@ -165,4 +161,53 @@ message GetSetupUserInfoResponse {
   bool success = 1;
   // secret: The secret values as a structured object matching the secret_schema.
   google.protobuf.Struct secret = 2 [(buf.validate.field).required = true];
+}
+
+// ResourceType: Enumerates the kinds of resources whose access can be checked.
+// Enum values can be added over time without breaking existing clients.
+enum ResourceType {
+  // RESOURCE_TYPE_UNSPECIFIED: Default value, must not be used in requests.
+  RESOURCE_TYPE_UNSPECIFIED = 0;
+  // RESOURCE_TYPE_SETUP: A setup resource (setups:).
+  RESOURCE_TYPE_SETUP = 1;
+  // RESOURCE_TYPE_MODULE: A module resource (modules:).
+  RESOURCE_TYPE_MODULE = 2;
+  // RESOURCE_TYPE_MISSION: A mission resource (missions:).
+  RESOURCE_TYPE_MISSION = 3;
+  // RESOURCE_TYPE_STORAGE_RECORD: A storage record resource.
+  RESOURCE_TYPE_STORAGE_RECORD = 4;
+  // RESOURCE_TYPE_FILE: A filesystem file resource.
+  RESOURCE_TYPE_FILE = 5;
+}
+
+// CheckResourceAccessRequest
+// This request is used to check whether the calling task is authorized to
+// access a given resource.
+//
+// The task identifier is NOT carried in this message: it is provided through
+// the gRPC request metadata (e.g. the "task-id" header) and resolved
+// server-side, so authorization context is decoupled from the payload.
+//
+// Fields:
+// - resource_type: The type of the resource whose access is being checked.
+// - resource_id: The unique identifier of the resource whose access is being checked.
+message CheckResourceAccessRequest {
+  // resource_type: The type of the resource whose access is being checked.
+  ResourceType resource_type = 1 [(buf.validate.field).required = true];
+  // resource_id: The unique identifier of the resource whose access is being checked.
+  string resource_id = 2 [(buf.validate.field).required = true];
+}
+
+// CheckResourceAccessResponse
+// Returns whether the calling task is allowed to access the requested resource.
+//
+// A denied access is a normal, expected answer and is reported through the
+// allowed flag with an OK gRPC status. Non-OK statuses are reserved for actual
+// failures (missing task metadata, unknown resource, internal errors).
+//
+// Fields:
+// - allowed: True if the task is authorized to access the resource, false otherwise.
+message CheckResourceAccessResponse {
+  // allowed: True if the task is authorized to access the resource, false otherwise.
+  bool allowed = 1;
 }
