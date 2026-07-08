@@ -85,7 +85,8 @@ message UserProfile {
   google.protobuf.Struct metadata = 11;
 }
 
-// GetUserProfileRequest: Request to get a user profile
+// GetUserProfileRequest: Request to get a user profile.
+// The user is resolved from the mission scope.
 message GetUserProfileRequest {
   // mission_id: Unique identifier for the mission
   string mission_id = 1 [
@@ -100,6 +101,11 @@ message GetUserProfileResponse {
   bool success = 1 [(buf.validate.field).required = true];
   // user_profile: Retrieved user profile
   UserProfile user_profile = 2 [(buf.validate.field).required = true];
+  // mission_cost: Total cost accumulated so far by the mission in the request
+  // (sum of its cost entries, same unit as cost.v1 total_cost / CreditLot)
+  double mission_cost = 3 [
+    (buf.validate.field).double.gte = 0
+  ];
 }
 
 // GetSetupSecretRequest

@@ -68,6 +68,18 @@ enum Visibility {
   VISIBILITY_INTERNAL = 3;
 }
 
+// Sort key for search results
+enum SortBy {
+  // Backend default: relevance when a query is set, otherwise updated_at descending
+  SORT_BY_UNSPECIFIED = 0;
+  // Name
+  SORT_BY_NAME = 1;
+  // Created at
+  SORT_BY_CREATED_AT = 2;
+  // Updated at
+  SORT_BY_UPDATED_AT = 3;
+}
+
 // ModuleType
 enum ModuleType {
   // Unspecified
@@ -75,5 +87,5 @@ enum ModuleType {
   // Archetype
   MODULE_TYPE_ARCHETYPE = 1;
   // Tool
-  MODULE_TYPE_TOOL = 2;
+  MODULE_TYPE_TOOL_MODULE = 2;
 }
