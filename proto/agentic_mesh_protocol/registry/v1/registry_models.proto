@@ -17,10 +17,9 @@ syntax = "proto3";
 package agentic_mesh_protocol.registry.v1;
 
 import "agentic_mesh_protocol/registry/v1/registry_enums.proto";
+import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
-
-import "buf/validate/validate.proto";
 
 // -------------------------
 // DOMAIN MODELS
@@ -89,25 +88,15 @@ message ModuleDescriptor {
 
   // Schemas for machine introspection
   // Input schema
-  google.protobuf.Struct input_schema = 11 [
-    (buf.validate.field).required = true
-  ];
+  google.protobuf.Struct input_schema = 11 [(buf.validate.field).required = true];
   // Output schema
-  google.protobuf.Struct output_schema = 12 [
-    (buf.validate.field).required = true
-  ];
+  google.protobuf.Struct output_schema = 12 [(buf.validate.field).required = true];
   // Setup schema
-  google.protobuf.Struct setup_schema = 13 [
-    (buf.validate.field).required = true
-  ];
+  google.protobuf.Struct setup_schema = 13 [(buf.validate.field).required = true];
   // Secret schema
-  google.protobuf.Struct secret_schema = 14 [
-    (buf.validate.field).required = true
-  ];
+  google.protobuf.Struct secret_schema = 14 [(buf.validate.field).required = true];
   // Cost schema
-  google.protobuf.Struct cost_schema = 15 [
-    (buf.validate.field).required = true
-  ];
+  google.protobuf.Struct cost_schema = 15 [(buf.validate.field).required = true];
 
   // Documentation
   string documentation = 16 [
@@ -116,13 +105,9 @@ message ModuleDescriptor {
   ];
 
   // Created at
-  google.protobuf.Timestamp created_at = 17 [
-    (buf.validate.field).required = true
-  ];
+  google.protobuf.Timestamp created_at = 17 [(buf.validate.field).required = true];
   // Updated at
-  google.protobuf.Timestamp updated_at = 18 [
-    (buf.validate.field).required = true
-  ];
+  google.protobuf.Timestamp updated_at = 18 [(buf.validate.field).required = true];
 }
 
 // Represents your "setups" + current "setup_versions"
@@ -191,12 +176,8 @@ message SetupDescriptor {
     (buf.validate.field).string.min_len = 1
   ];
   // Configuration
-  google.protobuf.Struct config = 12 [
-    (buf.validate.field).required = true
-  ];
+  google.protobuf.Struct config = 12 [(buf.validate.field).required = true];
 
   // Resolved module info (so agents don't need another round-trip)
-  ModuleDescriptor module = 13 [
-    (buf.validate.field).required = true
-  ];
+  ModuleDescriptor module = 13 [(buf.validate.field).required = true];
 }

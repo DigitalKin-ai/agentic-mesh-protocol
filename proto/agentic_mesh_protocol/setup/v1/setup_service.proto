@@ -21,25 +21,25 @@ import "agentic_mesh_protocol/setup/v1/setup.proto";
 // SetupService
 // Provides operations for setups and setup versions.
 service SetupService {
-  // CreateSetup creates a new setup.
+  // DEPRECATED: CreateSetup — unused in SDK.
   rpc CreateSetup(CreateSetupRequest) returns (CreateSetupResponse);
   // GetSetup retrieves a setup by its unique identifier.
   rpc GetSetup(GetSetupRequest) returns (GetSetupResponse);
-  // UpdateSetup updates an existing setup.
+  // DEPRECATED: UpdateSetup — unused in SDK.
   rpc UpdateSetup(UpdateSetupRequest) returns (UpdateSetupResponse);
-  // DeleteSetup deletes a setup.
+  // DEPRECATED: DeleteSetup — unused in SDK.
   rpc DeleteSetup(DeleteSetupRequest) returns (DeleteSetupResponse);
 
-  // CreateSetupVersion creates a new setup version.
+  // DEPRECATED: CreateSetupVersion — unused in SDK.
   rpc CreateSetupVersion(CreateSetupVersionRequest) returns (CreateSetupVersionResponse);
   // GetSetupVersion retrieves a setup version by its unique identifier.
   rpc GetSetupVersion(GetSetupVersionRequest) returns (GetSetupVersionResponse);
-  // SearchSetupVersions searches for setup versions based on provided filters.
+  // DEPRECATED: SearchSetupVersions — unused in SDK.
   rpc SearchSetupVersions(SearchSetupVersionsRequest) returns (SearchSetupVersionsResponse);
-  // UpdateSetupVersion updates an existing setup version.
+  // DEPRECATED: UpdateSetupVersion — unused in SDK.
   rpc UpdateSetupVersion(UpdateSetupVersionRequest) returns (UpdateSetupVersionResponse);
-  // DeleteSetupVersion deletes a setup version.
+  // DEPRECATED: DeleteSetupVersion — unused in SDK.
   rpc DeleteSetupVersion(DeleteSetupVersionRequest) returns (DeleteSetupVersionResponse);
-  // ListSetups retrieves a paginated list of setups, filtered by organisation or owner.
+  // DEPRECATED: ListSetups — unused in SDK.
   rpc ListSetups(ListSetupsRequest) returns (ListSetupsResponse);
 }

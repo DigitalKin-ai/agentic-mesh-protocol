@@ -139,7 +139,7 @@ message FileFilter {
   // context: Filter by context (required for scoping)
   string context = 4 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^(missions:|setups:).*$"
+    (buf.validate.field).string.pattern = "^(missions:|setups:|users:|organizations:).*$"
   ];
 
   // created_after: Filter files created after this timestamp
@@ -254,9 +254,7 @@ message UploadFilesResponse {
 // GetFileRequest is the request message for retrieving a specific file.
 message GetFileRequest {
   // context: Context ID for the file
-  string context = 1 [
-    (buf.validate.field).string.pattern = "^(missions:|setups:).*$"
-  ];
+  string context = 1 [(buf.validate.field).string.pattern = "^(missions:|setups:).*$"];
 
   // file_id: File ID
   string file_id = 2 [
@@ -324,7 +322,7 @@ message GetFilesRequest {
   // context: Context ID for the files
   string context = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^(missions:|setups:).*$"
+    (buf.validate.field).string.pattern = "^(missions:|setups:|users:|organizations:).*$"
   ];
 
   // filters: How to identify the files
