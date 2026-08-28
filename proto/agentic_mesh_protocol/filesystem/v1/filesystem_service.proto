@@ -30,7 +30,8 @@ service FilesystemService {
   // DEPRECATED: GetFile — unused in SDK, no callers.
   rpc GetFile(GetFileRequest) returns (GetFileResponse);
 
-  // DEPRECATED: GetFiles — unused in SDK, no callers.
+  // GetFiles retrieves multiple files matching the given filter,
+  // with pagination and optional visibility filtering.
   rpc GetFiles(GetFilesRequest) returns (GetFilesResponse);
 
   // UpdateFile allows updating various aspects of a file including

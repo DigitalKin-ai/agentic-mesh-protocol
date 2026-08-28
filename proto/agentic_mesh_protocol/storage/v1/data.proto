@@ -34,11 +34,38 @@ enum DataType {
   OTHER = 4;
 }
 
+// Visibility: Access scope of a record
+enum Visibility {
+  // VISIBILITY_UNSPECIFIED: Visibility not specified
+  VISIBILITY_UNSPECIFIED = 0;
+  // VISIBILITY_PUBLIC: Visible to everyone
+  VISIBILITY_PUBLIC = 1;
+  // VISIBILITY_PRIVATE: Visible only to the owner
+  VISIBILITY_PRIVATE = 2;
+  // VISIBILITY_INTERNAL: Visible within the organisation
+  VISIBILITY_INTERNAL = 3;
+}
+
+// ContextStorage: Type of context a record is scoped to. The matching identifier is
+// resolved server-side from the task metadata, so it is not carried by the requests.
+enum ContextStorage {
+  // CONTEXT_UNSPECIFIED: Default unspecified context
+  CONTEXT_UNSPECIFIED = 0;
+  // CONTEXT_MISSIONS: Context related to missions
+  CONTEXT_MISSIONS = 1;
+  // CONTEXT_SETUP_VERSIONS: Context related to setup versions
+  CONTEXT_SETUP_VERSIONS = 2;
+  // CONTEXT_USERS: Context related to users
+  CONTEXT_USERS = 3;
+  // CONTEXT_ORGANIZATIONS: Context related to organizations
+  CONTEXT_ORGANIZATIONS = 4;
+}
+
 // StorageRecord: Message to represent stored data
 message StorageRecord {
   // data: JSON Object to store
   google.protobuf.Struct data = 1 [(buf.validate.field).required = true];
-  // context: Mission ID linked to the data
+  // context: Prefixed identifier of the context owning the record (missions: or setup_versions:)
   string context = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.pattern = "^(missions|setup_versions):.+"
@@ -53,23 +80,29 @@ message StorageRecord {
   google.protobuf.Timestamp update_date = 6 [(buf.validate.field).required = true];
   // data_type: Type of the data
   DataType data_type = 7 [(buf.validate.field).required = true];
+  // visibility: Access scope of the record
+  Visibility visibility = 8 [(buf.validate.field).required = true];
+  // storage_id: Unique identifier for the storage record
+  string storage_id = 9 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "storage:"
+  ];
 }
 
 // StoreRecordRequest: Request to store record
 message StoreRecordRequest {
   // data: Data to store or to retrieve
   google.protobuf.Struct data = 1 [(buf.validate.field).required = true];
-  // context: Mission ID linked to the data
-  string context = 2 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^(missions|setup_versions):.+"
-  ];
+  // context: Type of context the record is scoped to (identifier resolved server-side)
+  ContextStorage context = 2 [(buf.validate.field).required = true];
   // collection: Name of a group of records (unique by context)
   string collection = 3 [(buf.validate.field).required = true];
   // record_id: Unique identifier for the record within collection
   string record_id = 4 [(buf.validate.field).required = true];
   // data_type: Type of the data
   DataType data_type = 5 [(buf.validate.field).required = true];
+  // visibility: Access scope of the record (optional; defaults server-side)
+  Visibility visibility = 6;
 }
 
 // StoreRecordResponse: Response to stored record
@@ -82,15 +115,14 @@ message StoreRecordResponse {
 
 // ReadRecordRequest: Request to read a record
 message ReadRecordRequest {
-  // context: Mission ID linked to the data
-  string context = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^(missions|setup_versions):.+"
-  ];
+  // context: Type of context the record is scoped to (identifier resolved server-side)
+  ContextStorage context = 1 [(buf.validate.field).required = true];
   // collection: Name of a group of records (unique by context)
   string collection = 2 [(buf.validate.field).required = true];
   // record_id: Unique identifier for the record within collection
   string record_id = 3 [(buf.validate.field).required = true];
+  // storage_id: Unique identifier for the storage record (optional; defaults server-side)
+  string storage_id = 4 [(buf.validate.field).string.prefix = "storage:"];
 }
 
 // ReadRecordResponse: Response after read a record
@@ -105,15 +137,14 @@ message ReadRecordResponse {
 message UpdateRecordRequest {
   // data: Data to store or to retrieve
   google.protobuf.Struct data = 1 [(buf.validate.field).required = true];
-  // context: Mission ID linked to the data
-  string context = 2 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^(missions|setup_versions):.+"
-  ];
+  // context: Type of context the record is scoped to (identifier resolved server-side)
+  ContextStorage context = 2 [(buf.validate.field).required = true];
   // collection: Name of a group of records (unique by context)
   string collection = 3 [(buf.validate.field).required = true];
   // record_id: Unique identifier for the record within collection
   string record_id = 4 [(buf.validate.field).required = true];
+  // visibility: Access scope of the record (optional; defaults server-side)
+  Visibility visibility = 5;
 }
 
 // UpdateRecordResponse: Response to record modification
@@ -126,12 +157,9 @@ message UpdateRecordResponse {
 
 // RemoveRecordRequest: Request to remove a record
 message RemoveRecordRequest {
-  // context: Mission ID linked to the data
-  string context = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^(missions|setup_versions):.+"
-  ];
-  // collection: Name of a group of records (unique by mission_id)
+  // context: Type of context the record is scoped to (identifier resolved server-side)
+  ContextStorage context = 1 [(buf.validate.field).required = true];
+  // collection: Name of a group of records (unique by context)
   string collection = 2 [(buf.validate.field).required = true];
   // record_id: Unique identifier for the record within collection
   string record_id = 3 [(buf.validate.field).required = true];
@@ -145,13 +173,21 @@ message RemoveRecordResponse {
 
 // ListRecordsRequest: Request to list all records in a given collection
 message ListRecordsRequest {
-  // context: Mission ID linked to the data
-  string context = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^(missions|setup_versions|users|organizations):.+"
-  ];
+  // context: Type of context the records are scoped to (identifier resolved server-side)
+  ContextStorage context = 1 [(buf.validate.field).required = true];
   // collection: Name of a group of records (unique by context)
   string collection = 2 [(buf.validate.field).required = true];
+  // visibilities: Filter by visibility (empty = no filter)
+  repeated Visibility visibilities = 3 [(buf.validate.field).repeated.items.enum.not_in = 0];
+  // record_id: Filter by record identifier within collection (optional; empty = no filter)
+  string record_id = 4;
+  // limit: Maximum number of records to return (0 = server default of 20, capped at 100)
+  int32 limit = 5 [
+    (buf.validate.field).int32.gte = 0,
+    (buf.validate.field).int32.lte = 100
+  ];
+  // offset: Number of records to skip before returning results
+  int32 offset = 6 [(buf.validate.field).int32.gte = 0];
 }
 
 // ListRecordsResponse: Response to list all records in a given collection
@@ -162,13 +198,12 @@ message ListRecordsResponse {
 
 // RemoveCollectionRequest: Request to remove a collection
 message RemoveCollectionRequest {
-  // context: Mission ID linked to the data
-  string context = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^(missions|setup_versions):.+"
-  ];
+  // context: Type of context the record is scoped to (identifier resolved server-side)
+  ContextStorage context = 1 [(buf.validate.field).required = true];
   // collection: Name of a group of records (unique by context)
   string collection = 2 [(buf.validate.field).required = true];
+  // record_id: Restrict removal to this record identifier (optional; empty = whole collection)
+  string record_id = 3;
 }
 
 // RemoveCollectionResponse: Response to removed collection

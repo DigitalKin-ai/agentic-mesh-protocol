@@ -98,16 +98,16 @@ message ModuleDescriptor {
   // Cost schema
   google.protobuf.Struct cost_schema = 15 [(buf.validate.field).required = true];
 
-  // Documentation
-  string documentation = 16 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
-  ];
+  // Documentation (may be empty)
+  string documentation = 16;
 
   // Created at
   google.protobuf.Timestamp created_at = 17 [(buf.validate.field).required = true];
   // Updated at
   google.protobuf.Timestamp updated_at = 18 [(buf.validate.field).required = true];
+
+  // Tags for categorization and search filtering (lowercase recommended)
+  repeated string tags = 19 [(buf.validate.field).repeated.items.string.min_len = 1];
 }
 
 // Represents your "setups" + current "setup_versions"
@@ -123,11 +123,8 @@ message SetupDescriptor {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ];
-  // Documentation
-  string documentation = 3 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.min_len = 1
-  ];
+  // Documentation (may be empty)
+  string documentation = 3;
   // Status
   SetupStatus status = 4 [
     (buf.validate.field).required = true,
@@ -180,4 +177,75 @@ message SetupDescriptor {
 
   // Resolved module info (so agents don't need another round-trip)
   ModuleDescriptor module = 13 [(buf.validate.field).required = true];
+
+  // Tags for categorization and search filtering (lowercase recommended)
+  repeated string tags = 14 [(buf.validate.field).repeated.items.string.min_len = 1];
+}
+
+// Trimmed, search-oriented view of a module. Intentionally excludes the
+// network address/port (mesh-internal) and the schema Structs — resolve
+// via GetModule when wiring communication.
+message ModuleSummary {
+  // Module ID
+  string id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "modules:",
+    (buf.validate.field).string.min_len = 1
+  ];
+  // Name
+  string name = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+  // Module type (tool vs archetype/kin)
+  ModuleType module_type = 3;
+  // Version
+  string version = 4;
+  // Status
+  ModuleStatus status = 5;
+  // Visibility
+  Visibility visibility = 6;
+  // Organization ID
+  string organization_id = 7;
+  // Documentation
+  string documentation = 8;
+  // Tags
+  repeated string tags = 9;
+}
+
+// Trimmed, search-oriented view of a setup. Intentionally excludes the
+// setup configuration (may contain sensitive values), owner/card ids and
+// the full module descriptor — resolve via GetSetup when invoking.
+message SetupSummary {
+  // Setup ID
+  string id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "setups:",
+    (buf.validate.field).string.min_len = 1
+  ];
+  // Name
+  string name = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1
+  ];
+  // Documentation
+  string documentation = 3;
+  // Status
+  SetupStatus status = 4;
+  // Visibility
+  Visibility visibility = 5;
+  // Organization ID
+  string organization_id = 6;
+  // Backing module
+  string module_id = 7;
+  // Backing module name (denormalized so search needs no second round-trip)
+  string module_name = 8;
+  // Backing module type (tool vs archetype/kin)
+  ModuleType module_type = 9;
+  // Current version id
+  string setup_version_id = 10;
+  // Current version label
+  string setup_version = 11;
+  // Tags
+  repeated string tags = 12;
 }

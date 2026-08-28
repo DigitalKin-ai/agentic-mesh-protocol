@@ -36,11 +36,13 @@ service RegistryService {
   // 2. DISCOVERY
   // -----------------------
 
-  // DEPRECATED: DiscoverSetups — unused in SDK, no callers.
-  rpc DiscoverSetups(DiscoverSetupsRequest) returns (DiscoverSetupsResponse);
+  // Search the setup catalog (configured, invocable agent/tool instances).
+  // Returns trimmed SetupSummary results; resolve full config via GetSetup.
+  rpc SearchSetups(SearchSetupsRequest) returns (SearchSetupsResponse);
 
-  // Discover raw modules (rarely used by agents directly).
-  rpc DiscoverModules(DiscoverModulesRequest) returns (DiscoverModulesResponse);
+  // Search the module catalog (module blueprints; needs a setup to be invocable).
+  // Returns trimmed ModuleSummary results; resolve address/schemas via GetModule.
+  rpc SearchModules(SearchModulesRequest) returns (SearchModulesResponse);
 
   // -----------------------
   // 3. RESOLUTION / INFO

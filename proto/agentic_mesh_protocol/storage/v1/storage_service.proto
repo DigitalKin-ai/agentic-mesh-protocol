@@ -32,7 +32,7 @@ service StorageService {
   // RemoveRecord: Delete a record from storage
   rpc RemoveRecord(RemoveRecordRequest) returns (RemoveRecordResponse);
 
-  // DEPRECATED: ListRecords — unused in SDK, no callers.
+  // ListRecords: List records in a collection, optionally filtered by visibility
   rpc ListRecords(ListRecordsRequest) returns (ListRecordsResponse);
 
   // DEPRECATED: RemoveCollection — unused in SDK, no callers.

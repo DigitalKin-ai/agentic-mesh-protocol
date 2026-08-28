@@ -377,6 +377,11 @@ Automatically pushes schema to Buf Schema Registry:
 
 **Note**: All CI workflows use concurrency groups to cancel in-progress runs when new commits are pushed.
 
+## Git Conventions
+
+### Commit Messages
+- **Never add a `Co-Authored-By:` trailer to commits.** This includes AI/assistant co-author trailers (e.g. `Co-Authored-By: Claude ... <noreply@anthropic.com>`) and any other co-author attribution. Commits must carry only their author.
+
 ## Important Notes
 
 ### Protocol and Structure

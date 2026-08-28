@@ -21,25 +21,24 @@ import "agentic_mesh_protocol/setup/v1/setup.proto";
 // SetupService
 // Provides operations for setups and setup versions.
 service SetupService {
-  // DEPRECATED: CreateSetup — unused in SDK.
-  rpc CreateSetup(CreateSetupRequest) returns (CreateSetupResponse);
   // GetSetup retrieves a setup by its unique identifier.
   rpc GetSetup(GetSetupRequest) returns (GetSetupResponse);
-  // DEPRECATED: UpdateSetup — unused in SDK.
+
+  // CreateSetup creates a new setup.
+  rpc CreateSetup(CreateSetupRequest) returns (CreateSetupResponse);
+
+  // UpdateSetup updates an existing setup.
   rpc UpdateSetup(UpdateSetupRequest) returns (UpdateSetupResponse);
-  // DEPRECATED: DeleteSetup — unused in SDK.
+
+  // DeleteSetup deletes a setup by its unique identifier.
   rpc DeleteSetup(DeleteSetupRequest) returns (DeleteSetupResponse);
 
-  // DEPRECATED: CreateSetupVersion — unused in SDK.
-  rpc CreateSetupVersion(CreateSetupVersionRequest) returns (CreateSetupVersionResponse);
-  // GetSetupVersion retrieves a setup version by its unique identifier.
-  rpc GetSetupVersion(GetSetupVersionRequest) returns (GetSetupVersionResponse);
-  // DEPRECATED: SearchSetupVersions — unused in SDK.
-  rpc SearchSetupVersions(SearchSetupVersionsRequest) returns (SearchSetupVersionsResponse);
-  // DEPRECATED: UpdateSetupVersion — unused in SDK.
-  rpc UpdateSetupVersion(UpdateSetupVersionRequest) returns (UpdateSetupVersionResponse);
-  // DEPRECATED: DeleteSetupVersion — unused in SDK.
-  rpc DeleteSetupVersion(DeleteSetupVersionRequest) returns (DeleteSetupVersionResponse);
-  // DEPRECATED: ListSetups — unused in SDK.
-  rpc ListSetups(ListSetupsRequest) returns (ListSetupsResponse);
+  // ChangeVisibility changes the visibility scope of a setup.
+  rpc ChangeVisibility(ChangeVisibilityRequest) returns (ChangeVisibilityResponse);
+
+  // ListSetupVersions lists the versions of a setup.
+  rpc ListSetupVersions(ListSetupVersionsRequest) returns (ListSetupVersionsResponse);
+
+  // SetCurrentSetupVersion activates an existing version of a setup.
+  rpc SetCurrentSetupVersion(SetCurrentSetupVersionRequest) returns (SetCurrentSetupVersionResponse);
 }

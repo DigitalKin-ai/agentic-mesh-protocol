@@ -49,6 +49,10 @@ message RegisterModuleRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1
   ]; // runtime version of the deployed module
+  // Module type (tool vs archetype/kin) declared by the module at registration
+  ModuleType module_type = 5;
+  // Internal documentation for registry index search.
+  string documentation = 6;
 }
 
 // RegisterModuleResponse
@@ -80,78 +84,81 @@ message HeartbeatResponse {
 // DISCOVERY
 // -------------------------
 
-// Discover setups that are available (agents / tools).
-message DiscoverSetupsRequest {
-  // Basic filtering
-  // Organization ID
-  string organization_id = 1 [
-    (buf.validate.field).string.prefix = "organizations:",
-    (buf.validate.field).string.min_len = 1
-  ];
-  // Visibility
-  repeated Visibility visibility = 2 [(buf.validate.field).repeated.items.enum.not_in = 0];
-  // Status
-  repeated SetupStatus status = 3 [(buf.validate.field).repeated.items.enum.not_in = 0]; // typically READY / CONFIGURATION_SUCCEEDED
-
-  // e.g. agent, tool
+// Search the setup catalog (configured, invocable agent/tool instances).
+message SearchSetupsRequest {
+  // Free-text search. The backend MUST match case-insensitively against
+  // BOTH the setup name and its documentation. Empty = match all.
+  string query = 1;
+  // Restrict to these setup ids (empty = no filter)
+  repeated string setup_ids = 2 [(buf.validate.field).repeated.items.string.prefix = "setups:"];
+  // Restrict to setups backed by these modules (empty = no filter)
+  repeated string module_ids = 3 [(buf.validate.field).repeated.items.string.prefix = "modules:"];
+  // Filter by backing module type, e.g. tool, archetype (empty = no filter)
   repeated ModuleType module_types = 4 [(buf.validate.field).repeated.items.enum.not_in = 0];
-
-  // Simple text search
-  string query = 5 [(buf.validate.field).string.min_len = 1]; // matches on name / documentation depending on implementation
-
-  // Filter on specific modules if needed
-  repeated string module_ids = 6 [
-    (buf.validate.field).repeated.items.string.prefix = "modules:",
-    (buf.validate.field).repeated.items.string.min_len = 1
-  ];
-
-  // Pagination
-  // Limit
-  int32 limit = 7 [
-    (buf.validate.field).int32.gte = 1,
+  // Filter by setup status (empty = no filter);
+  // typically READY / CONFIGURATION_SUCCEEDED for invocable setups
+  repeated SetupStatus statuses = 5 [(buf.validate.field).repeated.items.enum.not_in = 0];
+  // Filter by visibility (empty = no filter)
+  repeated Visibility visibilities = 6 [(buf.validate.field).repeated.items.enum.not_in = 0];
+  // Filter by tags (empty = no filter). Matched case-insensitively; a setup
+  // matches if it carries AT LEAST ONE of the given tags (OR semantics).
+  repeated string tags = 9 [(buf.validate.field).repeated.items.string.min_len = 1];
+  // Sort key (UNSPECIFIED = backend default)
+  SortBy sort_by = 10;
+  // Sort direction: false = ascending, true = descending
+  bool descending = 11;
+  // Pagination. limit 0 = server default (20), capped at 100.
+  int32 limit = 12 [
+    (buf.validate.field).int32.gte = 0,
     (buf.validate.field).int32.lte = 100
   ];
   // Offset
-  int32 offset = 8 [(buf.validate.field).int32.gte = 0];
+  int32 offset = 13 [(buf.validate.field).int32.gte = 0];
 }
 
-// DiscoverSetupsResponse
-message DiscoverSetupsResponse {
-  // Setups
-  repeated SetupDescriptor setups = 1;
+// SearchSetupsResponse
+message SearchSetupsResponse {
+  // Matching setups (paginated, trimmed summaries)
+  repeated SetupSummary setups = 1;
+  // Total matches ignoring limit/offset, so clients can paginate
+  int32 total = 2;
 }
 
-// Discover raw modules (rarely used by agents directly).
-message DiscoverModulesRequest {
-  // Organization ID
-  string organization_id = 1 [
-    (buf.validate.field).string.prefix = "organizations:",
-    (buf.validate.field).string.min_len = 1
-  ];
-  // Module types
-  repeated ModuleType module_types = 2 [(buf.validate.field).repeated.items.enum.not_in = 0];
-  // Status
-  repeated ModuleStatus status = 3 [(buf.validate.field).repeated.items.enum.not_in = 0];
-  // Visibility
-  repeated Visibility visibility = 4 [(buf.validate.field).repeated.items.enum.not_in = 0];
-
-  // Simple text search
-  string query = 5 [(buf.validate.field).string.min_len = 1]; // matches on name / documentation
-
-  // Pagination
-  // Limit
-  int32 limit = 6 [
-    (buf.validate.field).int32.gte = 1,
+// Search the module catalog (module blueprints; needs a setup to be invocable).
+message SearchModulesRequest {
+  // Free-text search. The backend MUST match case-insensitively against
+  // BOTH the module name and its documentation. Empty = match all.
+  string query = 1;
+  // Restrict to these module ids (empty = no filter)
+  repeated string module_ids = 2 [(buf.validate.field).repeated.items.string.prefix = "modules:"];
+  // Filter by module type, e.g. tool, archetype (empty = no filter)
+  repeated ModuleType module_types = 3 [(buf.validate.field).repeated.items.enum.not_in = 0];
+  // Filter by module status (empty = no filter)
+  repeated ModuleStatus statuses = 4 [(buf.validate.field).repeated.items.enum.not_in = 0];
+  // Filter by visibility (empty = no filter)
+  repeated Visibility visibilities = 5 [(buf.validate.field).repeated.items.enum.not_in = 0];
+  // Filter by tags (empty = no filter). Matched case-insensitively; a module
+  // matches if it carries AT LEAST ONE of the given tags (OR semantics).
+  repeated string tags = 8 [(buf.validate.field).repeated.items.string.min_len = 1];
+  // Sort key (UNSPECIFIED = backend default)
+  SortBy sort_by = 9;
+  // Sort direction: false = ascending, true = descending
+  bool descending = 10;
+  // Pagination. limit 0 = server default (20), capped at 100.
+  int32 limit = 11 [
+    (buf.validate.field).int32.gte = 0,
     (buf.validate.field).int32.lte = 100
   ];
   // Offset
-  int32 offset = 7 [(buf.validate.field).int32.gte = 0];
+  int32 offset = 12 [(buf.validate.field).int32.gte = 0];
 }
 
-// DiscoverModulesResponse
-message DiscoverModulesResponse {
-  // Modules
-  repeated ModuleDescriptor modules = 1;
+// SearchModulesResponse
+message SearchModulesResponse {
+  // Matching modules (paginated, trimmed summaries)
+  repeated ModuleSummary modules = 1;
+  // Total matches ignoring limit/offset, so clients can paginate
+  int32 total = 2;
 }
 
 // -------------------------
