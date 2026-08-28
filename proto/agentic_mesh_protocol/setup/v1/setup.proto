@@ -54,6 +54,25 @@ enum SetupStatus {
   CONFIGURATION_SUCCEEDED = 9;
 }
 
+// Visibility
+// Represents the visibility scope of a setup.
+//
+// Fields:
+// - VISIBILITY_UNSPECIFIED: Visibility not specified
+// - VISIBILITY_PUBLIC: Visible to everyone
+// - VISIBILITY_PRIVATE: Visible only to the owner
+// - VISIBILITY_INTERNAL: Visible within the organisation
+enum Visibility {
+  // VISIBILITY_UNSPECIFIED: Visibility not specified
+  VISIBILITY_UNSPECIFIED = 0;
+  // VISIBILITY_PUBLIC: Visible to everyone
+  VISIBILITY_PUBLIC = 1;
+  // VISIBILITY_PRIVATE: Visible only to the owner
+  VISIBILITY_PRIVATE = 2;
+  // VISIBILITY_INTERNAL: Visible within the organisation
+  VISIBILITY_INTERNAL = 3;
+}
+
 // SetupVersion
 // Represents a version of a setup's configuration.
 //
@@ -102,43 +121,8 @@ message Setup {
   optional SetupVersion current_setup_version = 6;
   // status: The status of the setup.
   SetupStatus status = 7 [(buf.validate.field).required = true];
-}
-
-// CreateSetupRequest
-// This request is used to create a new setup.
-//
-// Fields:
-// - name: The name of the setup.
-// - organisation_id: The unique identifier of the organisation.
-// - owner_id: The owner_id of the setup.
-// - module_id: The module identifier associated with the setup.
-// - current_setup_version: The unique identifier of the active setup version.
-message CreateSetupRequest {
-  // name: The name of the setup.
-  string name = 1 [(buf.validate.field).required = true];
-  // organisation_id: The unique identifier of the organisation.
-  string organisation_id = 2 [(buf.validate.field).required = true];
-  // owner_id: The owner_id of the setup.
-  string owner_id = 3 [(buf.validate.field).required = true];
-  // module_id: The module identifier associated with the setup.
-  string module_id = 4 [(buf.validate.field).required = true];
-  // current_setup_version: The unique identifier of the active setup version.
-  optional SetupVersion current_setup_version = 5;
-  // status: The status of the setup.
-  SetupStatus status = 6 [(buf.validate.field).required = true];
-}
-
-// CreateSetupResponse
-// Returns the newly created setup status flag.
-//
-// Fields:
-// - success: description flag of the operation.
-// - setup: The newly created setup entity.
-message CreateSetupResponse {
-  // success: description flag of the operation.
-  bool success = 1;
-  // setup: The newly created setup entity.
-  Setup setup = 2;
+  // visibility: The visibility scope of the setup.
+  Visibility visibility = 8 [(buf.validate.field).required = true];
 }
 
 // GetSetupRequest
@@ -167,37 +151,69 @@ message GetSetupResponse {
   SetupVersion setup_version = 2;
 }
 
+// CreateSetupRequest
+// This request is used to create a new setup. The owner and organisation are
+// resolved from the request context, and the identifier is generated server-side.
+//
+// Fields:
+// - name: The name of the setup.
+// - content: The configuration content of the initial setup version.
+message CreateSetupRequest {
+  // name: The name of the setup.
+  string name = 1 [(buf.validate.field).required = true];
+  // content: Key-value pairs for the initial configuration content.
+  google.protobuf.Struct content = 2 [(buf.validate.field).required = true];
+}
+
+// CreateSetupResponse
+// Returns the newly created setup.
+//
+// Fields:
+// - success: Whether the operation succeeded.
+// - setup: The newly created setup entity.
+// - setup_version: The newly created setup version.
+message CreateSetupResponse {
+  // success: Whether the operation succeeded.
+  bool success = 1;
+  // setup: The newly created setup entity.
+  Setup setup = 2;
+  // setup_version: The newly created setup version.
+  SetupVersion setup_version = 3;
+}
+
 // UpdateSetupRequest
 // This request is used to update an existing setup.
 //
 // Fields:
-// - name: The unique identifier of the setup to update.
-// - owner_id: (Optional) The new owner_id.
-// - current_setup_version: (Optional) The new active setup version identifier.
+// - setup_id: The unique identifier of the setup to update.
+// - name: The new name of the setup.
+// - content: The new configuration content.
+// - set_as_current: Whether the new version becomes the current one.
 message UpdateSetupRequest {
   // setup_id: The unique identifier of the setup.
   string setup_id = 1 [(buf.validate.field).required = true];
-  // name: The unique identifier of the setup to update.
+  // name: The name of the setup.
   string name = 2 [(buf.validate.field).required = true];
-  // owner_id: The owner_id of the setup.
-  string owner_id = 3;
-  // current_setup_version: The unique identifier of the active setup version.
-  SetupVersion current_setup_version = 4;
-  // status: The status of the setup.
-  SetupStatus status = 5 [(buf.validate.field).required = true];
+  // content: Key-value pairs for configuration content.
+  google.protobuf.Struct content = 3 [(buf.validate.field).required = true];
+  // set_as_current: Whether the new version becomes the current one.
+  bool set_as_current = 4;
 }
 
 // UpdateSetupResponse
-// Returns the updated setup status flag.
+// Returns the updated setup.
 //
 // Fields:
-// - success: description flag of the operation.
+// - success: Whether the operation succeeded.
 // - setup: The updated setup entity.
+// - setup_version: The updated setup version.
 message UpdateSetupResponse {
-  // success: description flag of the operation.
+  // success: Whether the operation succeeded.
   bool success = 1;
   // setup: The updated setup entity.
   Setup setup = 2;
+  // setup_version: The updated setup version.
+  SetupVersion setup_version = 3;
 }
 
 // DeleteSetupRequest
@@ -211,146 +227,105 @@ message DeleteSetupRequest {
 }
 
 // DeleteSetupResponse
-// Indicates that the setup has been successfully deleted.
+// Indicates whether the setup has been successfully deleted.
+//
+// Fields:
+// - success: Whether the operation succeeded.
 message DeleteSetupResponse {
-  // success: description flag of the operation.
+  // success: Whether the operation succeeded.
   bool success = 1;
 }
 
-// CreateSetupVersionRequest
-// This request is used to create a new setup version.
+// ChangeVisibilityRequest
+// This request is used to change the visibility scope of an existing setup.
 //
 // Fields:
-// - setup_id: The unique identifier of the parent setup.
-// - version: The label for the new version.
-// - content: The configuration content for this version.
-message CreateSetupVersionRequest {
-  // setup_id: The unique identifier of the parent setup.
+// - setup_id: The unique identifier of the setup.
+// - visibility: The new visibility scope for the setup.
+message ChangeVisibilityRequest {
+  // setup_id: The unique identifier of the setup.
   string setup_id = 1 [(buf.validate.field).required = true];
-  // version: The version label (e.g., "v1", "v2").
-  string version = 2 [(buf.validate.field).required = true];
-  // content: Key-value pairs for configuration content.
-  google.protobuf.Struct content = 3;
+  // visibility: The new visibility scope for the setup.
+  Visibility visibility = 2 [(buf.validate.field).required = true];
 }
 
-// CreateSetupVersionResponse
-// Returns the newly created setup version status flag.
+// ChangeVisibilityResponse
+// Returns the setup with its updated visibility.
 //
 // Fields:
-// - success: description flag of the operation.
-// - setup_version: The newly created setup version entity.
-message CreateSetupVersionResponse {
-  // success: description flag of the operation.
+// - success: Whether the operation succeeded.
+// - setup: The updated setup entity.
+// - setup_version: The current setup version.
+message ChangeVisibilityResponse {
+  // success: Whether the operation succeeded.
   bool success = 1;
-  // setup_version: The newly created setup version entity.
-  SetupVersion setup_version = 2;
+  // setup: The updated setup entity.
+  Setup setup = 2;
+  // setup_version: The current setup version.
+  SetupVersion setup_version = 3;
 }
 
-// GetSetupVersionRequest
-// This request is used to retrieve a setup version by its unique identifier.
+// ListSetupVersionsRequest
+// This request is used to list the versions of a setup, most recent first.
 //
 // Fields:
-// - setup_version_id: The unique identifier of the setup version.
-message GetSetupVersionRequest {
-  // setup_version_id: The unique identifier of the setup version.
-  string setup_version_id = 1;
-}
-
-// GetSetupVersionResponse
-// Returns the setup version corresponding to the setup_version_id.
-//
-// Fields:
-// - setup_version: The retrieved setup version entity.
-message GetSetupVersionResponse {
-  // setup_version: The retrieved setup version entity.
-  SetupVersion setup_version = 1;
-}
-
-// SearchSetupVersionsRequest
-// This request is used to search for setup versions using filters.
-//
-// Fields:
-// - setup_id: (Optional) Filter by the parent setup identifier.
-// - version: (Optional) Filter by the version label.
-message SearchSetupVersionsRequest {
-  // setup_id: The unique identifier of the parent setup.
-  string setup_id = 1;
-  // version: The version label to filter wirh.
-  optional string version = 2;
-}
-
-// SearchSetupVersionsResponse
-// Returns a list of setup versions that match the search criteria.
-message SearchSetupVersionsResponse {
-  // setup_versions: A list of setup versions matching the criteria.
-  repeated SetupVersion setup_versions = 1;
-}
-
-// UpdateSetupVersionRequest
-// This request is used to update an existing setup version.
-//
-// Fields:
-// - setup_version_id: The unique identifier of the setup version to update.
-// - version: (Optional) The new version label.
-// - content: (Optional) The new configuration content.
-message UpdateSetupVersionRequest {
-  // setup_version_id: The unique identifier of the setup version to update.
-  string setup_version_id = 1 [(buf.validate.field).required = true];
-  // version: The version label.
-  string version = 2 [(buf.validate.field).required = true];
-  // content: Key-value pairs for configuration content.
-  google.protobuf.Struct content = 3 [(buf.validate.field).required = true];
-}
-
-// UpdateSetupVersionResponse
-// Returns the updated setup version.
-//
-// Fields:
-// - success: description flag of the operation.
-// - setup_version: The updated setup version entity.
-message UpdateSetupVersionResponse {
-  // success: description flag of the operation.
-  bool success = 1;
-  // setup_version: The updated setup version entity.
-  SetupVersion setup_version = 2;
-}
-
-// DeleteSetupVersionRequest
-// This request is used to delete a setup version by its unique identifier.
-//
-// Fields:
-// - setup_version_id: The unique identifier of the setup version to delete.
-message DeleteSetupVersionRequest {
-  // setup_version_id: The unique identifier of the setup version.
-  string setup_version_id = 1 [(buf.validate.field).required = true];
-}
-
-// DeleteSetupVersionResponse
-// Indicates that the setup version has been successfully deleted.
-message DeleteSetupVersionResponse {
-  // success: description flag of the operation.
-  bool success = 1;
-}
-
-// ListSetupsRequest is the request message for listing setups.
-message ListSetupsRequest {
-  // organisation_id: Filter by organisation ID.
-  optional string organisation_id = 1;
-  // owner_id: Filter by owner ID.
-  optional string owner_id = 2;
-  // limit: Maximum number of setups to return.
-  int32 limit = 3 [
+// - setup_id: The unique identifier of the setup whose versions are listed.
+// - limit: The maximum number of setup versions to return.
+// - offset: The number of setup versions to skip for pagination.
+message ListSetupVersionsRequest {
+  // setup_id: The unique identifier of the setup.
+  string setup_id = 1 [(buf.validate.field).required = true];
+  // limit: The maximum number of setup versions to return.
+  int32 limit = 2 [
     (buf.validate.field).int32.gte = 1,
     (buf.validate.field).int32.lte = 1000
   ];
-  // offset: Number of setups to skip.
-  int32 offset = 4 [(buf.validate.field).int32.gte = 0];
+  // offset: The number of setup versions to skip for pagination.
+  int32 offset = 3 [(buf.validate.field).int32.gte = 0];
 }
 
-// ListSetupsResponse is the response message containing a list of setups.
-message ListSetupsResponse {
-  // setups: List of setups matching the criteria.
-  repeated Setup setups = 1;
-  // total_count: Total number of setups matching the criteria.
+// ListSetupVersionsResponse
+// Returns the versions of a setup, ordered by creation date descending.
+//
+// Fields:
+// - setup_versions: The setup versions matching the request.
+// - total_count: The total number of setup versions for this setup.
+// - current_setup_version_id: The identifier of the currently active version.
+message ListSetupVersionsResponse {
+  // setup_versions: The setup versions matching the request.
+  repeated SetupVersion setup_versions = 1;
+  // total_count: The total number of setup versions for this setup.
   int32 total_count = 2 [(buf.validate.field).int32.gte = 0];
+  // current_setup_version_id: The identifier of the currently active version, empty if none.
+  string current_setup_version_id = 3;
+}
+
+// SetCurrentSetupVersionRequest
+// This request is used to activate an existing version of a setup, making it
+// the current one.
+//
+// Fields:
+// - setup_id: The unique identifier of the setup.
+// - setup_version_id: The unique identifier of the setup version to activate.
+message SetCurrentSetupVersionRequest {
+  // setup_id: The unique identifier of the setup.
+  string setup_id = 1 [(buf.validate.field).required = true];
+  // setup_version_id: The unique identifier of the setup version to activate.
+  string setup_version_id = 2 [(buf.validate.field).required = true];
+}
+
+// SetCurrentSetupVersionResponse
+// Returns the setup with its newly activated version.
+//
+// Fields:
+// - success: Whether the operation succeeded.
+// - setup: The updated setup entity.
+// - setup_version: The newly activated setup version.
+message SetCurrentSetupVersionResponse {
+  // success: Whether the operation succeeded.
+  bool success = 1;
+  // setup: The updated setup entity.
+  Setup setup = 2;
+  // setup_version: The newly activated setup version.
+  SetupVersion setup_version = 3;
 }

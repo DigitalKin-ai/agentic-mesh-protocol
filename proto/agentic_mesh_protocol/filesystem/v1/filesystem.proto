@@ -56,6 +56,33 @@ enum FileStatus {
   FILE_STATUS_DELETED = 5;
 }
 
+// Visibility represents the access scope of a file.
+enum Visibility {
+  // VISIBILITY_UNSPECIFIED is the default unspecified value.
+  VISIBILITY_UNSPECIFIED = 0;
+  // VISIBILITY_PUBLIC indicates the file is visible to everyone.
+  VISIBILITY_PUBLIC = 1;
+  // VISIBILITY_PRIVATE indicates the file is visible only to the owner.
+  VISIBILITY_PRIVATE = 2;
+  // VISIBILITY_INTERNAL indicates the file is visible within the organisation.
+  VISIBILITY_INTERNAL = 3;
+}
+
+// ContextFile: Type of context a file is scoped to. The matching identifier is resolved
+// server-side from the task metadata, so it is not carried by the requests.
+enum ContextFile {
+  // CONTEXT_UNSPECIFIED: Default unspecified context
+  CONTEXT_UNSPECIFIED = 0;
+  // CONTEXT_MISSIONS: Context related to missions
+  CONTEXT_MISSIONS = 1;
+  // CONTEXT_SETUP: Context related to setup
+  CONTEXT_SETUP = 2;
+  // CONTEXT_USERS: Context related to users
+  CONTEXT_USERS = 3;
+  // CONTEXT_ORGANIZATIONS: Context related to organizations
+  CONTEXT_ORGANIZATIONS = 4;
+}
+
 // File represents a stored file with comprehensive metadata.
 message File {
   // file_id: Unique identifier for the file
@@ -64,7 +91,7 @@ message File {
     (buf.validate.field).string.pattern = "^files:.*$"
   ];
 
-  // context: Context ID linked to the file
+  // context: Prefixed identifier of the context owning the file (missions: or setups:)
   string context = 2 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.pattern = "^(missions:|setups:).*$"
@@ -123,6 +150,12 @@ message File {
 
   // content: The content of the file
   bytes content = 12;
+
+  // visibility: Access scope of the file
+  Visibility visibility = 13 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum.not_in = 0
+  ];
 }
 
 // FileFilter contains criteria for querying and filtering files.
@@ -136,11 +169,8 @@ message FileFilter {
   // file_types: Filter by file types
   repeated FileType file_types = 3 [(buf.validate.field).repeated.items.enum.not_in = 0];
 
-  // context: Filter by context (required for scoping)
-  string context = 4 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^(missions:|setups:|users:|organizations:).*$"
-  ];
+  // context: Type of context to scope the query to (identifier resolved server-side)
+  ContextFile context = 4 [(buf.validate.field).required = true];
 
   // created_after: Filter files created after this timestamp
   google.protobuf.Timestamp created_after = 5;
@@ -171,6 +201,9 @@ message FileFilter {
 
   // content_type: Filter by content type
   string content_type = 14;
+
+  // visibilities: Filter by visibility (empty = no filter)
+  repeated Visibility visibilities = 15 [(buf.validate.field).repeated.items.enum.not_in = 0];
 }
 
 // FileResult wraps the result of a file operation which may succeed or fail.
@@ -186,11 +219,8 @@ message FileResult {
 
 // UploadFileData contains the data required for uploading a single file.
 message UploadFileData {
-  // context: Context ID for the file
-  string context = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "(^(missions:|setups:).*$|^default$)"
-  ];
+  // context: Type of context the file is scoped to (identifier resolved server-side)
+  ContextFile context = 1 [(buf.validate.field).required = true];
 
   // name: Name of the file
   string name = 2 [
@@ -228,6 +258,9 @@ message UploadFileData {
 
   // replace_if_exists: Whether to replace existing file with same name
   bool replace_if_exists = 8;
+
+  // visibility: Access scope of the file (optional; defaults server-side)
+  Visibility visibility = 9;
 }
 
 // UploadFilesRequest is the request message for uploading multiple files.
@@ -253,8 +286,8 @@ message UploadFilesResponse {
 
 // GetFileRequest is the request message for retrieving a specific file.
 message GetFileRequest {
-  // context: Context ID for the file
-  string context = 1 [(buf.validate.field).string.pattern = "^(missions:|setups:).*$"];
+  // context: Type of context the file is scoped to (identifier resolved server-side)
+  ContextFile context = 1 [(buf.validate.field).required = true];
 
   // file_id: File ID
   string file_id = 2 [
@@ -277,11 +310,8 @@ message GetFileResponse {
 
 // UpdateFileRequest is the request message for updating a file.
 message UpdateFileRequest {
-  // context: Context ID for the file
-  string context = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^(missions:|setups:).*$"
-  ];
+  // context: Type of context the file is scoped to (identifier resolved server-side)
+  ContextFile context = 1 [(buf.validate.field).required = true];
 
   // file_id: Current id of the file
   string file_id = 2 [
@@ -309,6 +339,9 @@ message UpdateFileRequest {
 
   // metadata: New metadata (optional, will merge with existing)
   google.protobuf.Struct metadata = 8;
+
+  // visibility: New access scope of the file (optional; defaults server-side)
+  Visibility visibility = 9;
 }
 
 // UpdateFileResponse is the response message for file update operations.
@@ -319,11 +352,8 @@ message UpdateFileResponse {
 
 // GetFilesRequest is the request message for retrieving multiple files by various criteria.
 message GetFilesRequest {
-  // context: Context ID for the files
-  string context = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^(missions:|setups:|users:|organizations:).*$"
-  ];
+  // context: Type of context the files are scoped to (identifier resolved server-side)
+  ContextFile context = 1 [(buf.validate.field).required = true];
 
   // filters: How to identify the files
   FileFilter filters = 2 [(buf.validate.field).required = true];
@@ -355,11 +385,8 @@ message GetFilesResponse {
 
 // DeleteFilesRequest is the request message for deleting multiple files.
 message DeleteFilesRequest {
-  // context: Context ID for the files
-  string context = 1 [
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.pattern = "^(missions:|setups:).*$"
-  ];
+  // context: Type of context the files are scoped to (identifier resolved server-side)
+  ContextFile context = 1 [(buf.validate.field).required = true];
 
   // filters: How to identify the files
   FileFilter filters = 2 [(buf.validate.field).required = true];
