@@ -25,3 +25,5 @@ run.sh
 
 # Dist folders in tools
 /tools/**/dist/
+.serena
+/.task/checksum/generate

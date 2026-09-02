@@ -90,10 +90,14 @@ message SetupVersion {
   string setup_id = 2 [(buf.validate.field).required = true];
   // version: The label for this version.
   string version = 3 [(buf.validate.field).required = true];
+  // documentation: Technical descritpion of module
+  string documentation = 4 [
+    (buf.validate.field).string.max_len = 300
+  ];
   // content: Key-value pairs for configuration content.
-  google.protobuf.Struct content = 4 [(buf.validate.field).required = true];
+  google.protobuf.Struct content = 5 [(buf.validate.field).required = true];
   // creation_date: setup version creation date
-  google.protobuf.Timestamp creation_date = 5;
+  google.protobuf.Timestamp creation_date = 6;
 }
 
 // Setup
@@ -136,6 +140,8 @@ message GetSetupRequest {
   string setup_id = 1 [(buf.validate.field).required = true];
   // version: The unique identifier of the active setup version.
   optional string version = 2;
+  // structure_key: Specific key query from setup version.
+  string structure_key = 3;
 }
 
 // GetSetupResponse
@@ -163,6 +169,12 @@ message CreateSetupRequest {
   string name = 1 [(buf.validate.field).required = true];
   // content: Key-value pairs for the initial configuration content.
   google.protobuf.Struct content = 2 [(buf.validate.field).required = true];
+  // documentation: Technical descritpion of module
+  string documentation = 3 [
+    (buf.validate.field).string.max_len = 300
+  ];
+  // structure: Arborescence of the data files for services
+  google.protobuf.Struct structure = 4 [(buf.validate.field).required = true];
 }
 
 // CreateSetupResponse
@@ -179,6 +191,8 @@ message CreateSetupResponse {
   Setup setup = 2;
   // setup_version: The newly created setup version.
   SetupVersion setup_version = 3;
+  // structure: Arborescence of the data files for services
+  google.protobuf.Struct structure = 4;
 }
 
 // UpdateSetupRequest
@@ -198,6 +212,12 @@ message UpdateSetupRequest {
   google.protobuf.Struct content = 3 [(buf.validate.field).required = true];
   // set_as_current: Whether the new version becomes the current one.
   bool set_as_current = 4;
+  // documentation: Technical descritpion of module
+  string documentation = 5 [
+    (buf.validate.field).string.max_len = 300
+  ];
+  // structure: Arborescence of the data files for services
+  google.protobuf.Struct structure = 6 [(buf.validate.field).required = true];
 }
 
 // UpdateSetupResponse
@@ -214,6 +234,8 @@ message UpdateSetupResponse {
   Setup setup = 2;
   // setup_version: The updated setup version.
   SetupVersion setup_version = 3;
+  // structure: Arborescence of the data files for services
+  google.protobuf.Struct structure = 4 [(buf.validate.field).required = true];
 }
 
 // DeleteSetupRequest

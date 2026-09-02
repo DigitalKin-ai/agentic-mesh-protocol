@@ -229,7 +229,9 @@ message SetupSummary {
     (buf.validate.field).string.min_len = 1
   ];
   // Documentation
-  string documentation = 3;
+  string documentation = 3 [
+    (buf.validate.field).string.max_len = 300
+  ];
   // Status
   SetupStatus status = 4;
   // Visibility
@@ -246,6 +248,8 @@ message SetupSummary {
   string setup_version_id = 10;
   // Current version label
   string setup_version = 11;
+  // structure: Arborescence of the data files for services
+  google.protobuf.Struct structure = 12;
   // Tags
-  repeated string tags = 12;
+  repeated string tags = 13;
 }
