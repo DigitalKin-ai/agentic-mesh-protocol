@@ -247,7 +247,7 @@ message SetupSummary {
   // Current version label
   string setup_version = 11;
   // structure: Arborescence of the data files for services
-  string structure = 12;
+  google.protobuf.Struct structure = 12;
   // Tags
   repeated string tags = 13;
 }

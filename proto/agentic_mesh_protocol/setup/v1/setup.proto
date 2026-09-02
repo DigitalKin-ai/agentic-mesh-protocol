@@ -165,10 +165,10 @@ message CreateSetupRequest {
   string name = 1 [(buf.validate.field).required = true];
   // content: Key-value pairs for the initial configuration content.
   google.protobuf.Struct content = 2 [(buf.validate.field).required = true];
-  // description: Technical descritpion of module
-  string description = 3 [(buf.validate.field).required = true];
+  // documentation: Technical descritpion of module
+  string documentation = 3 [(buf.validate.field).required = true];
   // structure: Arborescence of the data files for services
-  string structure = 4 [(buf.validate.field).required = true];
+  google.protobuf.Struct structure = 4 [(buf.validate.field).required = true];
 }
 
 // CreateSetupResponse
@@ -186,7 +186,7 @@ message CreateSetupResponse {
   // setup_version: The newly created setup version.
   SetupVersion setup_version = 3;
   // structure: Arborescence of the data files for services
-  string structure = 4;
+  google.protobuf.Struct structure = 4;
 }
 
 // UpdateSetupRequest
@@ -206,10 +206,10 @@ message UpdateSetupRequest {
   google.protobuf.Struct content = 3 [(buf.validate.field).required = true];
   // set_as_current: Whether the new version becomes the current one.
   bool set_as_current = 4;
-  // description: Technical descritpion of module
-  string description = 5 [(buf.validate.field).required = true];
+  // documentation: Technical descritpion of module
+  string documentation = 5 [(buf.validate.field).required = true];
   // structure: Arborescence of the data files for services
-  string structure = 6 [(buf.validate.field).required = true];
+  google.protobuf.Struct structure = 6 [(buf.validate.field).required = true];
 }
 
 // UpdateSetupResponse
@@ -227,7 +227,7 @@ message UpdateSetupResponse {
   // setup_version: The updated setup version.
   SetupVersion setup_version = 3;
   // structure: Arborescence of the data files for services
-  string structure = 4 [(buf.validate.field).required = true];
+  google.protobuf.Struct structure = 4 [(buf.validate.field).required = true];
 }
 
 // DeleteSetupRequest
