@@ -246,6 +246,8 @@ message SetupSummary {
   string setup_version_id = 10;
   // Current version label
   string setup_version = 11;
+  // structure: Arborescence of the data files for services
+  string structure = 12;
   // Tags
-  repeated string tags = 12;
+  repeated string tags = 13;
 }
