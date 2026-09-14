@@ -10,6 +10,24 @@ export function toCamelCase(name: string): string {
 }
 
 /**
+ * Property name ts-proto gives a proto field with `snakeToCamel=keys`
+ * (ts-proto `maybeSnakeToCamel`): the names the Zod schemas must validate.
+ */
+export function tsProtoFieldName(name: string): string {
+  if (!name.includes("_")) {
+    return name;
+  }
+  const hasLowerCase = /[a-z]/.test(name);
+  return name
+    .split("_")
+    .map((word, i) => {
+      const w = hasLowerCase ? word : word.toLowerCase();
+      return i === 0 ? w : w.substring(0, 1).toUpperCase() + w.substring(1);
+    })
+    .join("");
+}
+
+/**
  * Generates Zod schema export name from message name
  * e.g., "RegisterRequest" -> "RegisterRequestSchema"
  */

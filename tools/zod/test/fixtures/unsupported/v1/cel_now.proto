@@ -1,0 +1,18 @@
+// Unsupported: a CEL rule reading the `now` variable.
+syntax = "proto3";
+
+package unsupported.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+// CelNow compares with now.
+message CelNow {
+  option (buf.validate.message).cel = {
+    id: "cel_now.past"
+    message: "at must be in the past"
+    expression: "this.at < now"
+  };
+
+  google.protobuf.Timestamp at = 1;
+}

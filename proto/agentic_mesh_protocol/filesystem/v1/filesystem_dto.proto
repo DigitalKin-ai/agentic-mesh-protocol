@@ -1,0 +1,197 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.filesystem.v1;
+
+import "agentic_mesh_protocol/common/v1/common_enums.proto";
+import "agentic_mesh_protocol/filesystem/v1/filesystem_enums.proto";
+import "agentic_mesh_protocol/filesystem/v1/filesystem_messages.proto";
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
+import "agentic_mesh_protocol/pagination/v1/pagination.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
+
+// ════════════════════════════════════ UploadFiles ════════════════════════════════════ //
+
+// UploadFilesRequest uploads a batch of files; each file succeeds or fails on its own.
+message UploadFilesRequest {
+  option (buf.validate.message).cel = {
+    id: "upload_files_request.unique_names"
+    message: "two files of the batch cannot share the same name in the same context"
+    expression: "this.files.map(f, string(f.context) + '/' + f.name).unique()"
+  };
+
+  // files is the batch of files to upload.
+  repeated UploadFileData files = 1 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 100
+  }];
+}
+
+// UploadFilesResponse reports the outcome of every uploaded file.
+message UploadFilesResponse {
+  // results holds one FileResult per uploaded file, in the request order.
+  repeated FileResult results = 1;
+  // bulk summarizes the batch upload.
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ GetFile ════════════════════════════════════ //
+
+// GetFileRequest retrieves a single file.
+message GetFileRequest {
+  // context is the kind of context the file is scoped to (UNSPECIFIED = attached to none).
+  FileContext context = 1 [(buf.validate.field).enum.defined_only = true];
+
+  // file_id is the unique identifier of the file.
+  string file_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "files:"
+      min_len: 7
+      max_len: 256
+    }
+  ];
+
+  // include_content returns the file content along with its metadata.
+  bool include_content = 3;
+}
+
+// GetFileResponse returns the requested file.
+message GetFileResponse {
+  // result holds the File, or an OperationError.
+  FileResult result = 1 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ ListFiles ════════════════════════════════════ //
+
+// ListFilesRequest lists the files of a context.
+message ListFilesRequest {
+  // context is the kind of context the files are scoped to (UNSPECIFIED = attached to none).
+  FileContext context = 1 [(buf.validate.field).enum.defined_only = true];
+
+  // filter narrows the listing (absent = every file of the context).
+  FileFilter filter = 2;
+
+  // include_content returns the content of every listed file.
+  bool include_content = 3;
+
+  // pagination selects the page to return (absent = server default).
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 4;
+}
+
+// ListFilesResponse returns a page of files.
+message ListFilesResponse {
+  // results holds one FileResult per listed file.
+  repeated FileResult results = 1;
+  // bulk summarizes the listing and its pagination.
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ UpdateFile ════════════════════════════════════ //
+
+// UpdateFileRequest updates a file; every absent field is left unchanged.
+message UpdateFileRequest {
+  option (buf.validate.message).cel = {
+    id: "update_file_request.not_empty"
+    message: "at least one of new_name, content, content_type, type, status, visibility or metadata must be set"
+    expression: "has(this.new_name) || has(this.content) || has(this.content_type) || has(this.type) || has(this.status) || this.visibility != 0 || has(this.metadata)"
+  };
+
+  // context is the kind of context the file is scoped to (UNSPECIFIED = attached to none).
+  FileContext context = 1 [(buf.validate.field).enum.defined_only = true];
+
+  // file_id is the unique identifier of the file.
+  string file_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "files:"
+      min_len: 7
+      max_len: 256
+    }
+  ];
+
+  // new_name renames the file; ".." segments are refused to prevent path traversal.
+  optional string new_name = 3 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 255
+    pattern: "^[^.]*([.][^.]+)*[.]?$"
+  }];
+
+  // content replaces the file content.
+  optional bytes content = 4 [(buf.validate.field).bytes.min_len = 1];
+
+  // content_type replaces the MIME type of the file.
+  optional string content_type = 5 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 255
+  }];
+
+  // type replaces the classification of the file.
+  optional FileType type = 6 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+
+  // status replaces the lifecycle status of the file.
+  optional FileStatus status = 7 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+
+  // visibility replaces the read-access scope (UNSPECIFIED = keep the current one).
+  agentic_mesh_protocol.common.v1.Visibility visibility = 8 [(buf.validate.field).enum.defined_only = true];
+
+  // metadata is merged into the existing metadata.
+  google.protobuf.Struct metadata = 9;
+}
+
+// UpdateFileResponse returns the updated file.
+message UpdateFileResponse {
+  // result holds the updated File, or an OperationError.
+  FileResult result = 1 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ DeleteFiles ════════════════════════════════════ //
+
+// DeleteFilesRequest deletes the files matching a filter; each file succeeds or fails on its own.
+message DeleteFilesRequest {
+  option (buf.validate.message).cel = {
+    id: "delete_files_request.targeted"
+    message: "filter must name the files to delete by ids, names or prefix"
+    expression: "size(this.filter.ids) > 0 || size(this.filter.names) > 0 || this.filter.prefix != ''"
+  };
+
+  // context is the kind of context the files are scoped to (UNSPECIFIED = attached to none).
+  FileContext context = 1 [(buf.validate.field).enum.defined_only = true];
+
+  // filter selects the files to delete.
+  FileFilter filter = 2 [(buf.validate.field).required = true];
+
+  // force deletes the files even when they are in use.
+  bool force = 3;
+
+  // permanent deletes the files for good instead of marking them DELETED.
+  bool permanent = 4;
+}
+
+// DeleteFilesResponse reports the outcome of every deleted file.
+message DeleteFilesResponse {
+  // results holds one FileResult per matched file.
+  repeated FileResult results = 1;
+  // bulk summarizes the batch deletion.
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
+}

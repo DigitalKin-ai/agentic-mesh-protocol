@@ -1,0 +1,12 @@
+// Unsupported: standard rules on a google.protobuf.Timestamp field.
+syntax = "proto3";
+
+package unsupported.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+// TimestampRules carries a timestamp.lt_now rule.
+message TimestampRules {
+  google.protobuf.Timestamp at = 1 [(buf.validate.field).timestamp.lt_now = true];
+}

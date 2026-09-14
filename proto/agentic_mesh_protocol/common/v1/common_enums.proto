@@ -1,0 +1,29 @@
+// Copyright 2026 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.common.v1;
+
+// Visibility is the read-access scope of a resource (setup, module, record, file).
+enum Visibility {
+  // VISIBILITY_UNSPECIFIED lets the server apply its default scope (or keep the current one).
+  VISIBILITY_UNSPECIFIED = 0;
+  // PUBLIC: visible to everyone.
+  PUBLIC = 1;
+  // PRIVATE: visible only to the owner.
+  PRIVATE = 2;
+  // INTERNAL: visible within the owner's organization.
+  INTERNAL = 3;
+}

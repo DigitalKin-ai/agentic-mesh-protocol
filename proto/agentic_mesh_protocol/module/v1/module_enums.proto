@@ -1,0 +1,61 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.module.v1;
+
+// ModuleStatus is the availability of a module in the mesh.
+enum ModuleStatus {
+  // MODULE_STATUS_UNSPECIFIED indicates that the module status is not set.
+  MODULE_STATUS_UNSPECIFIED = 0;
+  // READY: the module is registered and ready to be used.
+  READY = 1;
+  // ACTIVE: the module is running and answering heartbeats.
+  ACTIVE = 2;
+  // ARCHIVED: the module is archived and inactive.
+  ARCHIVED = 3;
+}
+
+// ModuleType is the kind of a module.
+enum ModuleType {
+  // MODULE_TYPE_UNSPECIFIED indicates that the module type is not set.
+  MODULE_TYPE_UNSPECIFIED = 0;
+  // ARCHETYPE: an agent brain (kin), e.g. a workflow or an LLM.
+  ARCHETYPE = 1;
+  // TOOL_MODULE: a utility an agent calls to perform a task.
+  TOOL_MODULE = 2;
+  // SERVICE: a shareable configuration document consumed by other modules.
+  SERVICE = 3;
+}
+
+// JobStatus is the lifecycle status of a module job.
+enum JobStatus {
+  // JOB_STATUS_UNSPECIFIED indicates that the job status is not set.
+  JOB_STATUS_UNSPECIFIED = 0;
+  // STARTING: the job is starting.
+  STARTING = 1;
+  // PROCESSING: the job is processing.
+  PROCESSING = 2;
+  // CANCELED: the job was canceled.
+  CANCELED = 3;
+  // FAILED: the job failed.
+  FAILED = 4;
+  // EXPIRED: the job expired.
+  EXPIRED = 5;
+  // SUCCESS: the job succeeded.
+  SUCCESS = 6;
+  // STOPPED: the job was stopped.
+  STOPPED = 7;
+}

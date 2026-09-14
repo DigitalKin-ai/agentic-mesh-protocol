@@ -1,0 +1,7 @@
+# Test-only module: fixtures of the protoc-gen-zod differential test (tools/zod/test).
+# zodtest/ covers the rule kinds the generator supports beyond those proto/ uses;
+# unsupported/ holds rules the generator must refuse.
+version: v2
+
+deps:
+  - buf.build/bufbuild/protovalidate

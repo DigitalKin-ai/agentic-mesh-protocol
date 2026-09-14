@@ -16,38 +16,32 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.module.v1;
 
-import "agentic_mesh_protocol/module/v1/information.proto";
-import "agentic_mesh_protocol/module/v1/lifecycle.proto";
+import "agentic_mesh_protocol/module/v1/module_dto.proto";
 
-// ModuleService
-// It represents a functional unit within an agent in the multi-agent system (SMA).
-// Modules can be of three types: Kin, Tool, and Trigger.
-// - Kin: Represents the agent's core data architecture or "brain", such as a workflow-based model or an LLM (Large Language Model).
-// - Tool: Refers to external utilities or tools that the agent uses to perform tasks or enhance its capabilities.
-// - Trigger: Serves as the entry point for the agent, initiating processes or actions based on external inputs.
-// This service manages the lifecycle and interactions of these modules, including starting, stopping,
-// and monitoring the module's status, as well as handling input and output operations.
+// ModuleService is served by every module of the mesh: an archetype (kin, the agent
+// brain), a tool (a utility the agent calls) or a service. It runs jobs and exposes
+// the schemas a caller needs to configure and call the module.
 service ModuleService {
-  // StartModule
+  // StartModule starts a job and streams its outputs.
   rpc StartModule(StartModuleRequest) returns (stream StartModuleResponse);
-  // StopModule
+  // StopModule stops a running job.
   rpc StopModule(StopModuleRequest) returns (StopModuleResponse);
-  // GetModuleInput
+  // GetModuleInput returns the input schema.
   rpc GetModuleInput(GetModuleInputRequest) returns (GetModuleInputResponse);
-  // GetModuleSelectInput
+  // GetModuleSelectInput returns the select-input schema.
   rpc GetModuleSelectInput(GetModuleSelectInputRequest) returns (GetModuleSelectInputResponse);
-  // GetModuleOutput
+  // GetModuleOutput returns the output schema.
   rpc GetModuleOutput(GetModuleOutputRequest) returns (GetModuleOutputResponse);
-  // GetModuleSetup
+  // GetModuleSetup returns the setup schema.
   rpc GetModuleSetup(GetModuleSetupRequest) returns (GetModuleSetupResponse);
-  // GetModuleSecret
+  // GetModuleSecret returns the secret schema.
   rpc GetModuleSecret(GetModuleSecretRequest) returns (GetModuleSecretResponse);
-  // GetModuleUserInfo
+  // GetModuleUserInfo returns the user-info schema.
   rpc GetModuleUserInfo(GetModuleUserInfoRequest) returns (GetModuleUserInfoResponse);
-  // GetConfigSetupModule
+  // GetConfigSetupModule returns the config-setup schema.
   rpc GetConfigSetupModule(GetConfigSetupModuleRequest) returns (GetConfigSetupModuleResponse);
-  // ConfigSetupModule
+  // ConfigSetupModule computes and stores the configuration of a setup version.
   rpc ConfigSetupModule(ConfigSetupModuleRequest) returns (ConfigSetupModuleResponse);
-  // GetModuleCost
+  // GetModuleCost returns the cost configuration schema.
   rpc GetModuleCost(GetModuleCostRequest) returns (GetModuleCostResponse);
 }

@@ -16,25 +16,20 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.storage.v1;
 
-import "agentic_mesh_protocol/storage/v1/data.proto";
+import "agentic_mesh_protocol/storage/v1/storage_dto.proto";
 
-// StorageService: Service for managing structured data storage
+// StorageService stores context-scoped JSON records grouped in collections.
 service StorageService {
-  // StoreRecord: Create a new record in the storage
-  rpc StoreRecord(StoreRecordRequest) returns (StoreRecordResponse);
-
-  // ReadRecord: Retrieve a single record by ID
-  rpc ReadRecord(ReadRecordRequest) returns (ReadRecordResponse);
-
-  // UpdateRecord: Update an existing record
+  // CreateRecord stores a new record.
+  rpc CreateRecord(CreateRecordRequest) returns (CreateRecordResponse);
+  // GetRecord retrieves a record.
+  rpc GetRecord(GetRecordRequest) returns (GetRecordResponse);
+  // UpdateRecord overwrites the data of an existing record.
   rpc UpdateRecord(UpdateRecordRequest) returns (UpdateRecordResponse);
-
-  // RemoveRecord: Delete a record from storage
-  rpc RemoveRecord(RemoveRecordRequest) returns (RemoveRecordResponse);
-
-  // ListRecords: List records in a collection, optionally filtered by visibility
+  // DeleteRecord deletes a record.
+  rpc DeleteRecord(DeleteRecordRequest) returns (DeleteRecordResponse);
+  // ListRecords retrieves a page of the records of a collection, optionally filtered.
   rpc ListRecords(ListRecordsRequest) returns (ListRecordsResponse);
-
-  // DEPRECATED: RemoveCollection — unused in SDK, no callers.
-  rpc RemoveCollection(RemoveCollectionRequest) returns (RemoveCollectionResponse);
+  // DeleteCollection deletes every record of a collection.
+  rpc DeleteCollection(DeleteCollectionRequest) returns (DeleteCollectionResponse);
 }
