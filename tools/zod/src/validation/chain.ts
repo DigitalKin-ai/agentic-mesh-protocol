@@ -17,7 +17,9 @@ export function getValidationChain(field: DescField): ValidationChain {
   const chain: ValidationChain = {
     methods: [],
     required: false,
+    ignoreIfZero: false,
     enumDefinedOnly: false,
+    itemEnumDefinedOnly: false,
     itemMethods: [],
     itemEnumNotIn: [],
   };
@@ -34,12 +36,20 @@ export function getValidationChain(field: DescField): ValidationChain {
 
     const constraints = getExtension(options, fieldExtension) as {
       required?: boolean;
+      ignore?: number;
       type?: { case: string; value: unknown };
       cel?: CelRule[];
     };
     if (!constraints) {
       return chain;
     }
+
+    // IGNORE_ALWAYS (3): the field carries no rule at all
+    if (constraints.ignore === 3) {
+      return chain;
+    }
+    // IGNORE_IF_ZERO_VALUE (1): rules apply only once the field holds a non-zero value
+    chain.ignoreIfZero = constraints.ignore === 1;
 
     // Check required constraint
     if (constraints.required) {
@@ -93,8 +103,8 @@ export function isFieldRequired(field: DescField): boolean {
 }
 
 /**
- * Get enum values excluding UNSPECIFIED (value 0) for defined_only constraint
+ * Get every value the enum declares (UNSPECIFIED included) for the defined_only constraint
  */
 export function getDefinedEnumValues(enumType: DescEnum): number[] {
-  return enumType.values.filter(v => v.number !== 0).map(v => v.number);
+  return enumType.values.map(v => v.number);
 }

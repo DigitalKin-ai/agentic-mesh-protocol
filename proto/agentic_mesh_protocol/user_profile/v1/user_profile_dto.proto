@@ -1,0 +1,180 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.user_profile.v1;
+
+import "agentic_mesh_protocol/user_profile/v1/user_profile_messages.proto";
+import "buf/validate/validate.proto";
+
+// ════════════════════════════════════ GetUserProfile ════════════════════════════════════ //
+
+// GetUserProfileRequest retrieves the profile of the user a mission runs for.
+message GetUserProfileRequest {
+  // mission_id is the mission whose user is resolved.
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "missions:"
+      min_len: 10
+      max_len: 256
+    }
+  ];
+}
+
+// GetUserProfileResponse returns the user profile and what the mission spent so far.
+message GetUserProfileResponse {
+  // result holds the UserProfile, or an OperationError.
+  UserProfileResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "get_user_profile_response.outcome"
+      message: "result must hold a UserProfile or an OperationError"
+      expression: "has(this.profile) || has(this.error)"
+    }
+  ];
+  // mission_cost is the total cost accumulated so far by the mission (same unit as the cost service).
+  double mission_cost = 2 [(buf.validate.field).double = {
+    gte: 0
+    finite: true
+  }];
+}
+
+// ════════════════════════════════════ GetSetupSecret ════════════════════════════════════ //
+
+// GetSetupSecretRequest resolves the secret object of a setup for the user a mission runs for.
+message GetSetupSecretRequest {
+  // setup_id is the setup whose secrets are resolved.
+  string setup_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "setups:"
+      min_len: 8
+      max_len: 256
+    }
+  ];
+
+  // mission_id is the mission whose user owns the secrets.
+  string mission_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "missions:"
+      min_len: 10
+      max_len: 256
+    }
+  ];
+}
+
+// GetSetupSecretResponse returns the secret object of the setup.
+message GetSetupSecretResponse {
+  // result holds the secret Struct, or an OperationError.
+  UserProfileResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "get_setup_secret_response.outcome"
+      message: "result must hold a secret or an OperationError"
+      expression: "has(this.secret) || has(this.error)"
+    }
+  ];
+}
+
+// ════════════════════════════════════ GetSetupUserInfo ════════════════════════════════════ //
+
+// GetSetupUserInfoRequest resolves the user information a setup needs to run, for the
+// user a mission runs for.
+message GetSetupUserInfoRequest {
+  // setup_id is the setup whose user information is resolved.
+  string setup_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "setups:"
+      min_len: 8
+      max_len: 256
+    }
+  ];
+
+  // mission_id is the mission whose user is resolved.
+  string mission_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "missions:"
+      min_len: 10
+      max_len: 256
+    }
+  ];
+}
+
+// GetSetupUserInfoResponse returns the user information of the setup.
+message GetSetupUserInfoResponse {
+  // result holds the user_info Struct, or an OperationError.
+  UserProfileResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "get_setup_user_info_response.outcome"
+      message: "result must hold a user_info or an OperationError"
+      expression: "has(this.user_info) || has(this.error)"
+    }
+  ];
+}
+
+// ════════════════════════════════════ CheckResourceAccess ════════════════════════════════════ //
+
+// CheckResourceAccessRequest checks whether the calling task may access a resource.
+// The task is not carried by the message: it is read from the request metadata
+// ("task-id" header) and resolved server-side.
+message CheckResourceAccessRequest {
+  // resource is the resource whose access is checked, named by its typed identifier.
+  oneof resource {
+    option (buf.validate.oneof).required = true;
+    // setup_id is the setup whose access is checked.
+    string setup_id = 1 [(buf.validate.field).string = {
+      prefix: "setups:"
+      min_len: 8
+      max_len: 256
+    }];
+    // module_id is the module whose access is checked.
+    string module_id = 2 [(buf.validate.field).string = {
+      prefix: "modules:"
+      min_len: 9
+      max_len: 256
+    }];
+    // mission_id is the mission whose access is checked.
+    string mission_id = 3 [(buf.validate.field).string = {
+      prefix: "missions:"
+      min_len: 10
+      max_len: 256
+    }];
+    // storage_id is the storage record whose access is checked.
+    string storage_id = 4 [(buf.validate.field).string = {
+      prefix: "storage:"
+      min_len: 9
+      max_len: 256
+    }];
+    // file_id is the file whose access is checked.
+    string file_id = 5 [(buf.validate.field).string = {
+      prefix: "files:"
+      min_len: 7
+      max_len: 256
+    }];
+  }
+}
+
+// CheckResourceAccessResponse tells whether the calling task may access the resource.
+// A denial is a normal answer carried with an OK status; a non-OK status is a failure
+// (missing task metadata, unknown resource, internal error).
+message CheckResourceAccessResponse {
+  // allowed is true when the calling task may access the resource.
+  bool allowed = 1;
+}

@@ -1,0 +1,181 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.cost.v1;
+
+import "agentic_mesh_protocol/cost/v1/cost_enums.proto";
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
+import "buf/validate/validate.proto";
+
+// ═════════════════════════════════════ Objects ════════════════════════════════════ //
+
+// Cost is a cost entry attributed to a mission.
+message Cost {
+  // mission_id is the mission the cost is attributed to.
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "missions:"
+      min_len: 10
+      max_len: 256
+    }
+  ];
+
+  // setup_version_id is the setup version that incurred the cost.
+  string setup_version_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "setup_versions:"
+      min_len: 16
+      max_len: 256
+    }
+  ];
+
+  // name is the descriptive name of the cost (e.g., LLM model name, API endpoint).
+  string name = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 255
+  ];
+
+  // cost is the total cost value (zero for a free usage).
+  double cost = 4 [(buf.validate.field).double = {
+    gte: 0
+    finite: true
+  }];
+
+  // quantity is the number of units consumed.
+  double quantity = 5 [(buf.validate.field).double = {
+    gte: 0
+    finite: true
+  }];
+
+  // rate is the cost per unit (zero for a free unit).
+  double rate = 6 [(buf.validate.field).double = {
+    gte: 0
+    finite: true
+  }];
+
+  // unit is the unit of measurement (e.g., "tokens", "calls", "GB").
+  string unit = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 64
+  ];
+
+  // type is the classification of the cost.
+  CostType type = 8 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+}
+
+// CostFilter narrows a cost listing; every empty list means "no filter".
+message CostFilter {
+  // types keeps the costs of these types.
+  repeated CostType types = 1 [(buf.validate.field).repeated = {
+    max_items: 16
+    items: {
+      enum: {
+        defined_only: true
+        not_in: [0]
+      }
+    }
+  }];
+
+  // names keeps the costs carrying one of these names.
+  repeated string names = 2 [(buf.validate.field).repeated = {
+    max_items: 100
+    items: {
+      string: {
+        min_len: 1
+        max_len: 255
+      }
+    }
+  }];
+
+  // setup_version_ids keeps the costs incurred by these setup versions.
+  repeated string setup_version_ids = 3 [(buf.validate.field).repeated = {
+    max_items: 100
+    items: {
+      string: {
+        prefix: "setup_versions:"
+        min_len: 16
+        max_len: 256
+      }
+    }
+  }];
+}
+
+// CostConfig is a pricing entry of a setup version.
+message CostConfig {
+  // name is the unique name of the configuration within its setup version.
+  string name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 255
+    }
+  ];
+
+  // type is the classification of the priced cost.
+  CostType type = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // description provides context about this configuration.
+  string description = 3 [(buf.validate.field).string.max_len = 1000];
+
+  // unit is the measurement unit (e.g., "tokens", "calls", "MB").
+  string unit = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 64
+    }
+  ];
+
+  // rate is the cost per unit, in dollars.
+  double rate = 5 [(buf.validate.field).double = {
+    gt: 0
+    finite: true
+  }];
+}
+
+// CostResult is the outcome of an operation on a single cost or cost configuration.
+message CostResult {
+  // identifier is the identifier of the processed item.
+  string identifier = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 256
+  ];
+
+  // outcome holds the processed item, or the error that prevented processing it.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // cost is the processed cost entry.
+    Cost cost = 2;
+    // config is the processed cost configuration.
+    CostConfig config = 3;
+    // error describes why the item could not be processed.
+    agentic_mesh_protocol.pagination.v1.OperationError error = 4;
+  }
+}

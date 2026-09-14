@@ -15,6 +15,11 @@ function escapeString(s: string): string {
   return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
+/** Convert a proto field name to the ts-proto property name (snakeToCamel=keys) */
+function snakeToCamel(name: string): string {
+  return name.replace(/_([a-z0-9])/g, (_m, c: string) => c.toUpperCase());
+}
+
 /** Generate a fallback .refine() that always passes but carries the CEL as documentation */
 function celToRefine(expression: string, message: string): string {
   const m = escapeString(message || "Validation failed");
@@ -84,6 +89,12 @@ function parseCelExpression(expression: string, message: string): string[] {
   // Compound || → single refine (cannot be decomposed)
   const orParts = splitTopLevel(trimmed, "||");
   if (orParts.length > 1) {
+    // has(this.a) || has(this.b) → at least one of these message fields is set
+    const presence = orParts.map((part) => part.trim().match(/^has\(\s*this\.([a-z_][a-z0-9_]*)\s*\)$/));
+    if (presence.every((match) => match !== null)) {
+      const checks = presence.map((match) => `v.${snakeToCamel(match![1])} !== undefined`).join(" || ");
+      return [`.refine((v) => ${checks}, { message: "${escapeString(message || "Validation failed")}" })`];
+    }
     return [celToRefine(trimmed, message)];
   }
 

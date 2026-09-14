@@ -1,0 +1,281 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.setup.v1;
+
+import "agentic_mesh_protocol/common/v1/common_enums.proto";
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
+import "agentic_mesh_protocol/pagination/v1/pagination.proto";
+import "agentic_mesh_protocol/setup/v1/setup_enums.proto";
+import "agentic_mesh_protocol/setup/v1/setup_messages.proto";
+import "buf/validate/validate.proto";
+
+// ════════════════════════════════════ CreateSetup ════════════════════════════════════ //
+
+// CreateSetupRequest creates a setup and its initial version. The owner and the
+// organization are resolved from the request context; the identifiers are generated server-side.
+message CreateSetupRequest {
+  // name is the human-readable name of the setup.
+  string name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 255
+    }
+  ];
+
+  // revision holds the configuration of the initial version.
+  SetupRevision revision = 2 [(buf.validate.field).required = true];
+
+  // module_id is the module backing the setup (absent = resolved from the request context).
+  optional string module_id = 3 [(buf.validate.field).string = {
+    prefix: "modules:"
+    min_len: 9
+    max_len: 256
+  }];
+
+  // visibility is the read-access scope of the setup (UNSPECIFIED = server default).
+  agentic_mesh_protocol.common.v1.Visibility visibility = 4 [(buf.validate.field).enum.defined_only = true];
+}
+
+// CreateSetupResponse returns the created setup with its initial version.
+message CreateSetupResponse {
+  // result holds the created Setup, or an OperationError.
+  SetupResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "create_setup_response.outcome"
+      message: "result must hold a Setup or an OperationError"
+      expression: "has(this.setup) || has(this.error)"
+    }
+  ];
+}
+
+// ════════════════════════════════════ GetSetup ════════════════════════════════════ //
+
+// GetSetupRequest retrieves a setup with one of its versions.
+message GetSetupRequest {
+  // setup_id is the unique identifier of the setup.
+  string setup_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "setups:"
+      min_len: 8
+      max_len: 256
+    }
+  ];
+
+  // version is the label of the version to return (absent = the current version).
+  optional string version = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 128
+  }];
+
+  // structure_key projects the version content down to one key path (absent = the whole
+  // content). A key path the content does not have is answered NOT_FOUND.
+  optional string structure_key = 3 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 1024
+  }];
+}
+
+// GetSetupResponse returns the requested setup.
+message GetSetupResponse {
+  // result holds the Setup (its current_setup_version is the requested version), or an OperationError.
+  SetupResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "get_setup_response.outcome"
+      message: "result must hold a Setup or an OperationError"
+      expression: "has(this.setup) || has(this.error)"
+    }
+  ];
+}
+
+// ════════════════════════════════════ ListSetups ════════════════════════════════════ //
+
+// ListSetupsRequest lists the setups visible to the caller, optionally filtered.
+message ListSetupsRequest {
+  // organization_id restricts the listing to one organization (absent = no filter).
+  optional string organization_id = 1 [(buf.validate.field).string = {
+    prefix: "organizations:"
+    min_len: 15
+    max_len: 256
+  }];
+
+  // owner_id restricts the listing to one owner (absent = no filter).
+  optional string owner_id = 2 [(buf.validate.field).string = {
+    prefix: "users:"
+    min_len: 7
+    max_len: 256
+  }];
+
+  // module_id restricts the listing to the setups of one module (absent = no filter).
+  optional string module_id = 3 [(buf.validate.field).string = {
+    prefix: "modules:"
+    min_len: 9
+    max_len: 256
+  }];
+
+  // statuses restricts the listing to these statuses (empty = no filter).
+  repeated SetupStatus statuses = 4 [(buf.validate.field).repeated = {
+    max_items: 16
+    items: {
+      enum: {
+        defined_only: true
+        not_in: [0]
+      }
+    }
+  }];
+
+  // pagination selects the page to return (absent = server default).
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 5;
+}
+
+// ListSetupsResponse returns a page of setups.
+message ListSetupsResponse {
+  // results holds one SetupResult per listed setup.
+  repeated SetupResult results = 1 [(buf.validate.field).repeated.items.cel = {
+    id: "list_setups_response.outcome"
+    message: "every result must hold a Setup or an OperationError"
+    expression: "has(this.setup) || has(this.error)"
+  }];
+  // bulk summarizes the listing and its pagination.
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ UpdateSetup ════════════════════════════════════ //
+
+// UpdateSetupRequest updates a setup; every absent field is left unchanged. A revision
+// cuts a new version rather than editing the current one.
+message UpdateSetupRequest {
+  option (buf.validate.message).cel = {
+    id: "update_setup_request.not_empty"
+    message: "at least one of name, status or revision must be set"
+    expression: "has(this.name) || has(this.status) || has(this.revision)"
+  };
+  option (buf.validate.message).cel = {
+    id: "update_setup_request.current_needs_revision"
+    message: "set_as_current needs a revision to cut"
+    expression: "!this.set_as_current || has(this.revision)"
+  };
+
+  // setup_id is the unique identifier of the setup.
+  string setup_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "setups:"
+      min_len: 8
+      max_len: 256
+    }
+  ];
+
+  // name is the new name of the setup.
+  optional string name = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 255
+  }];
+
+  // status is the new lifecycle status of the setup.
+  optional SetupStatus status = 3 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+
+  // revision is the new version to cut (absent = no new version).
+  SetupRevision revision = 4;
+
+  // set_as_current makes the version cut from revision the current one.
+  bool set_as_current = 5;
+}
+
+// UpdateSetupResponse returns the updated setup.
+message UpdateSetupResponse {
+  // result holds the updated Setup, or an OperationError.
+  SetupResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "update_setup_response.outcome"
+      message: "result must hold a Setup or an OperationError"
+      expression: "has(this.setup) || has(this.error)"
+    }
+  ];
+}
+
+// ════════════════════════════════════ ChangeVisibility ════════════════════════════════════ //
+
+// ChangeVisibilityRequest changes the read-access scope of a setup.
+message ChangeVisibilityRequest {
+  // setup_id is the unique identifier of the setup.
+  string setup_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "setups:"
+      min_len: 8
+      max_len: 256
+    }
+  ];
+
+  // visibility is the new read-access scope.
+  agentic_mesh_protocol.common.v1.Visibility visibility = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+}
+
+// ChangeVisibilityResponse returns the setup with its new visibility.
+message ChangeVisibilityResponse {
+  // result holds the updated Setup, or an OperationError.
+  SetupResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "change_visibility_response.outcome"
+      message: "result must hold a Setup or an OperationError"
+      expression: "has(this.setup) || has(this.error)"
+    }
+  ];
+}
+
+// ════════════════════════════════════ DeleteSetup ════════════════════════════════════ //
+
+// DeleteSetupRequest deletes a setup and its versions.
+message DeleteSetupRequest {
+  // setup_id is the unique identifier of the setup.
+  string setup_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "setups:"
+      min_len: 8
+      max_len: 256
+    }
+  ];
+}
+
+// DeleteSetupResponse returns the deleted setup.
+message DeleteSetupResponse {
+  // result holds the deleted Setup, or an OperationError.
+  SetupResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "delete_setup_response.outcome"
+      message: "result must hold a Setup or an OperationError"
+      expression: "has(this.setup) || has(this.error)"
+    }
+  ];
+}

@@ -7,8 +7,12 @@ export interface ValidationChain {
   methods: string[];
   /** Whether the field is required (not optional) */
   required: boolean;
-  /** Whether enum should filter out UNSPECIFIED (value 0) */
+  /** buf.validate `ignore = IGNORE_IF_ZERO_VALUE`: the proto3 zero value skips every rule */
+  ignoreIfZero: boolean;
+  /** Whether the enum must hold one of its declared values (buf.validate `defined_only`) */
   enumDefinedOnly: boolean;
+  /** Whether each enum item must hold one of its declared values (items `defined_only`) */
+  itemEnumDefinedOnly: boolean;
   /** Zod methods to apply to array items (for repeated fields with items constraints) */
   itemMethods: string[];
   /** Whether enum items should filter out UNSPECIFIED (value 0) */
@@ -64,7 +68,7 @@ export function itemTarget(chain: ValidationChain): MethodTarget {
       chain.itemStringPattern = pattern;
     },
     setEnumDefinedOnly: (value: boolean) => {
-      chain.enumDefinedOnly = value;
+      chain.itemEnumDefinedOnly = value;
     },
     setEnumNotIn: (values: number[]) => {
       chain.itemEnumNotIn = values;

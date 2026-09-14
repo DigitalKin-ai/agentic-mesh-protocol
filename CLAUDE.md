@@ -18,8 +18,9 @@ agentic-mesh-protocol/
 │   └── typescript/          # TypeScript (ts-proto generated)
 ├── index.ts                  # Main barrel export entry point
 ├── buf.gen.yaml             # Code generation configuration
-├── Taskfile.yml             # Task runner commands
+├── taskfile.yml             # Task runner commands
 ├── package.json             # npm package configuration
+├── CHANGELOG.md             # Every protocol change, kept up to date with each change
 └── CLAUDE.md                # This file
 ```
 
@@ -58,56 +59,24 @@ After installing prerequisites:
 
 ## Development Commands
 
-**IMPORTANT**: All commands in this section must be run from the **repository root directory** (where `Taskfile.yml`, `buf.gen.yaml`, and `package.json` are located), NOT from the `proto/` subdirectory. The proto files are in `proto/`, but build configuration files are at the root.
+**IMPORTANT**: All commands in this section must be run from the **repository root directory** (where `taskfile.yml`, `buf.gen.yaml`, and `package.json` are located), NOT from the `proto/` subdirectory. The proto files are in `proto/`, but build configuration files are at the root.
 
 ### Using Taskfile (Recommended)
 
 This project uses [Task](https://taskfile.dev/) for running common commands:
 
 ```bash
-# Show all available tasks
-task
-
-# Install dependencies
-task check                # Check if required tools are installed (Node.js, npm, buf, Go)
-task install              # Install npm dependencies and update buf dependencies
-
-# Linting
-task lint              # Lint proto files with buf
-task lint:buf          # Lint proto files with buf
-task lint:ci           # Run all linting checks (CI mode)
-
-# Formatting
-task format            # Format proto files with buf
-task format:check      # Check if proto files are formatted (no write)
-
-# Breaking changes
-task breaking          # Check for breaking changes against main branch
-task breaking:verbose  # Check with verbose JSON output
-
-# Code generation
-task generate          # Generate code for all languages (Python, TypeScript)
-task generate:check    # Verify generated code is up to date
-
-# Build workflows
-task build             # Full build - format, lint, and generate
-task build:ci          # CI build - format check, lint, breaking, and generate check
-task ci                # Run all CI checks locally (recommended before pushing)
-
-# Buf Schema Registry
-task push              # Push schema to BSR (requires DKIN_CLOUD_TOKEN or BUF_TOKEN)
-task push:tag TAG=v1.0.0  # Push schema with a specific tag
-
-# Cleanup
-task clean             # Remove generated files (gen/)
-task clean:all         # Remove all generated and dependency files
-
-# Development helpers
-task validate          # Validate proto files are syntactically correct
-task deps              # Show buf dependencies
-task deps:update       # Update buf dependencies
-task watch             # Watch for changes and auto-generate code
-task stats             # Show statistics about proto files
+task                        # Show all available tasks
+task install                # Install npm dependencies (for buf)
+task gen                    # Generate Python code from proto files (buf.gen.yaml)
+task lint                   # Format check + buf lint
+task lint:check             # Lint proto files with buf
+task lint:format            # Format proto files with buf
+task lint:format:check      # Check proto formatting (no write)
+task version:breaking       # Check for breaking changes against main
+task version:breaking:verbose  # Same, verbose JSON output
+task clean                  # Remove generated files
+task clean:all              # Remove generated files and node_modules
 ```
 
 ### Direct Commands
@@ -162,88 +131,71 @@ After running `npm run build`:
 
 ## Architecture
 
+### File Layout
+
+Every package `agentic_mesh_protocol/<domain>/v1/` is split the same way:
+
+- `<domain>_enums.proto` — the enums of the domain
+- `<domain>_messages.proto` — the domain objects and the `<Domain>Result` outcome message
+- `<domain>_dto.proto` — the `<Rpc>Request` / `<Rpc>Response` messages
+- `<domain>_service.proto` — the service definition
+
+Shared packages:
+
+- `pagination/v1` — `PaginationRequest` (order, descending, limit 1–100, offset), `PaginationResponse`,
+  `BulkResponse` (totals + page of a listing or batch) and `OperationError` (code + message)
+- `common/v1` — `Visibility` (PUBLIC / PRIVATE / INTERNAL), shared by setups, modules, records and files
+
+### Response Pattern
+
+- A single-item RPC returns `<Domain>Result result`: an `identifier` plus a required
+  `oneof outcome` holding either the item or an `OperationError`.
+- A listing or batch RPC returns `repeated <Domain>Result results` plus a `BulkResponse bulk`
+  (total processed, total failed, pagination for listings).
+- Listing requests take an optional `PaginationRequest pagination` (absent = server default page).
+
 ### Service Domains
 
-The protocol defines seven core service domains:
-
-1. **Module Registry Service** (`agentic_mesh_protocol.module_registry.v1`)
-   - Central discovery hub for all modules in the mesh
-   - Handles registration, deregistration, and discovery of modules
-   - Tracks module health status across the network
-   - Key for enabling dynamic service mesh topology
-   - RPCs: RegisterModule, DeregisterModule, DiscoverInfoModule, DiscoverSearchModule, GetModuleStatus, ListModuleStatus, GetAllModuleStatus (streaming), UpdateModuleStatus
-
-2. **Module Service** (`agentic_mesh_protocol.module.v1`)
-   - Execution engine for individual modules
-   - Manages module lifecycle (start/stop/monitor)
-   - Provides streaming execution via `StartModule` RPC
-   - Returns input/output schemas and setup requirements
-   - Module types: KIN (agent brain/LLM), TOOL (utilities), TRIGGER (entry points)
-   - RPCs: StartModule (streaming), StopModule, GetModuleStatus, GetModuleJobs, GetModuleInput, GetModuleOutput, GetModuleSetup, GetModuleSecret
-
-3. **Setup Service** (`agentic_mesh_protocol.setup.v1`)
-   - Configuration management with versioning
-   - Each Setup can have multiple SetupVersions
-   - Stores structured configuration as `google.protobuf.Struct`
-   - Enables parameterized module execution
-   - RPCs: CreateSetup, GetSetup, UpdateSetup, DeleteSetup, CreateSetupVersion, GetSetupVersion, SearchSetupVersions, UpdateSetupVersion, DeleteSetupVersion
-
-4. **Storage Service** (`agentic_mesh_protocol.storage.v1`)
-   - Mission-scoped key-value storage for structured data
-   - Records categorized as OUTPUT, VIEW, LOGS, or OTHER
-   - Supports CRUD operations on JSON-like data
-   - RPCs: StoreRecord, ReadRecord, ModifyRecord, RemoveRecord
-
-5. **FileSystem Service** (`agentic_mesh_protocol.filesystem.v1`)
-   - Binary file storage for large artifacts
-   - Mission-scoped file operations
-   - Handles files that exceed structured storage limits
-   - RPCs: UploadFile, GetFile, GetFilesByMission, GetFilesByName, DeleteFile
-
-6. **Cost Service** (`agentic_mesh_protocol.cost.v1`)
-   - Tracks operational costs (e.g., LLM API calls, compute)
-   - Mission-scoped cost attribution
-   - Enables financial accountability in multi-agent systems
-   - RPCs: AddCost, GetCostsByMission, GetCostsByName, GetCostsByType
-
-7. **UserProfile Service** (`agentic_mesh_protocol.userprofile.v1`)
-   - User profile management for the multi-agent system
-   - Stores user information and metadata
-   - Organisation-scoped user profiles
-   - RPCs: CreateUserProfile, GetUserProfile, UpdateUserProfile, DeleteUserProfile, ListUserProfilesByOrganisation
+1. **RegistryService** (`registry.v1`) — module registration and discovery.
+   RPCs: RegisterModule, Heartbeat, SearchSetups, SearchModules, GetSetup, GetModule, GetModuleStatus.
+   Searches return search-safe summaries (`SetupSummary` / `ModuleSummary`: no config, no endpoint);
+   resolve them with GetSetup / GetModule.
+2. **ModuleService** (`module.v1`) — served by every module (ARCHETYPE, TOOL_MODULE, SERVICE).
+   RPCs: StartModule (server streaming), StopModule, GetModuleInput, GetModuleSelectInput, GetModuleOutput,
+   GetModuleSetup, GetModuleSecret, GetModuleUserInfo, GetConfigSetupModule, ConfigSetupModule, GetModuleCost.
+3. **SetupService** / **SetupVersionService** (`setup.v1`) — setups and their versions.
+   SetupService: CreateSetup, GetSetup, ListSetups, UpdateSetup, ChangeVisibility, DeleteSetup.
+   SetupVersionService: CreateSetupVersion, GetSetupVersion, ListSetupVersions, UpdateSetupVersion,
+   SetCurrentSetupVersion, DeleteSetupVersion.
+4. **StorageService** (`storage.v1`) — context-scoped JSON records grouped in collections.
+   RPCs: CreateRecord, GetRecord, UpdateRecord, DeleteRecord, ListRecords, DeleteCollection.
+5. **FilesystemService** (`filesystem.v1`) — context-scoped binary files.
+   RPCs: UploadFiles, GetFile, ListFiles, UpdateFile, DeleteFiles.
+6. **CostService** (`cost.v1`) — mission-scoped cost tracking.
+   RPCs: CreateCost, ListCosts, ListCostConfigs, SetCostConfig.
+7. **UserProfileService** (`user_profile.v1`) — the user a mission runs for.
+   RPCs: GetUserProfile, GetSetupSecret, GetSetupUserInfo, CheckResourceAccess.
+8. **GatewayService** (`gateway.v1`) — external surface of a producer module.
+   RPCs: AssociateTask, StartStream, Stream (BiDi, in-band `stream.*` sentinels), SendSignal.
 
 ### Key Architectural Patterns
 
-- **Mission Scoping**: All operations include `mission_id` for multi-tenant isolation and traceability
-- **Module Types**: TRIGGER (entry points), KIN (core intelligence), TOOL (utilities), VIEW (UI components)
-- **Validation**: All messages use `buf.validate` annotations for request validation
-- **Flexible Schemas**: Extensive use of `google.protobuf.Struct` for forward-compatible data definitions
-- **Streaming**: `StartModule` returns a stream for long-running operations
-- **Status Tracking**: Job lifecycle states: STARTING → PROCESSING → (SUCCESS|FAILED|CANCELED|EXPIRED|STOPPED)
-
-### Data Flow Pattern
-
-```
-1. Discover module via Module Registry
-2. Retrieve setup configuration from Setup Service
-3. Start execution via Module Service (streaming)
-4. Store results in Storage/FileSystem Services
-5. Track costs via Cost Service
-```
+- **Context scoping**: storage and filesystem requests carry a context *kind* (`StorageContext`,
+  `FileContext`); the matching identifier is resolved server-side from the task metadata.
+- **Caller scoping**: owner and organization are resolved from the request context, never trusted from the payload.
+- **Flexible schemas**: `google.protobuf.Struct` for configuration, data and module schemas.
+- **Streaming**: `StartModule` streams job outputs; `Stream` is the Gateway BiDi channel.
+- **Job lifecycle**: STARTING → PROCESSING → (SUCCESS | FAILED | CANCELED | EXPIRED | STOPPED).
 
 ## Linting and Style
 
 ### Buf Lint Rules (proto/buf.yaml)
 
-- Uses DEFAULT, STANDARD, COMMENTS, UNARY_RPC rules
-- Requires FILE_LOWER_SNAKE_CASE naming
-- Services must end with "Service" suffix
-- Enum zero values must end with "_UNSPECIFIED"
-- Allows `google.protobuf.Empty` for requests/responses
-- 4-space indentation via `buf format`
-- Lower snake_case for fields and file names
-- Upper CamelCase for messages
-- All messages, services, RPCs, fields, and enums require comments
+- STANDARD, COMMENTS, FILE_LOWER_SNAKE_CASE and PROTOVALIDATE (every `buf.validate` rule must compile)
+- Only exception: ENUM_VALUE_PREFIX — enum values are not prefixed, except the zero value
+  which must be `<ENUM_NAME>_UNSPECIFIED` (enum value names must stay unique within a package)
+- Requests and responses are named `<Rpc>Request` / `<Rpc>Response`, unique per RPC
+- All messages, services, RPCs, fields and enum values require comments; format with `buf format`
 
 ## Dependencies
 
@@ -377,6 +329,20 @@ Automatically pushes schema to Buf Schema Registry:
 
 **Note**: All CI workflows use concurrency groups to cancel in-progress runs when new commits are pushed.
 
+## Changelog
+
+**Every change must be recorded in `CHANGELOG.md`, in the same change that introduces it.**
+This covers proto files (messages, fields, enums, RPCs, validation rules), the generators
+(`tools/zod`), the build and lint configuration, and the documentation of the protocol.
+
+- Add the entry under `## [Unreleased]`, in the matching section: `Added`, `Changed`, `Removed`,
+  `Fixed`, `Changed — tooling`, `Migration notes`, `Open decisions`.
+- Flag every wire, JSON or generated-code breaking change with **BREAKING** and give the
+  before → after mapping (RPC, message, field, enum value, file) consumers need to migrate.
+- Name the domain the entry belongs to (setup, registry, module, storage, filesystem, cost,
+  user_profile, gateway, pagination, common).
+- On release, move the `[Unreleased]` entries under a `## [x.y.z] - YYYY-MM-DD` heading.
+
 ## Git Conventions
 
 ### Commit Messages
@@ -386,7 +352,7 @@ Automatically pushes schema to Buf Schema Registry:
 
 ### Protocol and Structure
 - This repository contains Protocol Buffer definitions and generates code for consumption
-- All proto files must maintain backward compatibility (checked by CI)
+- Breaking changes are checked by CI (`buf breaking`); a wire-breaking change needs a new package version
 - All packages use v1 versioning (e.g., `agentic_mesh_protocol.module.v1`, `agentic_mesh_protocol.storage.v1`)
 - Licensed under GPL-3.0
 
@@ -399,13 +365,36 @@ Automatically pushes schema to Buf Schema Registry:
 - **Build**: Users' TypeScript compilers handle compilation (no pre-compilation)
 
 ### Validation Rules
-ID prefixes are enforced via buf.validate:
-- Module IDs must be prefixed with "modules:"
-- Job IDs must be prefixed with "jobs:"
-- Setup IDs must be prefixed with "setups:"
-- Mission IDs must be prefixed with "missions:"
-- User IDs must be prefixed with "users:"
-- Organisation IDs must be prefixed with "organisations:"
+
+Every field carries `buf.validate` rules, checked by protovalidate (Python) and by the
+generated Zod schemas (TypeScript, `tools/zod`). Conventions:
+
+- **IDs**: standard string rules `prefix` + `min_len` (prefix length + 1) + `max_len: 256`:
+  `modules:`, `jobs:`, `setups:`, `setup_versions:`, `missions:`, `users:`, `organizations:`,
+  `files:`, `storage:`, `cards:`. Task IDs (Gateway) match `^[A-Za-z0-9_:.-]+$`, at most 256 characters.
+- **`required`** is used only in its protovalidate meaning: a non-empty string, a non-zero number or
+  enum, a present message, a non-empty list. Never on a `bool` (it would force `true`) nor on a filter.
+- **Optional scalars** of a request are declared `optional` (explicit presence): their rules apply
+  only when the field is set. Partial updates rely on it ("absent = unchanged").
+- **Enums**: `defined_only: true` everywhere; `not_in: [0]` when UNSPECIFIED is not a valid value.
+- **Bounds**: every string has a `max_len` (names 255, documentation 300, versions 128, tags 64...),
+  every repeated field a `max_items`, every double is `finite`.
+- **Single-field constraints use standard rules only** (string, number, enum, repeated, `oneof`):
+  they carry built-in error messages and are fully translated to Zod. A dependency between fields
+  is modeled by the message shape when possible: a `oneof` with `(buf.validate.oneof).required`
+  (e.g. `SendSignalRequest.signal`, `CheckResourceAccessRequest.resource`) or a nested message
+  with its own required fields (e.g. `SetupRevision`: no structure without content).
+- **CEL only where no standard rule exists**, always with a custom `id` and `message`
+  (a custom message is only possible through CEL):
+  - message-level `(buf.validate.message).cel` for rules across fields — `<message>.<rule>` ids,
+    e.g. `update_setup_request.not_empty`, `file_filter.created_range`, `storage_record.chronology`,
+    `bulk_response.failed_within_processed`, `upload_files_request.unique_names`;
+  - field-level `cel` on `result` / `repeated.items.cel` on `results` for the outcome kind an RPC
+    returns (`<response>.outcome`, e.g. a GetSetupResponse holds a Setup or an OperationError).
+    Keep `has()` off list comprehension variables: protovalidate-python ignores field presence
+    there, so a per-item rule goes on `repeated.items.cel` where `this` is the item.
+- The Zod generator translates `has(this.a) || has(this.b)` field rules; it does not read
+  message-level CEL, which TypeScript servers must enforce themselves.
 
 ### Build Process
 1. **Generate**: `buf generate` creates TypeScript from proto files in `gen/typescript/`

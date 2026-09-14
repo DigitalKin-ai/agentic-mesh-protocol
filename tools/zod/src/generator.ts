@@ -4,12 +4,13 @@
 
 import type { Schema, GeneratedFile } from "@bufbuild/protoplugin";
 import type { DescFile, DescMessage, DescEnum, DescField } from "@bufbuild/protobuf";
+import { ScalarType } from "@bufbuild/protobuf";
 import {
   mapFieldToZod,
   isFieldOptional,
   type TypeMapperContext,
 } from "./type-mapper.js";
-import { getValidationChain, isFieldRequired } from "./validation/index.js";
+import { getValidationChain, isFieldRequired, getDefinedEnumValues } from "./validation/index.js";
 import { toCamelCase, toSchemaName, getRelativeImportPath, toScreamingSnakeCase, stripEnumPrefix } from "./utils.js";
 
 export interface PluginOptions {
@@ -297,6 +298,45 @@ function escapePattern(pattern: string): string {
 }
 
 /**
+ * Builds the defined_only refinement: the value must be one the enum declares
+ * (rejects ts-proto's UNRECOGNIZED = -1 and any unknown number)
+ */
+function definedOnlyRefine(enumType: DescEnum): string {
+  const values = getDefinedEnumValues(enumType).join(", ");
+  return `.refine((v) => [${values}].includes(v), { message: "Must be one of: ${values}" })`;
+}
+
+/**
+ * Returns the ts-proto zero value of a singular scalar or enum field as a literal,
+ * or undefined when the field has no literal zero (bytes, messages, lists, maps)
+ */
+function zeroLiteral(field: DescField): string | undefined {
+  if (field.fieldKind === "enum") {
+    return "0";
+  }
+  if (field.fieldKind !== "scalar") {
+    return undefined;
+  }
+  switch (field.scalar) {
+    case ScalarType.STRING:
+      return '""';
+    case ScalarType.BOOL:
+      return "false";
+    case ScalarType.BYTES:
+      return undefined;
+    case ScalarType.INT64:
+    case ScalarType.SINT64:
+    case ScalarType.SFIXED64:
+    case ScalarType.UINT64:
+    case ScalarType.FIXED64:
+      // ts-proto with forceLong=string renders 64-bit integers as strings
+      return '"0"';
+    default:
+      return "0";
+  }
+}
+
+/**
  * Generates a Zod schema for a single field
  */
 function generateFieldSchema(
@@ -331,7 +371,13 @@ function generateFieldSchema(
   }
 
   // For list fields, apply item-level constraints from buf.validate
-  if (field.fieldKind === "list" && (validation.itemMethods.length > 0 || validation.itemEnumNotIn.length > 0 || validation.itemStringPattern)) {
+  if (
+    field.fieldKind === "list" &&
+    (validation.itemMethods.length > 0 ||
+      validation.itemEnumNotIn.length > 0 ||
+      validation.itemEnumDefinedOnly ||
+      validation.itemStringPattern)
+  ) {
     // Extract the item type from z.array(itemType)
     const match = zodExpression.match(/^z\.array\((.+)\)$/);
     if (match) {
@@ -347,6 +393,11 @@ function generateFieldSchema(
       if (validation.itemStringPattern) {
         const escapedPattern = escapePattern(validation.itemStringPattern);
         itemType += `.refine((v) => v === "" || new RegExp("${escapedPattern}").test(v), { message: "Must match pattern: ${escapedPattern}" })`;
+      }
+
+      // Apply enum definedOnly constraint for items (any value the enum declares)
+      if (validation.itemEnumDefinedOnly && field.listKind === "enum") {
+        itemType += definedOnlyRefine(field.enum);
       }
 
       // Apply enum notIn constraint for items
@@ -376,9 +427,18 @@ function generateFieldSchema(
     }
   }
 
-  // Handle enum defined_only constraint
+  // Handle enum defined_only constraint: any value the enum declares, UNSPECIFIED included
+  // (a non-zero value is asked for with `not_in: 0`, as protovalidate reads it)
   if (validation.enumDefinedOnly && field.fieldKind === "enum") {
-    zodExpression += `.refine((v) => v !== 0, "Value is required")`;
+    zodExpression += definedOnlyRefine(field.enum);
+  }
+
+  // Handle ignore = IGNORE_IF_ZERO_VALUE: the proto3 zero value bypasses every rule above
+  if (validation.ignoreIfZero) {
+    const zero = zeroLiteral(field);
+    if (zero !== undefined) {
+      zodExpression = `z.union([z.literal(${zero}), ${zodExpression}])`;
+    }
   }
 
   // Handle optional fields

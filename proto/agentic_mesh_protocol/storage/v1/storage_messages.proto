@@ -1,0 +1,105 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.storage.v1;
+
+import "agentic_mesh_protocol/common/v1/common_enums.proto";
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
+import "agentic_mesh_protocol/storage/v1/storage_enums.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+// ═════════════════════════════════════ Objects ════════════════════════════════════ //
+
+// StorageRecord is a JSON document stored in a collection of a context.
+message StorageRecord {
+  option (buf.validate.message).cel = {
+    id: "storage_record.chronology"
+    message: "created_at must not be after updated_at"
+    expression: "this.created_at <= this.updated_at"
+  };
+
+  // storage_id is the unique identifier of the record in the storage.
+  string storage_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "storage:"
+      min_len: 9
+      max_len: 256
+    }
+  ];
+
+  // context is the identifier of the context owning the record (a mission or a setup version).
+  string context = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 256
+      pattern: "^(missions|setup_versions):.+$"
+    }
+  ];
+
+  // collection is the name of the group of records (unique within the context).
+  string collection = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 255
+  ];
+
+  // record_id is the identifier of the record within its collection.
+  string record_id = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 255
+  ];
+
+  // data_type is the category of the data.
+  DataType data_type = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // visibility is the read-access scope of the record.
+  agentic_mesh_protocol.common.v1.Visibility visibility = 6 [(buf.validate.field).enum.defined_only = true];
+
+  // data is the stored JSON document.
+  google.protobuf.Struct data = 7 [(buf.validate.field).required = true];
+
+  // created_at is the creation date of the record.
+  google.protobuf.Timestamp created_at = 8 [(buf.validate.field).required = true];
+
+  // updated_at is the last update date of the record.
+  google.protobuf.Timestamp updated_at = 9 [(buf.validate.field).required = true];
+}
+
+// StorageResult is the outcome of an operation on a single record.
+message StorageResult {
+  // identifier is the identifier of the processed item.
+  string identifier = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 256
+  ];
+
+  // outcome holds the processed record, or the error that prevented processing it.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // record is the processed record.
+    StorageRecord record = 2;
+    // error describes why the item could not be processed.
+    agentic_mesh_protocol.pagination.v1.OperationError error = 3;
+  }
+}

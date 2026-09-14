@@ -1,0 +1,388 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.registry.v1;
+
+import "agentic_mesh_protocol/common/v1/common_enums.proto";
+import "agentic_mesh_protocol/module/v1/module_enums.proto";
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
+import "agentic_mesh_protocol/pagination/v1/pagination.proto";
+import "agentic_mesh_protocol/registry/v1/registry_messages.proto";
+import "agentic_mesh_protocol/setup/v1/setup_enums.proto";
+import "buf/validate/validate.proto";
+
+// ═══════════════════════════════════ RegisterModule ═══════════════════════════════════ //
+
+// RegisterModuleRequest is sent by a module at startup to declare itself in the mesh.
+// The module must already exist in the platform database.
+message RegisterModuleRequest {
+  // module_id is the unique identifier of the module.
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "modules:"
+      min_len: 9
+      max_len: 256
+    }
+  ];
+
+  // address is the host name or IP address the module is reachable at.
+  string address = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 253
+      pattern: "^[A-Za-z0-9._:\\[\\]-]+$"
+    }
+  ];
+
+  // port is the port the module is reachable at.
+  int32 port = 3 [(buf.validate.field).int32 = {
+    gte: 1
+    lte: 65535
+  }];
+
+  // version is the runtime version of the deployed module.
+  string version = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 128
+    }
+  ];
+
+  // type is the kind the module declares itself as.
+  agentic_mesh_protocol.module.v1.ModuleType type = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // documentation describes the module and its triggers, indexed by the registry search.
+  string documentation = 6 [(buf.validate.field).string.max_len = 65536];
+}
+
+// RegisterModuleResponse returns the registered module.
+message RegisterModuleResponse {
+  // result holds the ModuleDescriptor, or an OperationError.
+  RegistryResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "register_module_response.outcome"
+      message: "result must hold a ModuleDescriptor or an OperationError"
+      expression: "has(this.module_descriptor) || has(this.error)"
+    }
+  ];
+}
+
+// ═════════════════════════════════════ Heartbeat ══════════════════════════════════════ //
+
+// HeartbeatRequest is sent periodically by a module to signal it is alive.
+message HeartbeatRequest {
+  // module_id is the unique identifier of the module.
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "modules:"
+      min_len: 9
+      max_len: 256
+    }
+  ];
+}
+
+// HeartbeatResponse returns the status the registry holds for the module.
+message HeartbeatResponse {
+  // status is the availability the registry considers for the module (READY, ACTIVE, ...).
+  agentic_mesh_protocol.module.v1.ModuleStatus status = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+}
+
+// ════════════════════════════════════ SearchSetups ════════════════════════════════════ //
+
+// SearchSetupsRequest searches the setup catalog (configured, invocable instances).
+message SearchSetupsRequest {
+  option (buf.validate.message).cel = {
+    id: "search_setups_request.order"
+    message: "pagination.order must be one of '', 'name', 'created_at' or 'updated_at'"
+    expression: "!has(this.pagination) || this.pagination.order in ['', 'name', 'created_at', 'updated_at']"
+  };
+
+  // query is a free-text search matched case-insensitively against BOTH the name and
+  // the documentation (empty = match all). An empty pagination.order sorts by relevance
+  // when a query is set, by updated_at descending otherwise.
+  string query = 1 [(buf.validate.field).string.max_len = 1000];
+
+  // setup_ids keeps these setups only (empty = no filter).
+  repeated string setup_ids = 2 [(buf.validate.field).repeated = {
+    max_items: 100
+    items: {
+      string: {
+        prefix: "setups:"
+        min_len: 8
+        max_len: 256
+      }
+    }
+  }];
+
+  // module_ids keeps the setups backed by these modules (empty = no filter).
+  repeated string module_ids = 3 [(buf.validate.field).repeated = {
+    max_items: 100
+    items: {
+      string: {
+        prefix: "modules:"
+        min_len: 9
+        max_len: 256
+      }
+    }
+  }];
+
+  // module_types keeps the setups backed by modules of these kinds (empty = no filter).
+  repeated agentic_mesh_protocol.module.v1.ModuleType module_types = 4 [(buf.validate.field).repeated = {
+    max_items: 16
+    items: {
+      enum: {
+        defined_only: true
+        not_in: [0]
+      }
+    }
+  }];
+
+  // statuses keeps the setups in these statuses (empty = no filter), typically READY or CONFIGURATION_SUCCEEDED.
+  repeated agentic_mesh_protocol.setup.v1.SetupStatus statuses = 5 [(buf.validate.field).repeated = {
+    max_items: 16
+    items: {
+      enum: {
+        defined_only: true
+        not_in: [0]
+      }
+    }
+  }];
+
+  // visibilities keeps the setups carrying one of these scopes (empty = no filter).
+  repeated agentic_mesh_protocol.common.v1.Visibility visibilities = 6 [(buf.validate.field).repeated = {
+    max_items: 16
+    items: {
+      enum: {
+        defined_only: true
+        not_in: [0]
+      }
+    }
+  }];
+
+  // tags keeps the items carrying AT LEAST ONE of these tags, matched case-insensitively.
+  repeated string tags = 7 [(buf.validate.field).repeated = {
+    max_items: 50
+    items: {
+      string: {
+        min_len: 1
+        max_len: 64
+      }
+    }
+  }];
+
+  // pagination selects the page to return (absent = server default); pagination.order
+  // accepts "name", "created_at" or "updated_at".
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 8;
+}
+
+// SearchSetupsResponse returns a page of search-safe setup summaries.
+message SearchSetupsResponse {
+  // results holds one RegistryResult (a SetupSummary) per matching setup.
+  repeated RegistryResult results = 1 [(buf.validate.field).repeated.items.cel = {
+    id: "search_setups_response.outcome"
+    message: "every result must hold a SetupSummary or an OperationError"
+    expression: "has(this.setup_summary) || has(this.error)"
+  }];
+  // bulk summarizes the search and its pagination.
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
+}
+
+// ═══════════════════════════════════ SearchModules ════════════════════════════════════ //
+
+// SearchModulesRequest searches the module catalog (blueprints that need a setup to be invocable).
+message SearchModulesRequest {
+  option (buf.validate.message).cel = {
+    id: "search_modules_request.order"
+    message: "pagination.order must be one of '', 'name', 'created_at' or 'updated_at'"
+    expression: "!has(this.pagination) || this.pagination.order in ['', 'name', 'created_at', 'updated_at']"
+  };
+
+  // query is a free-text search matched case-insensitively against BOTH the name and
+  // the documentation (empty = match all). An empty pagination.order sorts by relevance
+  // when a query is set, by updated_at descending otherwise.
+  string query = 1 [(buf.validate.field).string.max_len = 1000];
+
+  // module_ids keeps these modules only (empty = no filter).
+  repeated string module_ids = 2 [(buf.validate.field).repeated = {
+    max_items: 100
+    items: {
+      string: {
+        prefix: "modules:"
+        min_len: 9
+        max_len: 256
+      }
+    }
+  }];
+
+  // module_types keeps the modules of these kinds (empty = no filter).
+  repeated agentic_mesh_protocol.module.v1.ModuleType module_types = 3 [(buf.validate.field).repeated = {
+    max_items: 16
+    items: {
+      enum: {
+        defined_only: true
+        not_in: [0]
+      }
+    }
+  }];
+
+  // statuses keeps the modules in these statuses (empty = no filter).
+  repeated agentic_mesh_protocol.module.v1.ModuleStatus statuses = 4 [(buf.validate.field).repeated = {
+    max_items: 16
+    items: {
+      enum: {
+        defined_only: true
+        not_in: [0]
+      }
+    }
+  }];
+
+  // visibilities keeps the modules carrying one of these scopes (empty = no filter).
+  repeated agentic_mesh_protocol.common.v1.Visibility visibilities = 5 [(buf.validate.field).repeated = {
+    max_items: 16
+    items: {
+      enum: {
+        defined_only: true
+        not_in: [0]
+      }
+    }
+  }];
+
+  // tags keeps the items carrying AT LEAST ONE of these tags, matched case-insensitively.
+  repeated string tags = 6 [(buf.validate.field).repeated = {
+    max_items: 50
+    items: {
+      string: {
+        min_len: 1
+        max_len: 64
+      }
+    }
+  }];
+
+  // pagination selects the page to return (absent = server default); pagination.order
+  // accepts "name", "created_at" or "updated_at".
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 7;
+}
+
+// SearchModulesResponse returns a page of search-safe module summaries.
+message SearchModulesResponse {
+  // results holds one RegistryResult (a ModuleSummary) per matching module.
+  repeated RegistryResult results = 1 [(buf.validate.field).repeated.items.cel = {
+    id: "search_modules_response.outcome"
+    message: "every result must hold a ModuleSummary or an OperationError"
+    expression: "has(this.module_summary) || has(this.error)"
+  }];
+  // bulk summarizes the search and its pagination.
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
+}
+
+// ══════════════════════════════════════ GetSetup ══════════════════════════════════════ //
+
+// GetSetupRequest resolves a setup into its complete descriptor.
+message GetSetupRequest {
+  // setup_id is the unique identifier of the setup.
+  string setup_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "setups:"
+      min_len: 8
+      max_len: 256
+    }
+  ];
+}
+
+// GetSetupResponse returns the complete descriptor of the setup.
+message GetSetupResponse {
+  // result holds the SetupDescriptor, or an OperationError.
+  RegistryResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "get_setup_response.outcome"
+      message: "result must hold a SetupDescriptor or an OperationError"
+      expression: "has(this.setup_descriptor) || has(this.error)"
+    }
+  ];
+}
+
+// ═════════════════════════════════════ GetModule ══════════════════════════════════════ //
+
+// GetModuleRequest resolves a module into its complete descriptor.
+message GetModuleRequest {
+  // module_id is the unique identifier of the module.
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "modules:"
+      min_len: 9
+      max_len: 256
+    }
+  ];
+}
+
+// GetModuleResponse returns the complete descriptor of the module.
+message GetModuleResponse {
+  // result holds the ModuleDescriptor, or an OperationError.
+  RegistryResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "get_module_response.outcome"
+      message: "result must hold a ModuleDescriptor or an OperationError"
+      expression: "has(this.module_descriptor) || has(this.error)"
+    }
+  ];
+}
+
+// ══════════════════════════════════ GetModuleStatus ═══════════════════════════════════ //
+
+// GetModuleStatusRequest retrieves the availability of a module.
+message GetModuleStatusRequest {
+  // module_id is the unique identifier of the module.
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "modules:"
+      min_len: 9
+      max_len: 256
+    }
+  ];
+}
+
+// GetModuleStatusResponse returns the availability of the module.
+message GetModuleStatusResponse {
+  // status is the availability the registry considers for the module (READY, ACTIVE, ...).
+  agentic_mesh_protocol.module.v1.ModuleStatus status = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+}

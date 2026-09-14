@@ -16,29 +16,20 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.setup.v1;
 
-import "agentic_mesh_protocol/setup/v1/setup.proto";
+import "agentic_mesh_protocol/setup/v1/setup_dto.proto";
 
-// SetupService
-// Provides operations for setups and setup versions.
+// SetupService manages setups: configured instances of a module.
 service SetupService {
-  // GetSetup retrieves a setup by its unique identifier.
-  rpc GetSetup(GetSetupRequest) returns (GetSetupResponse);
-
-  // CreateSetup creates a new setup.
+  // CreateSetup creates a setup and its initial version.
   rpc CreateSetup(CreateSetupRequest) returns (CreateSetupResponse);
-
-  // UpdateSetup updates an existing setup.
+  // GetSetup retrieves a setup with its current (or a given) version.
+  rpc GetSetup(GetSetupRequest) returns (GetSetupResponse);
+  // ListSetups retrieves a page of setups, optionally filtered.
+  rpc ListSetups(ListSetupsRequest) returns (ListSetupsResponse);
+  // UpdateSetup updates a setup; a new content cuts a new version.
   rpc UpdateSetup(UpdateSetupRequest) returns (UpdateSetupResponse);
-
-  // DeleteSetup deletes a setup by its unique identifier.
-  rpc DeleteSetup(DeleteSetupRequest) returns (DeleteSetupResponse);
-
-  // ChangeVisibility changes the visibility scope of a setup.
+  // ChangeVisibility changes the read-access scope of a setup.
   rpc ChangeVisibility(ChangeVisibilityRequest) returns (ChangeVisibilityResponse);
-
-  // ListSetupVersions lists the versions of a setup.
-  rpc ListSetupVersions(ListSetupVersionsRequest) returns (ListSetupVersionsResponse);
-
-  // SetCurrentSetupVersion activates an existing version of a setup.
-  rpc SetCurrentSetupVersion(SetCurrentSetupVersionRequest) returns (SetCurrentSetupVersionResponse);
+  // DeleteSetup deletes a setup and its versions.
+  rpc DeleteSetup(DeleteSetupRequest) returns (DeleteSetupResponse);
 }
