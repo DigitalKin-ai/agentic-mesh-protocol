@@ -103,6 +103,9 @@ npx buf generate
 # Or use npm script
 npm run build  # Runs: npx buf generate
 
+# Differential test of the generated Zod schemas against protovalidate
+npm test
+
 # Push schema to Buf Schema Registry (requires DKIN_CLOUD_TOKEN)
 npx buf push proto
 ```
@@ -393,8 +396,15 @@ generated Zod schemas (TypeScript, `tools/zod`). Conventions:
     returns (`<response>.outcome`, e.g. a GetSetupResponse holds a Setup or an OperationError).
     Keep `has()` off list comprehension variables: protovalidate-python ignores field presence
     there, so a per-item rule goes on `repeated.items.cel` where `this` is the item.
-- The Zod generator translates `has(this.a) || has(this.b)` field rules; it does not read
-  message-level CEL, which TypeScript servers must enforce themselves.
+- The Zod generator (`tools/zod`) translates every rule kind used here, message-level CEL included:
+  CEL is parsed, type-checked against the descriptors and compiled into `.refine()` /
+  `.superRefine()` checks on the ts-proto shape (int64 as strings, oneof members as separate
+  properties, an absent property read as the proto3 zero value). A rule or a CEL construct it cannot
+  translate faithfully fails the generation: extend the generator, or pick a supported form.
+- `npm test` runs the differential test (`tools/zod/test`): protovalidate and the generated schemas
+  must agree on every variant of every message, and every declared rule must be broken by one of them.
+  A new pattern needs a sample in `PATTERN_SAMPLES`; a CEL rule spanning several fields may need an
+  entry in `RULE_MUTATIONS` for the test to break it.
 
 ### Build Process
 1. **Generate**: `buf generate` creates TypeScript from proto files in `gen/typescript/`

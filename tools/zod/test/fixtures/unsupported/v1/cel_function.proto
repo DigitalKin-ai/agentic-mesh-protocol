@@ -1,0 +1,17 @@
+// Unsupported: a CEL function outside the compiled subset (strings extension).
+syntax = "proto3";
+
+package unsupported.v1;
+
+import "buf/validate/validate.proto";
+
+// CelFunction uses lowerAscii().
+message CelFunction {
+  option (buf.validate.message).cel = {
+    id: "cel_function.lower"
+    message: "name must be lowercase"
+    expression: "this.name.lowerAscii() == this.name"
+  };
+
+  string name = 1;
+}

@@ -1,0 +1,29 @@
+# Generates the differential-test fixtures (tools/zod/test/fixtures/zodtest) with the same
+# plugins and options as buf.gen.ts.yaml, into tools/zod/test/dist/gen.
+version: v2
+
+plugins:
+  - local: protoc-gen-ts_proto
+    out: tools/zod/test/dist/gen
+    strategy: all
+    opt:
+      - outputServices=grpc-js
+      - outputClientImpl=grpc-js
+      - env=node
+      - esModuleInterop=true
+      - exportCommonSymbols=false
+      - useOptionals=messages
+      - useDate=true
+      - forceLong=string
+      - importSuffix=.js
+      - snakeToCamel=keys
+      - esLintDisable=true
+
+  - local:
+      - node
+      - ./tools/zod/dist/index.js
+    out: tools/zod/test/dist/gen
+    strategy: all
+    opt:
+      - target=ts
+      - include_responses=true

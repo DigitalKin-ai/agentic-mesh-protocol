@@ -1,0 +1,13 @@
+# Runs protoc-gen-zod alone on one fixture of tools/zod/test/fixtures/unsupported,
+# which the generator must refuse.
+version: v2
+
+plugins:
+  - local:
+      - node
+      - ./tools/zod/dist/index.js
+    out: tools/zod/test/dist/unsupported
+    strategy: all
+    opt:
+      - target=ts
+      - include_responses=true
