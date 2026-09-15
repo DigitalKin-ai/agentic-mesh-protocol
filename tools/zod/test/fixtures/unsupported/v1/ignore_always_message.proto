@@ -1,0 +1,16 @@
+// Unsupported: IGNORE_ALWAYS on a message field (the nested schema would still validate).
+syntax = "proto3";
+
+package unsupported.v1;
+
+import "buf/validate/validate.proto";
+
+// Nested has a rule of its own.
+message Nested {
+  string name = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+// IgnoreAlwaysMessage skips the rules of its nested message.
+message IgnoreAlwaysMessage {
+  Nested nested = 1 [(buf.validate.field).ignore = IGNORE_ALWAYS];
+}

@@ -1,0 +1,43 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.setup.v1;
+
+// SetupStatus is the lifecycle status of a setup.
+enum SetupStatus {
+  // SETUP_STATUS_UNSPECIFIED indicates that the status is not set.
+  SETUP_STATUS_UNSPECIFIED = 0;
+  // DRAFT: the setup is being drafted or edited.
+  DRAFT = 1;
+  // WAITING_FOR_APPROVAL: the setup waits for an approval before it can be used.
+  WAITING_FOR_APPROVAL = 2;
+  // READY: the setup is ready for use.
+  READY = 3;
+  // PAUSED: the setup is temporarily paused.
+  PAUSED = 4;
+  // FAILED: the setup has failed at some stage.
+  FAILED = 5;
+  // ARCHIVED: the setup is archived and inactive.
+  ARCHIVED = 6;
+  // NEEDS_CONFIGURATION: the setup needs additional configuration.
+  NEEDS_CONFIGURATION = 7;
+  // CONFIGURATION_FAILED: the setup configuration failed.
+  CONFIGURATION_FAILED = 8;
+  // CONFIGURATION_SUCCEEDED: the setup configuration succeeded.
+  CONFIGURATION_SUCCEEDED = 9;
+  // VALIDATING: the setup is being validated.
+  VALIDATING = 10;
+}

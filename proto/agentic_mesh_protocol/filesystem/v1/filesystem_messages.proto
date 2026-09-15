@@ -1,0 +1,302 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.filesystem.v1;
+
+import "agentic_mesh_protocol/common/v1/common_enums.proto";
+import "agentic_mesh_protocol/filesystem/v1/filesystem_enums.proto";
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+// ═════════════════════════════════════ Objects ════════════════════════════════════ //
+
+// File is a stored file with its metadata.
+message File {
+  option (buf.validate.message).cel = {
+    id: "file.size_matches_content"
+    message: "size_bytes must match the content length when the content is returned"
+    expression: "size(this.content) == 0 || this.size_bytes == size(this.content)"
+  };
+  option (buf.validate.message).cel = {
+    id: "file.chronology"
+    message: "created_at must not be after updated_at"
+    expression: "!has(this.created_at) || !has(this.updated_at) || this.created_at <= this.updated_at"
+  };
+
+  // id is the unique identifier of the file.
+  string id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "files:"
+      min_len: 7
+      max_len: 256
+    }
+  ];
+
+  // context is the identifier of the mission or setup owning the file (empty = attached to none).
+  string context = 2 [(buf.validate.field).string = {
+    max_len: 256
+    pattern: "^((missions|setups):.+)?$"
+  }];
+
+  // name is the name of the file (unique within its context).
+  string name = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 255
+  ];
+
+  // type is the classification of the file.
+  FileType type = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // status is the lifecycle status of the file.
+  FileStatus status = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // visibility is the read-access scope of the file.
+  agentic_mesh_protocol.common.v1.Visibility visibility = 6 [(buf.validate.field).enum.defined_only = true];
+
+  // content_type is the MIME type of the file.
+  string content_type = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 255
+  ];
+
+  // size_bytes is the size of the file content, in bytes.
+  int64 size_bytes = 8 [(buf.validate.field).int64.gte = 0];
+
+  // checksum is the SHA-256 checksum of the file content.
+  string checksum = 9 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 128
+  ];
+
+  // storage_uri is the internal URI of the file content.
+  string storage_uri = 10 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      uri_ref: true
+      max_len: 2048
+    }
+  ];
+
+  // url is the external URL of the file content.
+  string url = 11 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      uri: true
+      max_len: 2048
+    }
+  ];
+
+  // metadata holds free-form properties of the file.
+  google.protobuf.Struct metadata = 12;
+
+  // content is the file content, returned only when it was requested.
+  bytes content = 13;
+
+  // created_at is the upload date of the file.
+  google.protobuf.Timestamp created_at = 14;
+
+  // updated_at is the last update date of the file.
+  google.protobuf.Timestamp updated_at = 15;
+}
+
+// FileFilter narrows a file query; every empty field means "no filter".
+message FileFilter {
+  option (buf.validate.message).cel = {
+    id: "file_filter.created_range"
+    message: "created_after must be before created_before"
+    expression: "!has(this.created_after) || !has(this.created_before) || this.created_after < this.created_before"
+  };
+  option (buf.validate.message).cel = {
+    id: "file_filter.updated_range"
+    message: "updated_after must be before updated_before"
+    expression: "!has(this.updated_after) || !has(this.updated_before) || this.updated_after < this.updated_before"
+  };
+  option (buf.validate.message).cel = {
+    id: "file_filter.size_range"
+    message: "min_size_bytes must not exceed max_size_bytes"
+    expression: "this.max_size_bytes == 0 || this.min_size_bytes <= this.max_size_bytes"
+  };
+
+  // ids keeps the files carrying one of these identifiers.
+  repeated string ids = 1 [(buf.validate.field).repeated = {
+    max_items: 1000
+    items: {
+      string: {
+        prefix: "files:"
+        min_len: 7
+        max_len: 256
+      }
+    }
+  }];
+
+  // names keeps the files carrying one of these names (exact match).
+  repeated string names = 2 [(buf.validate.field).repeated = {
+    max_items: 1000
+    items: {
+      string: {
+        min_len: 1
+        max_len: 255
+      }
+    }
+  }];
+
+  // types keeps the files of these types.
+  repeated FileType types = 3 [(buf.validate.field).repeated = {
+    max_items: 16
+    items: {
+      enum: {
+        defined_only: true
+        not_in: [0]
+      }
+    }
+  }];
+
+  // status keeps the files in this status (UNSPECIFIED = no filter).
+  FileStatus status = 4 [(buf.validate.field).enum.defined_only = true];
+
+  // visibilities keeps the files carrying one of these scopes.
+  repeated agentic_mesh_protocol.common.v1.Visibility visibilities = 5 [(buf.validate.field).repeated = {
+    max_items: 16
+    items: {
+      enum: {
+        defined_only: true
+        not_in: [0]
+      }
+    }
+  }];
+
+  // prefix keeps the files whose name starts with this path prefix (e.g., "folder1/");
+  // ".." segments are refused to prevent path traversal.
+  string prefix = 6 [(buf.validate.field).string = {
+    max_len: 1024
+    pattern: "^[^.]*([.][^.]+)*[.]?$"
+  }];
+
+  // content_type keeps the files of this exact MIME type.
+  string content_type = 7 [(buf.validate.field).string.max_len = 255];
+
+  // content_type_prefix keeps the files whose MIME type starts with this prefix (e.g., "image/").
+  string content_type_prefix = 8 [(buf.validate.field).string.max_len = 255];
+
+  // min_size_bytes keeps the files at least this large.
+  int64 min_size_bytes = 9 [(buf.validate.field).int64.gte = 0];
+
+  // max_size_bytes keeps the files at most this large (0 = no upper bound).
+  int64 max_size_bytes = 10 [(buf.validate.field).int64.gte = 0];
+
+  // created_after keeps the files created after this date.
+  google.protobuf.Timestamp created_after = 11;
+
+  // created_before keeps the files created before this date.
+  google.protobuf.Timestamp created_before = 12;
+
+  // updated_after keeps the files updated after this date.
+  google.protobuf.Timestamp updated_after = 13;
+
+  // updated_before keeps the files updated before this date.
+  google.protobuf.Timestamp updated_before = 14;
+}
+
+// UploadFileData is one file of an upload batch.
+message UploadFileData {
+  // context is the kind of context the file is scoped to (UNSPECIFIED = attached to none).
+  FileContext context = 1 [(buf.validate.field).enum.defined_only = true];
+
+  // name is the name of the file; ".." segments are refused to prevent path traversal.
+  string name = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 255
+      pattern: "^[^.]*([.][^.]+)*[.]?$"
+    }
+  ];
+
+  // type is the classification of the file.
+  FileType type = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // status is the initial lifecycle status of the file.
+  FileStatus status = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // visibility is the read-access scope of the file (UNSPECIFIED = server default).
+  agentic_mesh_protocol.common.v1.Visibility visibility = 5 [(buf.validate.field).enum.defined_only = true];
+
+  // content_type is the MIME type of the file.
+  string content_type = 6 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 255
+    }
+  ];
+
+  // content is the file content.
+  bytes content = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).bytes.min_len = 1
+  ];
+
+  // metadata holds free-form properties of the file.
+  google.protobuf.Struct metadata = 8;
+
+  // replace_if_exists replaces an existing file carrying the same name in the same context.
+  bool replace_if_exists = 9;
+}
+
+// FileResult is the outcome of an operation on a single file.
+message FileResult {
+  // identifier is the identifier of the processed item (the file id, or its name on upload failure).
+  string identifier = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 256
+  ];
+
+  // outcome holds the processed file, or the error that prevented processing it.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // file is the processed file.
+    File file = 2;
+    // error describes why the item could not be processed.
+    agentic_mesh_protocol.pagination.v1.OperationError error = 3;
+  }
+}

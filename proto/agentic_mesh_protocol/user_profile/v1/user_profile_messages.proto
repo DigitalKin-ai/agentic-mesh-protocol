@@ -1,0 +1,166 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.user_profile.v1;
+
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+// ═════════════════════════════════════ Objects ════════════════════════════════════ //
+
+// Subscription is the subscription of a user.
+message Subscription {
+  option (buf.validate.message).cel = {
+    id: "subscription.period"
+    message: "start must be before end"
+    expression: "!has(this.start) || !has(this.end) || this.start < this.end"
+  };
+
+  // tier is the subscription tier (e.g., "free", "pro").
+  string tier = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 64
+  ];
+
+  // status is the current status of the subscription (e.g., "active", "canceled").
+  string status = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 64
+  ];
+
+  // start is the start date of the subscription.
+  google.protobuf.Timestamp start = 3;
+
+  // end is the end date of the subscription (absent = open-ended).
+  google.protobuf.Timestamp end = 4;
+}
+
+// CreditLot is a lot of credits allocated to a user.
+message CreditLot {
+  option (buf.validate.message).cel = {
+    id: "credit_lot.remaining_within_total"
+    message: "remaining must not exceed total"
+    expression: "this.remaining <= double(this.total)"
+  };
+
+  // source is the origin of the lot (e.g., "top-up", "subscription", "free plan").
+  string source = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 64
+  ];
+
+  // total is the number of credits allocated in the lot.
+  int64 total = 2 [(buf.validate.field).int64.gte = 0];
+
+  // remaining is the number of credits left in the lot.
+  double remaining = 3 [(buf.validate.field).double = {
+    gte: 0
+    finite: true
+  }];
+
+  // timestamp is the last update date of the lot.
+  google.protobuf.Timestamp timestamp = 4;
+}
+
+// UserProfile is the profile of a user.
+message UserProfile {
+  option (buf.validate.message).cel = {
+    id: "user_profile.chronology"
+    message: "created_at must not be after updated_at"
+    expression: "!has(this.created_at) || !has(this.updated_at) || this.created_at <= this.updated_at"
+  };
+
+  // user_id is the unique identifier of the user.
+  string user_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "users:"
+      min_len: 7
+      max_len: 256
+    }
+  ];
+
+  // organization_id is the organization the user belongs to.
+  string organization_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "organizations:"
+      min_len: 15
+      max_len: 256
+    }
+  ];
+
+  // email is the email address of the user.
+  string email = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      email: true
+      max_len: 254
+    }
+  ];
+
+  // first_name is the first name of the user.
+  string first_name = 4 [(buf.validate.field).string.max_len = 255];
+
+  // last_name is the last name of the user.
+  string last_name = 5 [(buf.validate.field).string.max_len = 255];
+
+  // locale is the preferred locale of the user, as a BCP 47 tag (e.g., "fr", "en-US").
+  string locale = 6 [(buf.validate.field).string = {
+    max_len: 35
+    pattern: "^([A-Za-z]{2,3}([-_][A-Za-z0-9]{2,8})*)?$"
+  }];
+
+  // created_at is the creation date of the profile.
+  google.protobuf.Timestamp created_at = 7;
+
+  // updated_at is the last update date of the profile.
+  google.protobuf.Timestamp updated_at = 8;
+
+  // metadata holds the preferences and settings of the user.
+  google.protobuf.Struct metadata = 9;
+
+  // subscription is the subscription of the user (absent = none).
+  Subscription subscription = 10;
+
+  // credits lists the credit lots of the user.
+  repeated CreditLot credits = 11 [(buf.validate.field).repeated.max_items = 1000];
+}
+
+// UserProfileResult is the outcome of a user profile operation.
+message UserProfileResult {
+  // identifier is the identifier of the processed item (the user or the setup id).
+  string identifier = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 256
+  ];
+
+  // outcome holds the resolved item, or the error that prevented resolving it.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // profile is the user profile.
+    UserProfile profile = 2;
+    // secret is the secret object of a setup, conforming to the secret_schema of its module.
+    google.protobuf.Struct secret = 3;
+    // user_info is the user information a setup needs to run, conforming to the
+    // user_info_schema of its module.
+    google.protobuf.Struct user_info = 4;
+    // error describes why the item could not be resolved.
+    agentic_mesh_protocol.pagination.v1.OperationError error = 5;
+  }
+}

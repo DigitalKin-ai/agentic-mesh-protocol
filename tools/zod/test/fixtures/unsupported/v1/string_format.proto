@@ -1,0 +1,11 @@
+// Unsupported: a well-known string format the generator does not translate.
+syntax = "proto3";
+
+package unsupported.v1;
+
+import "buf/validate/validate.proto";
+
+// StringFormat carries a string.tuuid rule.
+message StringFormat {
+  string id = 1 [(buf.validate.field).string.tuuid = true];
+}

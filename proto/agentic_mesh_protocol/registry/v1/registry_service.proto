@@ -16,41 +16,23 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.registry.v1;
 
-import "agentic_mesh_protocol/registry/v1/registry_models.proto";
-import "agentic_mesh_protocol/registry/v1/registry_requests.proto";
+import "agentic_mesh_protocol/registry/v1/registry_dto.proto";
 
-// RegistryService is the entry point for agents and tools
-// to register themselves and discover other resources in the mesh.
+// RegistryService is the entry point for modules to register themselves and for
+// agents to discover the modules and setups of the mesh.
 service RegistryService {
-  // -----------------------
-  // 1. REGISTRATION
-  // -----------------------
-
-  // Called by a module gRPC at startup to declare itself in the network.
+  // RegisterModule is called by a module at startup to declare itself in the mesh.
   rpc RegisterModule(RegisterModuleRequest) returns (RegisterModuleResponse);
-
-  // Optional but useful if you want a bit of liveness.
+  // Heartbeat signals that a module is alive.
   rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
-
-  // -----------------------
-  // 2. DISCOVERY
-  // -----------------------
-
-  // Search the setup catalog (configured, invocable agent/tool instances).
-  // Returns trimmed SetupSummary results; resolve full config via GetSetup.
+  // SearchSetups searches the setup catalog; resolve a result with GetSetup before invoking it.
   rpc SearchSetups(SearchSetupsRequest) returns (SearchSetupsResponse);
-
-  // Search the module catalog (module blueprints; needs a setup to be invocable).
-  // Returns trimmed ModuleSummary results; resolve address/schemas via GetModule.
+  // SearchModules searches the module catalog; resolve a result with GetModule before calling it.
   rpc SearchModules(SearchModulesRequest) returns (SearchModulesResponse);
-
-  // -----------------------
-  // 3. RESOLUTION / INFO
-  // -----------------------
-
-  // Resolve a setup_id into a complete descriptor (config + endpoint module).
-  rpc GetSetup(GetSetupRequest) returns (SetupDescriptor);
-
-  // Resolve a module_id into a complete descriptor.
-  rpc GetModule(GetModuleRequest) returns (ModuleDescriptor);
+  // GetSetup resolves a setup into its complete descriptor (configuration + module endpoint).
+  rpc GetSetup(GetSetupRequest) returns (GetSetupResponse);
+  // GetModule resolves a module into its complete descriptor.
+  rpc GetModule(GetModuleRequest) returns (GetModuleResponse);
+  // GetModuleStatus retrieves the availability of a module.
+  rpc GetModuleStatus(GetModuleStatusRequest) returns (GetModuleStatusResponse);
 }
