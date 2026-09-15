@@ -167,7 +167,8 @@ Shared packages:
    RPCs: StartModule (server streaming), StopModule, GetModuleInput, GetModuleSelectInput, GetModuleOutput,
    GetModuleSetup, GetModuleSecret, GetModuleUserInfo, GetConfigSetupModule, ConfigSetupModule, GetModuleCost.
 3. **SetupService** / **SetupVersionService** (`setup.v1`) — setups and their versions.
-   SetupService: CreateSetup, GetSetup, ListSetups, UpdateSetup, ChangeVisibility, DeleteSetup.
+   SetupService: CreateSetup, GetSetup, ListSetups, UpdateSetup, ChangeVisibility, DeleteSetup,
+   ChangeOwnership.
    SetupVersionService: CreateSetupVersion, GetSetupVersion, ListSetupVersions, UpdateSetupVersion,
    SetCurrentSetupVersion, DeleteSetupVersion.
 4. **StorageService** (`storage.v1`) — context-scoped JSON records grouped in collections.

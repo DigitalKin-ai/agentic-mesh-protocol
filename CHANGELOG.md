@@ -156,6 +156,13 @@ Added RPCs: `SetupService.ListSetups`; `SetupVersionService.CreateSetupVersion`,
 - module: `GetModuleUserInfo`.
 - gateway: `AssociateTask`, `StartStream`, `Stream`, `SendSignal`.
 
+### Added
+
+- setup: `SetupService.ChangeOwnership` transfers a setup to another user —
+  `ChangeOwnershipRequest` (`setup_id`, `email` of the new owner: required, a valid email of at
+  most 254 characters) returns `ChangeOwnershipResponse` (`SetupResult result` holding the Setup
+  with its new owner, or an `OperationError`).
+
 ### Added — validation
 
 Every field carries `buf.validate` rules, checked by protovalidate (Python) and by the generated
@@ -173,7 +180,7 @@ Zod schemas (TypeScript). The conventions are documented in `CLAUDE.md` (Validat
     period, empty partial updates, `set_as_current` without revision, file size vs content,
     unique names in upload and cost-config batches, `total_failed <= total_processed`,
     `remaining <= total`, registry sort keys, targeted file deletion;
-  - 35 field-level `<response>.outcome` rules: each response holds the expected item kind or an
+  - 36 field-level `<response>.outcome` rules: each response holds the expected item kind or an
     `OperationError` (e.g. a `GetSetupResponse` cannot hold a `SetupVersion`).
 
 ### Fixed
