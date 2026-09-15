@@ -1,0 +1,45 @@
+name: Zod schemas
+
+# Differential test of the generated Zod schemas against protovalidate (tools/zod/test):
+# a disagreement, or a rule the generator cannot translate, fails the build.
+
+on:
+  push:
+    paths:
+      - 'proto/**'
+      - 'tools/zod/**'
+      - 'buf.gen.ts.yaml'
+      - 'package.json'
+      - 'tsconfig.gen.json'
+      - '.github/workflows/zod.yml'
+  pull_request:
+    paths:
+      - 'proto/**'
+      - 'tools/zod/**'
+      - 'buf.gen.ts.yaml'
+      - 'package.json'
+      - 'tsconfig.gen.json'
+      - '.github/workflows/zod.yml'
+
+concurrency:
+  group: zod-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  differential:
+    name: protovalidate vs zod
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Differential test
+        run: npm test

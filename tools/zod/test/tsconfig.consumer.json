@@ -1,0 +1,22 @@
+{
+  // Type-checks the generated TypeScript the way a strict consumer compiles it
+  // (the options of horizon-back's shared tsconfig), since consumers compile the .ts files.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "types": ["node"],
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "useUnknownInCatchVariables": true,
+    "noEmit": true
+  },
+  "include": ["../../../gen/typescript/**/*.ts", "dist/gen/**/*.ts"],
+  "exclude": ["../../../gen/typescript/**/*.d.ts", "dist/gen/**/*.d.ts"]
+}

@@ -192,6 +192,41 @@ Zod schemas (TypeScript). The conventions are documented in `CLAUDE.md` (Validat
   applies `defined_only` canonically (every declared value, UNSPECIFIED included, on fields and
   repeated items), and translates `has(this.a) || has(this.b)` CEL field rules into a real refine
   carrying the custom message.
+- `tools/zod` (Zod generator), **BREAKING** for the generated schemas (stricter; five inferred types
+  change): a schema now accepts exactly what protovalidate accepts, on the ts-proto shape it validates
+  (a `*Schema.parse` is as strict as the Python client's protovalidate).
+  - CEL: a CEL parser and type checker replace the regex matcher (whose unknown expressions became a
+    refine accepting everything). The 20 message-level rules of `proto/` (`file.chronology`,
+    `bulk_response.failed_within_processed`, `update_setup_request.not_empty`...) run in a
+    `.superRefine()` on the object; field and `repeated.items` rules run on their value.
+  - oneof: `(buf.validate.oneof).required` is enforced (`FileResult`, `StorageResult`,
+    `SendSignalRequest` accepted an empty outcome / signal); two members set, which the ts-proto shape
+    allows and the wire does not, are refused.
+  - `required` follows protovalidate: a non-empty string / bytes / list / map, a non-zero number or
+    enum, a present message (`File.name: ""` was accepted).
+  - An absent property stands for its proto3 zero value: it is optional only when that value passes the
+    field rules. **BREAKING** (inferred types): `CostConfig.rate`, `UploadFilesRequest.files`,
+    `PaginationRequest.limit`, `RegisterModuleRequest.port` and `ModuleDescriptor.port` become required.
+  - Formats and bounds: string lengths count code points, as CEL `size()` does (they counted UTF-16
+    units); `uri`, `uri_ref` and `email` use protovalidate's RFC 3986 / HTML algorithms (`uri` used
+    zod's WHATWG `.url()`, `uri_ref` was dropped); `pattern` also applies to an empty string; numeric
+    ranges follow protovalidate (exclusive ranges, NaN); a double without `finite` accepts NaN and ±Inf.
+  - ts-proto shape: an int64 string must be a decimal within int64 (a malformed one made a refine
+    throw instead of failing), an int32 / uint32 must fit its type.
+  - A rule the generator cannot translate faithfully fails the generation (`UnsupportedRuleError`):
+    unsupported formats (`tuuid`, `ip_prefix`...), timestamp / duration / map rules, CEL outside the
+    compiled subset (`now`, strings extension...).
+  - Error messages read `<rule_id>: <message>`, the protovalidate id and text.
+  - The runtime helpers are emitted once as `gen/typescript/zod_rules.ts`; the zod plugin runs with
+    `strategy: all` in `buf.gen.ts.yaml`.
+- `tools/zod/test`: differential test of the generated schemas against `@bufbuild/protovalidate`
+  (`npm test`, workflow `.github/workflows/zod.yml`). Every message of `gen/descriptor.bin` and of the
+  test fixtures is validated by both on thousands of variants (a valid value, then each field mutated
+  to break its rules), on the decoded ts-proto shape and on that shape without its zero values; a
+  disagreement, or a declared rule no variant breaks, fails the test. The fixtures also cover the
+  rule kinds `proto/` does not use yet, and the rules the generator must refuse.
+- `package.json`: `test`, `test:zod` and `test:zod:fixtures` scripts; `@bufbuild/protovalidate`
+  dev dependency.
 - `proto/buf.yaml`: adds the `PROTOVALIDATE` lint rule; drops the lint exceptions no longer needed
   (only `ENUM_VALUE_PREFIX` remains).
 - `taskfile.yml`: replaces `Taskfile.yml`; `version:breaking` now runs on `proto/` (it used to pick
@@ -203,12 +238,13 @@ Zod schemas (TypeScript). The conventions are documented in `CLAUDE.md` (Validat
 - **SDK (Python)**: imports move to the new files (`setup_pb2` → `setup_dto_pb2` / `setup_messages_pb2`...),
   every service client and the module / gateway servicers must follow the renamed RPCs, the result /
   bulk responses and the partial-update requests. Planned as the next step.
-- **Backend (TypeScript)**: same renames; the Zod schemas enforce the field rules and the outcome
-  rules, but the message-level CEL rules must be enforced by the servers.
+- **Backend (TypeScript)**: same renames; the Zod schemas enforce every rule (field, outcome,
+  oneof and message-level CEL rules), so hand-written checks of the message rules become redundant.
+  Replies that break a rule (an empty required string, a result without outcome, a reversed
+  chronology...) now fail `*ResponseSchema`, as they fail the Python client.
 - **Service APIs (Python package)**: regenerate from this branch and publish a new version.
 
 ### Open decisions
 
 - The API is wire-breaking against `main` while packages stay in `v1`: the CI `buf breaking` check
   fails until the packages move to `v2` (or the check is waived for this release).
-- Message-level CEL rules are not translated by the Zod generator.
