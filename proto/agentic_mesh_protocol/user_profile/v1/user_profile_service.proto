@@ -16,21 +16,18 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.user_profile.v1;
 
-import "agentic_mesh_protocol/user_profile/v1/user_profile.proto";
+import "agentic_mesh_protocol/user_profile/v1/user_profile_dto.proto";
 
-// UserProfileService: Service to manage user profiles
+// UserProfileService resolves the user a mission runs for, the per-user data of a
+// setup, and the access rights of a task.
 service UserProfileService {
-  // GetUserProfile: Get a user profile by user ID
+  // GetUserProfile retrieves the profile of the user a mission runs for.
   rpc GetUserProfile(GetUserProfileRequest) returns (GetUserProfileResponse);
-
-  // GetSetupSecret resolves the secret object attached to a setup, conforming to the module's secret_schema.
+  // GetSetupSecret resolves the secret object of a setup, conforming to its module secret_schema.
   rpc GetSetupSecret(GetSetupSecretRequest) returns (GetSetupSecretResponse);
-
-  // GetSetupUserInfo retrieves the user information attached to a setup, needed for a kin to run.
+  // GetSetupUserInfo resolves the user information a setup needs to run.
   rpc GetSetupUserInfo(GetSetupUserInfoRequest) returns (GetSetupUserInfoResponse);
-
   // CheckResourceAccess checks whether the calling task (resolved from the request
-  // metadata) is authorized to access the given resource. Access is returned as a
-  // boolean flag with an OK status; non-OK statuses signal failures, not denials.
+  // metadata) may access a resource.
   rpc CheckResourceAccess(CheckResourceAccessRequest) returns (CheckResourceAccessResponse);
 }

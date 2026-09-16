@@ -1,0 +1,107 @@
+// Copyright 2026 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.gateway.v1;
+
+import "agentic_mesh_protocol/gateway/v1/gateway_enums.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
+
+// ═════════════════════════════════════ Stream frames ════════════════════════════════════ //
+
+// StreamRequest is a frame sent by the client (UI / caller module) to the Gateway.
+//
+// FIRST FRAME opens the stream:
+//   task_id  = required, identifies the running task
+//   from_seq = resume point; 0 means "from the start"
+//   data     = the query, delivered to the SDK module as its first input
+//
+// NEXT FRAMES carry additional upstream input (e.g. a follow-up turn) in data;
+// task_id and from_seq are ignored once the stream is bound.
+//
+// Resume contract:
+//   STATELESS clients (no seq tracking) always send from_seq = 0: the Gateway replays
+//   the whole stream from seq 1, duplicates included.
+//   STATEFUL clients send the highest seq they received: the Gateway delivers only
+//   frames with seq > from_seq. A jump between two consecutive seq reveals a gap
+//   (the stream was trimmed upstream); the client decides whether to abort or accept it.
+//   The resume window is bounded by the Redis stream retention: a from_seq older than
+//   the oldest retained frame resumes from the oldest one.
+message StreamRequest {
+  // from_seq is the resume point on the first frame (0 = replay everything).
+  uint64 from_seq = 1;
+
+  // task_id identifies the task being consumed (required on the first frame).
+  string task_id = 2 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string = {
+      max_len: 256
+      pattern: "^[A-Za-z0-9_:.-]+$"
+    }
+  ];
+
+  // data is the upstream payload: the query on the first frame, additional input afterwards.
+  google.protobuf.Struct data = 3;
+}
+
+// StreamResponse is a frame sent by the Gateway to the client, one per Redis stream
+// entry, in seq order.
+//
+// The lifecycle travels in-band, in data.root.protocol:
+//   first frame "stream.start" (module_start_info: task, setup and mission ids),
+//   last frame  "stream.end",
+//   errors      "stream.error" {code, message, fatal}, followed by stream.end when fatal.
+// Errors never surface as a gRPC status on the Stream RPC.
+message StreamResponse {
+  // seq is monotonic from 1, assigned by the Gateway when it persists the frame.
+  // Stateful clients send the highest seq back as from_seq when they reconnect.
+  uint64 seq = 1;
+
+  // task_id identifies the task the frame belongs to.
+  string task_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 256
+  ];
+
+  // data is the output of the SDK module, or a lifecycle sentinel ("protocol" tells them apart).
+  google.protobuf.Struct data = 3 [(buf.validate.field).required = true];
+}
+
+// ═════════════════════════════════════ Signals ════════════════════════════════════ //
+
+// CancelSignal cancels a running task.
+message CancelSignal {
+  // task_id is the task to cancel.
+  string task_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 256
+      pattern: "^[A-Za-z0-9_:.-]+$"
+    }
+  ];
+}
+
+// InvalidateSignal wipes a server-wide cache.
+message InvalidateSignal {
+  // scope is the cache to wipe.
+  CacheScope scope = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+}

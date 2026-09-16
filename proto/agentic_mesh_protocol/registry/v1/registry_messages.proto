@@ -1,0 +1,355 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.registry.v1;
+
+import "agentic_mesh_protocol/common/v1/common_enums.proto";
+import "agentic_mesh_protocol/module/v1/module_enums.proto";
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
+import "agentic_mesh_protocol/setup/v1/setup_enums.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+// ═════════════════════════════════════ Objects ════════════════════════════════════ //
+
+// ModuleDescriptor is the complete view of a module, including how to reach it.
+message ModuleDescriptor {
+  option (buf.validate.message).cel = {
+    id: "module_descriptor.chronology"
+    message: "created_at must not be after updated_at"
+    expression: "this.created_at <= this.updated_at"
+  };
+
+  // id is the unique identifier of the module.
+  string id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "modules:"
+      min_len: 9
+      max_len: 256
+    }
+  ];
+
+  // name is the human-readable name of the module.
+  string name = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 255
+  ];
+
+  // type is the kind of the module.
+  agentic_mesh_protocol.module.v1.ModuleType type = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // version is the runtime version of the deployed module.
+  string version = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 128
+  ];
+
+  // address is the host name or IP address the module is reachable at.
+  string address = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 253
+      pattern: "^[A-Za-z0-9._:\\[\\]-]+$"
+    }
+  ];
+
+  // port is the port the module is reachable at.
+  int32 port = 6 [(buf.validate.field).int32 = {
+    gte: 1
+    lte: 65535
+  }];
+
+  // status is the availability of the module.
+  agentic_mesh_protocol.module.v1.ModuleStatus status = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // visibility is the read-access scope of the module.
+  agentic_mesh_protocol.common.v1.Visibility visibility = 8 [(buf.validate.field).enum.defined_only = true];
+
+  // organization_id is the organization owning the module.
+  string organization_id = 9 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "organizations:"
+      min_len: 15
+      max_len: 256
+    }
+  ];
+
+  // owner_id is the user owning the module.
+  string owner_id = 10 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "users:"
+      min_len: 7
+      max_len: 256
+    }
+  ];
+
+  // documentation describes the module and its triggers, indexed by the registry search.
+  string documentation = 11 [(buf.validate.field).string.max_len = 65536];
+
+  // tags categorize the module for search filtering (lowercase recommended).
+  repeated string tags = 12 [(buf.validate.field).repeated = {
+    max_items: 50
+    items: {
+      string: {
+        min_len: 1
+        max_len: 64
+      }
+    }
+  }];
+
+  // input_schema is the JSON schema of the module input.
+  google.protobuf.Struct input_schema = 13 [(buf.validate.field).required = true];
+
+  // output_schema is the JSON schema of the module output.
+  google.protobuf.Struct output_schema = 14 [(buf.validate.field).required = true];
+
+  // setup_schema is the JSON schema of the module setup.
+  google.protobuf.Struct setup_schema = 15 [(buf.validate.field).required = true];
+
+  // secret_schema is the JSON schema of the module secrets.
+  google.protobuf.Struct secret_schema = 16 [(buf.validate.field).required = true];
+
+  // cost_schema is the JSON schema of the module cost configuration.
+  google.protobuf.Struct cost_schema = 17 [(buf.validate.field).required = true];
+
+  // created_at is the registration date of the module.
+  google.protobuf.Timestamp created_at = 18 [(buf.validate.field).required = true];
+
+  // updated_at is the last update date of the module.
+  google.protobuf.Timestamp updated_at = 19 [(buf.validate.field).required = true];
+}
+
+// SetupDescriptor is the complete view of a setup: its current version and its resolved module.
+message SetupDescriptor {
+  // id is the unique identifier of the setup.
+  string id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "setups:"
+      min_len: 8
+      max_len: 256
+    }
+  ];
+
+  // name is the human-readable name of the setup.
+  string name = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 255
+  ];
+
+  // documentation is the technical description of the setup.
+  string documentation = 3 [(buf.validate.field).string.max_len = 300];
+
+  // status is the lifecycle status of the setup.
+  agentic_mesh_protocol.setup.v1.SetupStatus status = 4 [(buf.validate.field).enum.defined_only = true];
+
+  // visibility is the read-access scope of the setup.
+  agentic_mesh_protocol.common.v1.Visibility visibility = 5 [(buf.validate.field).enum.defined_only = true];
+
+  // organization_id is the organization owning the setup.
+  string organization_id = 6 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "organizations:"
+      min_len: 15
+      max_len: 256
+    }
+  ];
+
+  // owner_id is the user owning the setup.
+  string owner_id = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "users:"
+      min_len: 7
+      max_len: 256
+    }
+  ];
+
+  // card_id is the card presenting the setup (absent = the setup has no card).
+  optional string card_id = 8 [(buf.validate.field).string = {
+    prefix: "cards:"
+    min_len: 7
+    max_len: 256
+  }];
+
+  // setup_version_id is the identifier of the current version.
+  string setup_version_id = 9 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "setup_versions:"
+      min_len: 16
+      max_len: 256
+    }
+  ];
+
+  // setup_version is the label of the current version.
+  string setup_version = 10 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 128
+  ];
+
+  // config is the content of the current version.
+  google.protobuf.Struct config = 11 [(buf.validate.field).required = true];
+
+  // tags categorize the setup for search filtering (lowercase recommended).
+  repeated string tags = 12 [(buf.validate.field).repeated = {
+    max_items: 50
+    items: {
+      string: {
+        min_len: 1
+        max_len: 64
+      }
+    }
+  }];
+
+  // module is the resolved module backing the setup, so a caller needs no second round-trip.
+  ModuleDescriptor module = 13 [(buf.validate.field).required = true];
+}
+
+// ModuleSummary is the search-safe view of a module: no network endpoint, no schemas.
+// Resolve it with GetModule before calling the module.
+message ModuleSummary {
+  // id is the unique identifier of the module.
+  string id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "modules:"
+      min_len: 9
+      max_len: 256
+    }
+  ];
+
+  // name is the human-readable name of the module.
+  string name = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 255
+  ];
+
+  // type is the kind of the module.
+  agentic_mesh_protocol.module.v1.ModuleType type = 3 [(buf.validate.field).enum.defined_only = true];
+
+  // version is the runtime version of the deployed module.
+  string version = 4 [(buf.validate.field).string.max_len = 128];
+
+  // status is the availability of the module.
+  agentic_mesh_protocol.module.v1.ModuleStatus status = 5 [(buf.validate.field).enum.defined_only = true];
+
+  // visibility is the read-access scope of the module.
+  agentic_mesh_protocol.common.v1.Visibility visibility = 6 [(buf.validate.field).enum.defined_only = true];
+
+  // organization_id is the organization owning the module.
+  string organization_id = 7 [(buf.validate.field).string.max_len = 256];
+
+  // documentation describes the module and its triggers.
+  string documentation = 8 [(buf.validate.field).string.max_len = 65536];
+
+  // tags categorize the module.
+  repeated string tags = 9 [(buf.validate.field).repeated.max_items = 50];
+}
+
+// SetupSummary is the search-safe view of a setup: no configuration (it may hold
+// sensitive values), no owner nor card. Resolve it with GetSetup before invoking it.
+message SetupSummary {
+  // id is the unique identifier of the setup.
+  string id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "setups:"
+      min_len: 8
+      max_len: 256
+    }
+  ];
+
+  // name is the human-readable name of the setup.
+  string name = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 255
+  ];
+
+  // documentation is the technical description of the setup.
+  string documentation = 3 [(buf.validate.field).string.max_len = 300];
+
+  // status is the lifecycle status of the setup.
+  agentic_mesh_protocol.setup.v1.SetupStatus status = 4 [(buf.validate.field).enum.defined_only = true];
+
+  // visibility is the read-access scope of the setup.
+  agentic_mesh_protocol.common.v1.Visibility visibility = 5 [(buf.validate.field).enum.defined_only = true];
+
+  // organization_id is the organization owning the setup.
+  string organization_id = 6 [(buf.validate.field).string.max_len = 256];
+
+  // module_id is the module backing the setup.
+  string module_id = 7 [(buf.validate.field).string.max_len = 256];
+
+  // module_name is the name of the backing module (denormalized so search needs no second round-trip).
+  string module_name = 8 [(buf.validate.field).string.max_len = 255];
+
+  // module_type is the kind of the backing module.
+  agentic_mesh_protocol.module.v1.ModuleType module_type = 9 [(buf.validate.field).enum.defined_only = true];
+
+  // setup_version_id is the identifier of the current version.
+  string setup_version_id = 10 [(buf.validate.field).string.max_len = 256];
+
+  // setup_version is the label of the current version.
+  string setup_version = 11 [(buf.validate.field).string.max_len = 128];
+
+  // structure maps a leaf key path of the current content to a description, so a result shows its shape.
+  google.protobuf.Struct structure = 12;
+
+  // tags categorize the setup.
+  repeated string tags = 13 [(buf.validate.field).repeated.max_items = 50];
+}
+
+// RegistryResult is the outcome of a registry operation on a single module or setup.
+message RegistryResult {
+  // identifier is the identifier of the processed item.
+  string identifier = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 256
+  ];
+
+  // outcome holds the resolved item, or the error that prevented resolving it.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // module_descriptor is the complete view of a module.
+    ModuleDescriptor module_descriptor = 2;
+    // setup_descriptor is the complete view of a setup.
+    SetupDescriptor setup_descriptor = 3;
+    // module_summary is the search-safe view of a module.
+    ModuleSummary module_summary = 4;
+    // setup_summary is the search-safe view of a setup.
+    SetupSummary setup_summary = 5;
+    // error describes why the item could not be processed.
+    agentic_mesh_protocol.pagination.v1.OperationError error = 6;
+  }
+}
