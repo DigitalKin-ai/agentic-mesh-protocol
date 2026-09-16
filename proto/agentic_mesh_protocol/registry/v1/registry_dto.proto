@@ -23,6 +23,7 @@ import "agentic_mesh_protocol/pagination/v1/pagination.proto";
 import "agentic_mesh_protocol/registry/v1/registry_messages.proto";
 import "agentic_mesh_protocol/setup/v1/setup_enums.proto";
 import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
 
 // ═══════════════════════════════════ RegisterModule ═══════════════════════════════════ //
 
@@ -74,6 +75,27 @@ message RegisterModuleRequest {
 
   // documentation describes the module and its triggers, indexed by the registry search.
   string documentation = 6 [(buf.validate.field).string.max_len = 65536];
+
+  // input_schema is the JSON schema of the module input (an empty object when the module declares none).
+  google.protobuf.Struct input_schema = 7 [(buf.validate.field).required = true];
+
+  // select_input_schema is the JSON schema of the module trigger selection (an empty object when the module declares none).
+  google.protobuf.Struct select_input_schema = 8 [(buf.validate.field).required = true];
+
+  // output_schema is the JSON schema of the module output (an empty object when the module declares none).
+  google.protobuf.Struct output_schema = 9 [(buf.validate.field).required = true];
+
+  // setup_schema is the JSON schema of the module setup (an empty object when the module declares none).
+  google.protobuf.Struct setup_schema = 10 [(buf.validate.field).required = true];
+
+  // secret_schema is the JSON schema of the module secrets (an empty object when the module declares none).
+  google.protobuf.Struct secret_schema = 11 [(buf.validate.field).required = true];
+
+  // config_setup_schema is the JSON schema of the module config setup (an empty object when the module declares none).
+  google.protobuf.Struct config_setup_schema = 12 [(buf.validate.field).required = true];
+
+  // cost_schema is the JSON schema of the module cost configuration (an empty object when the module declares none).
+  google.protobuf.Struct cost_schema = 13 [(buf.validate.field).required = true];
 }
 
 // RegisterModuleResponse returns the registered module.

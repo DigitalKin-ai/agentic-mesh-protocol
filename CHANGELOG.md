@@ -156,6 +156,15 @@ Added RPCs: `SetupService.ListSetups`; `SetupVersionService.CreateSetupVersion`,
 - module: `GetModuleUserInfo`.
 - gateway: `AssociateTask`, `StartStream`, `Stream`, `SendSignal`.
 
+### Added — registry schemas at registration
+
+- registry: `RegisterModuleRequest` carries the module schemas served by `ModuleService`, except
+  the user-info schema: `input_schema` (7), `select_input_schema` (8), `output_schema` (9),
+  `setup_schema` (10), `secret_schema` (11), `config_setup_schema` (12), `cost_schema` (13), all
+  `google.protobuf.Struct`, each `required`: a module that declares no such schema sends an empty
+  object, matching the schemas `ModuleDescriptor` already requires. New tags, so the wire stays
+  compatible, but a registry enforcing protovalidate refuses a registration that omits any of them.
+
 ### Added — validation
 
 Every field carries `buf.validate` rules, checked by protovalidate (Python) and by the generated
