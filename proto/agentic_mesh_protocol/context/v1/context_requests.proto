@@ -1,0 +1,50 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.context.v1;
+
+import "agentic_mesh_protocol/context/v1/context_models.proto";
+import "buf/validate/validate.proto";
+
+// SearchRequest: what to look for in the caller's own knowledge.
+//
+// It carries no identity, deliberately. The organization, the user and the mission are
+// derived server-side from the request context, exactly as the storage service does, and the
+// Context Platform refuses any identity sent in a request body. An agent therefore cannot
+// widen what it may read, by accident or otherwise.
+message SearchRequest {
+  // The question, in the user's own words.
+  string query = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 4000
+  ];
+  // Restrict the search to these providers, e.g. ["google_drive", "notion"]. Empty = every
+  // source the caller has connected. This is what lets a user choose where to look.
+  repeated string sources = 2 [(buf.validate.field).repeated.max_items = 16];
+  // How many documents to return. 0 = server default (10), capped at 50. These are documents,
+  // not passages: several passages of one document count once.
+  int32 limit = 3 [
+    (buf.validate.field).int32.gte = 0,
+    (buf.validate.field).int32.lte = 50
+  ];
+}
+
+// SearchResponse: the documents that answer the query, best first.
+message SearchResponse {
+  // Citations, most relevant first. Empty when nothing matched, which is an answer and not an error.
+  repeated Citation results = 1;
+}
