@@ -72,6 +72,7 @@ const PATTERN_SAMPLES: Record<string, string> = {
   "^[A-Za-z0-9_:.-]+$": "task:1",
   "^[A-Z][A-Z0-9_]*$": "NOT_FOUND",
   "^([a-z][a-z0-9_]*)?$": "name",
+  "^[a-z][a-z0-9_]*$": "google_drive",
   "(?i)^abc$": "AbC",
 };
 

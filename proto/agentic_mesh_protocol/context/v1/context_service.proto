@@ -16,9 +16,9 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.context.v1;
 
-import "agentic_mesh_protocol/context/v1/context_requests.proto";
+import "agentic_mesh_protocol/context/v1/context_dto.proto";
 
-// ContextService: read the enterprise knowledge a caller is allowed to see.
+// ContextService reads the enterprise knowledge a caller is allowed to see.
 //
 // One entry point, by design. Sources are connected through the product API and indexed by
 // the Context Platform; an agent only ever asks a question and receives cited passages. It
@@ -29,6 +29,6 @@ import "agentic_mesh_protocol/context/v1/context_requests.proto";
 // read. A backend implementing this service must therefore assert *who* is calling — and
 // nothing more.
 service ContextService {
-  // Search: return the documents matching the query that the caller may see, with citations.
-  rpc Search(SearchRequest) returns (SearchResponse);
+  // SearchDocuments retrieves a page of the documents matching the query that the caller may see, with citations.
+  rpc SearchDocuments(SearchDocumentsRequest) returns (SearchDocumentsResponse);
 }

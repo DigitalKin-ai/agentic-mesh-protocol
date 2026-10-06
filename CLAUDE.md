@@ -156,6 +156,9 @@ Shared packages:
 - A listing or batch RPC returns `repeated <Domain>Result results` plus a `BulkResponse bulk`
   (total processed, total failed, pagination for listings).
 - Listing requests take an optional `PaginationRequest pagination` (absent = server default page).
+- Exception — a ranked search (`ContextService.SearchDocuments`) returns its items directly
+  (`repeated Citation results`) and takes a bounded `limit`: no per-item error, no total count,
+  no offset (results fused by rank are not stable between calls).
 
 ### Service Domains
 
@@ -167,7 +170,8 @@ Shared packages:
    RPCs: StartModule (server streaming), StopModule, GetModuleInput, GetModuleSelectInput, GetModuleOutput,
    GetModuleSetup, GetModuleSecret, GetModuleUserInfo, GetConfigSetupModule, ConfigSetupModule, GetModuleCost.
 3. **SetupService** / **SetupVersionService** (`setup.v1`) — setups and their versions.
-   SetupService: CreateSetup, GetSetup, ListSetups, UpdateSetup, ChangeVisibility, DeleteSetup.
+   SetupService: CreateSetup, GetSetup, ListSetups, UpdateSetup, ChangeVisibility, DeleteSetup,
+   ChangeOwnership.
    SetupVersionService: CreateSetupVersion, GetSetupVersion, ListSetupVersions, UpdateSetupVersion,
    SetCurrentSetupVersion, DeleteSetupVersion.
 4. **StorageService** (`storage.v1`) — context-scoped JSON records grouped in collections.
@@ -180,6 +184,8 @@ Shared packages:
    RPCs: GetUserProfile, GetSetupSecret, GetSetupUserInfo, CheckResourceAccess.
 8. **GatewayService** (`gateway.v1`) — external surface of a producer module.
    RPCs: AssociateTask, StartStream, Stream (BiDi, in-band `stream.*` sentinels), SendSignal.
+9. **ContextService** (`context.v1`) — enterprise knowledge retrieval (Google Drive, Notion...).
+   RPCs: SearchDocuments (one `Citation` per matching document, relevance-ordered, at most 50; identity resolved server-side).
 
 ### Key Architectural Patterns
 
@@ -343,7 +349,7 @@ This covers proto files (messages, fields, enums, RPCs, validation rules), the g
 - Flag every wire, JSON or generated-code breaking change with **BREAKING** and give the
   before → after mapping (RPC, message, field, enum value, file) consumers need to migrate.
 - Name the domain the entry belongs to (setup, registry, module, storage, filesystem, cost,
-  user_profile, gateway, pagination, common).
+  user_profile, gateway, context, pagination, common).
 - On release, move the `[Unreleased]` entries under a `## [x.y.z] - YYYY-MM-DD` heading.
 
 ## Git Conventions

@@ -209,6 +209,10 @@ export function isInf(v: number, sign: bigint = BigInt(0)): boolean {
 /** Whether every item of a list differs from the others (protovalidate `unique`). */
 export function unique(list: readonly unknown[]): boolean {
   return list.every((a, index, arr) => {
+    // NaN equals nothing, itself included, so it never makes a list non-unique
+    if (typeof a === "number" && Number.isNaN(a)) {
+      return true;
+    }
     if (a instanceof Uint8Array) {
       for (let i = 0; i < arr.length; i++) {
         const b = arr[i];

@@ -279,3 +279,40 @@ message DeleteSetupResponse {
     }
   ];
 }
+
+// ════════════════════════════════════ ChangeOwnership ════════════════════════════════════ //
+
+// ChangeOwnershipRequest transfers a setup to another user, identified by email.
+message ChangeOwnershipRequest {
+  // setup_id is the unique identifier of the setup.
+  string setup_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "setups:"
+      min_len: 8
+      max_len: 256
+    }
+  ];
+
+  // email is the email address of the new owner.
+  string email = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      email: true
+      max_len: 254
+    }
+  ];
+}
+
+// ChangeOwnershipResponse returns the setup with its new owner.
+message ChangeOwnershipResponse {
+  // result holds the updated Setup, or an OperationError.
+  SetupResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "change_ownership_response.outcome"
+      message: "result must hold a Setup or an OperationError"
+      expression: "has(this.setup) || has(this.error)"
+    }
+  ];
+}

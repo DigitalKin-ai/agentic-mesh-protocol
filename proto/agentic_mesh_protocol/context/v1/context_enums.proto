@@ -16,25 +16,25 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.context.v1;
 
-// Modality: what kind of content a retrieved passage is.
+// Modality is the kind of content a retrieved passage is.
 //
 // Text is all the Context Platform indexes today; the others exist so that adding
 // multimodal retrieval later is not a breaking change for clients.
 enum Modality {
-  // Unspecified: never sent by the backend.
+  // MODALITY_UNSPECIFIED indicates that the modality is not set (never sent by the backend).
   MODALITY_UNSPECIFIED = 0;
-  // Text: a passage of normalized Markdown.
-  MODALITY_TEXT = 1;
-  // Image: an image asset of a document.
-  MODALITY_IMAGE = 2;
-  // Page: a rendered page, typically of a PDF.
-  MODALITY_PAGE = 3;
-  // Slide: a rendered slide of a presentation.
-  MODALITY_SLIDE = 4;
-  // Table: a table extracted from a document.
-  MODALITY_TABLE = 5;
-  // Audio: a segment of an audio track.
-  MODALITY_AUDIO = 6;
-  // Video: a segment of a video track.
-  MODALITY_VIDEO = 7;
+  // TEXT: a passage of normalized Markdown.
+  TEXT = 1;
+  // IMAGE: an image asset of a document.
+  IMAGE = 2;
+  // PAGE: a rendered page, typically of a PDF.
+  PAGE = 3;
+  // SLIDE: a rendered slide of a presentation.
+  SLIDE = 4;
+  // TABLE: a table extracted from a document.
+  TABLE = 5;
+  // AUDIO: a segment of an audio track.
+  AUDIO = 6;
+  // VIDEO: a segment of a video track.
+  VIDEO = 7;
 }

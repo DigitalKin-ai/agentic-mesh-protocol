@@ -145,6 +145,25 @@ Added RPCs: `SetupService.ListSetups`; `SetupVersionService.CreateSetupVersion`,
 - `SignalAction` replaced by a required `oneof signal`: `CancelSignal` (`task_id` required) or
   `InvalidateSignal` (`CacheScope`: `ALL`, `CHANNELS`, `MODELS`, `SETUP`, `TOOLS`, `SHARED`).
 
+**context** — the `ContextService` (`37d34aa`, merged into `main` alongside this branch) aligned
+on the conventions above:
+- Files: `context_models.proto` → `context_messages.proto`, `context_requests.proto` → `context_dto.proto`.
+- RPC `Search(SearchRequest) returns (SearchResponse)` →
+  `SearchDocuments(SearchDocumentsRequest) returns (SearchDocumentsResponse)`.
+- `Modality` values lose their prefix: `MODALITY_TEXT` → `TEXT`, `MODALITY_IMAGE` → `IMAGE`,
+  `MODALITY_PAGE` → `PAGE`, `MODALITY_SLIDE` → `SLIDE`, `MODALITY_TABLE` → `TABLE`,
+  `MODALITY_AUDIO` → `AUDIO`, `MODALITY_VIDEO` → `VIDEO` (numbers unchanged).
+- `SearchDocumentsRequest.limit` unchanged: `int32`, 0 to 50, 0 = server default (10).
+- Deliberate exception to the response pattern: `SearchDocumentsResponse` keeps `repeated Citation
+  results` (at most 50), with no `ContextResult` and no `BulkResponse`, and the request takes no
+  `PaginationRequest`. A search is a read over a ranked index, not a batch: an unreadable document
+  is not returned (no per-item error), the total number of matches cannot be computed without
+  scanning the index, and an offset over results fused by rank (RRF) is not stable between calls
+  (the Context Platform `POST /v1/context/search` takes `query`, `limit`, `sources` only).
+- Validation: `Citation.document_id` required (max 256), `title` max 1024, `snippet` max 65536,
+  `score` finite, `source` required and snake_case (`^[a-z][a-z0-9_]*$`, max 64), `source_url` max 2048,
+  `modality` required (`defined_only`, not UNSPECIFIED); `SearchDocumentsRequest.sources` items snake_case (max 64).
+
 ### Added — ported from `feat/structure`
 
 - setup: `visibility`, `documentation`, `structure`, `structure_key`, `ChangeVisibility`,
@@ -165,6 +184,13 @@ Added RPCs: `SetupService.ListSetups`; `SetupVersionService.CreateSetupVersion`,
   object, matching the schemas `ModuleDescriptor` already requires. New tags, so the wire stays
   compatible, but a registry enforcing protovalidate refuses a registration that omits any of them.
 
+### Added — setup ownership
+
+- setup: `SetupService.ChangeOwnership` transfers a setup to another user —
+  `ChangeOwnershipRequest` (`setup_id`, `email` of the new owner: required, a valid email of at
+  most 254 characters) returns `ChangeOwnershipResponse` (`SetupResult result` holding the Setup
+  with its new owner, or an `OperationError`).
+
 ### Added — validation
 
 Every field carries `buf.validate` rules, checked by protovalidate (Python) and by the generated
@@ -182,7 +208,7 @@ Zod schemas (TypeScript). The conventions are documented in `CLAUDE.md` (Validat
     period, empty partial updates, `set_as_current` without revision, file size vs content,
     unique names in upload and cost-config batches, `total_failed <= total_processed`,
     `remaining <= total`, registry sort keys, targeted file deletion;
-  - 35 field-level `<response>.outcome` rules: each response holds the expected item kind or an
+  - 36 field-level `<response>.outcome` rules: each response holds the expected item kind or an
     `OperationError` (e.g. a `GetSetupResponse` cannot hold a `SetupVersion`).
 
 ### Fixed
@@ -234,6 +260,11 @@ Zod schemas (TypeScript). The conventions are documented in `CLAUDE.md` (Validat
   to break its rules), on the decoded ts-proto shape and on that shape without its zero values; a
   disagreement, or a declared rule no variant breaks, fails the test. The fixtures also cover the
   rule kinds `proto/` does not use yet, and the rules the generator must refuse.
+- `tools/zod` (Zod generator): `repeated.unique` / CEL `unique()` treat a NaN as distinct from every
+  item, itself included, as protovalidate 1.3.0 does (`[NaN]` and `[NaN, NaN]` were refused).
+  `@bufbuild/protovalidate` dev dependency `^1.2.0` → `^1.3.0`: the lockfile is not committed, so CI
+  resolved 1.3.0 and the differential test failed on `zodtest.v1.PresenceCases.unique_doubles`.
+- `tools/zod/test`: `PATTERN_SAMPLES` covers `^[a-z][a-z0-9_]*$` (context sources).
 - `package.json`: `test`, `test:zod` and `test:zod:fixtures` scripts; `@bufbuild/protovalidate`
   dev dependency.
 - `proto/buf.yaml`: adds the `PROTOVALIDATE` lint rule; drops the lint exceptions no longer needed

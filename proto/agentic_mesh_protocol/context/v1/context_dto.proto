@@ -1,0 +1,71 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.context.v1;
+
+import "agentic_mesh_protocol/context/v1/context_messages.proto";
+import "buf/validate/validate.proto";
+
+// ══════════════════════════════════ SearchDocuments ═══════════════════════════════════ //
+
+// SearchDocumentsRequest searches the caller's own knowledge.
+//
+// It carries no identity, deliberately. The organization, the user and the mission are
+// derived server-side from the request context, exactly as the storage service does, and the
+// Context Platform refuses any identity sent in a request body. An agent therefore cannot
+// widen what it may read, by accident or otherwise.
+message SearchDocumentsRequest {
+  // query is the question, in the user's own words.
+  string query = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 4000
+    }
+  ];
+
+  // sources restricts the search to these providers, e.g. ["google_drive", "notion"] (empty =
+  // every source the caller has connected). This is what lets a user choose where to look.
+  repeated string sources = 2 [(buf.validate.field).repeated = {
+    max_items: 16
+    items: {
+      string: {
+        max_len: 64
+        pattern: "^[a-z][a-z0-9_]*$"
+      }
+    }
+  }];
+
+  // limit is the maximum number of documents to return, at most 50 (0 = server default: 10).
+  // These are documents, not passages: several passages of one document count once. There is no
+  // offset: results fused by rank (RRF) shift between calls, so a second page would not continue
+  // the first one. Ask for more documents instead.
+  int32 limit = 3 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 50
+  }];
+}
+
+// SearchDocumentsResponse returns the documents that answer the query, best first.
+//
+// A search is a read over a ranked index, not a batch: a document that cannot be read is simply
+// not returned, so there is no per-item error, and the total number of matches cannot be known
+// without scanning the whole index, so there is no BulkResponse.
+message SearchDocumentsResponse {
+  // results holds one Citation per matching document, most relevant first.
+  // Empty when nothing matched, which is an answer and not an error.
+  repeated Citation results = 1 [(buf.validate.field).repeated.max_items = 50];
+}

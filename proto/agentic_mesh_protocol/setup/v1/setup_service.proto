@@ -32,4 +32,6 @@ service SetupService {
   rpc ChangeVisibility(ChangeVisibilityRequest) returns (ChangeVisibilityResponse);
   // DeleteSetup deletes a setup and its versions.
   rpc DeleteSetup(DeleteSetupRequest) returns (DeleteSetupResponse);
+  // ChangeOwnership transfers a setup to another user.
+  rpc ChangeOwnership(ChangeOwnershipRequest) returns (ChangeOwnershipResponse);
 }
