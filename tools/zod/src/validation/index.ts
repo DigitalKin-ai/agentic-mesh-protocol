@@ -2,5 +2,6 @@
  * Barrel re-export for the validation module
  */
 
-export type { ValidationChain } from "./types.js";
-export { getValidationChain, isFieldRequired, getDefinedEnumValues } from "./chain.js";
+export { fieldPlan, messagePlan, oneofRequired, UnsupportedRuleError } from "./rules.js";
+export type { Check, CelRuleSpec, FieldPlan, MessagePlan, ValueRules } from "./rules.js";
+export { compileCelRule, CelUnsupportedError } from "./cel/compiler.js";

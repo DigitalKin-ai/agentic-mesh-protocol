@@ -1,0 +1,11 @@
+// Unsupported: map rules.
+syntax = "proto3";
+
+package unsupported.v1;
+
+import "buf/validate/validate.proto";
+
+// MapRules carries a map.min_pairs rule.
+message MapRules {
+  map<string, string> labels = 1 [(buf.validate.field).map.min_pairs = 1];
+}

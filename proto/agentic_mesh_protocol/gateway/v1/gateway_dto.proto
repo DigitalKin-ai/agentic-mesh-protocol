@@ -1,0 +1,119 @@
+// Copyright 2026 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.gateway.v1;
+
+import "agentic_mesh_protocol/gateway/v1/gateway_messages.proto";
+import "buf/validate/validate.proto";
+
+// ════════════════════════════════════ AssociateTask ════════════════════════════════════ //
+
+// AssociateTaskRequest asks the Gateway to mint a sub-task linked to the task currently
+// processing a message. The Gateway generates the task_id, resolves the parent's mission,
+// persists the parent → child link and returns the new id, ready for StartStream.
+message AssociateTaskRequest {
+  // parent_task_id is the task currently processing the message that spawns the sub-task.
+  string parent_task_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 256
+      pattern: "^[A-Za-z0-9_:.-]+$"
+    }
+  ];
+}
+
+// AssociateTaskResponse returns the minted sub-task, registered and linked to its parent.
+message AssociateTaskResponse {
+  // task_id is the generated sub-task identifier, to pass to StartStream.
+  string task_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 256
+      pattern: "^[A-Za-z0-9_:.-]+$"
+    }
+  ];
+
+  // parent_task_id is the parent task (echoed from the request).
+  string parent_task_id = 2 [(buf.validate.field).string.max_len = 256];
+}
+
+// ════════════════════════════════════ StartStream ════════════════════════════════════ //
+
+// StartStreamRequest asks the Gateway to start the producer of a task. The Gateway resolves
+// the setup, dispatches the producer and acknowledges; module_start_info reaches the
+// consumer as the first frame of Stream (seq 1).
+message StartStreamRequest {
+  // task_id is the task to start.
+  string task_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 256
+      pattern: "^[A-Za-z0-9_:.-]+$"
+    }
+  ];
+
+  // setup_id is the setup the producer runs with.
+  string setup_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "setups:"
+      min_len: 8
+      max_len: 256
+    }
+  ];
+
+  // mission_id is the mission the task runs for (multi-tenant isolation).
+  string mission_id = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "missions:"
+      min_len: 10
+      max_len: 256
+    }
+  ];
+}
+
+// StartStreamResponse acknowledges the start request.
+message StartStreamResponse {
+  // accepted is true when the Gateway dispatched the producer.
+  bool accepted = 1;
+
+  // task_id is the started task (echoed from the request).
+  string task_id = 2 [(buf.validate.field).string.max_len = 256];
+}
+
+// ════════════════════════════════════ SendSignal ════════════════════════════════════ //
+
+// SendSignalRequest publishes a control signal: per-task (cancel) or server-wide (invalidate).
+message SendSignalRequest {
+  // signal is the control signal to publish.
+  oneof signal {
+    option (buf.validate.oneof).required = true;
+    // cancel cancels a running task.
+    CancelSignal cancel = 1;
+    // invalidate wipes a server-wide cache.
+    InvalidateSignal invalidate = 2;
+  }
+}
+
+// SendSignalResponse acknowledges that the Gateway published the signal.
+message SendSignalResponse {
+  // success is true when the signal was published.
+  bool success = 1;
+
+  // task_id is the canceled task (echoed from the request; empty for an invalidation).
+  string task_id = 2 [(buf.validate.field).string.max_len = 256];
+}

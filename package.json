@@ -21,7 +21,10 @@
         "generate:reflection": "npx buf build proto -o gen/descriptor.bin && npx buf build proto -o gen/descriptor.json",
         "build": "npm run generate",
         "prepare": "npm run generate && npm run generate:reflection",
-        "clean": "rm -rf gen/ && rm -rf tools/zod/dist/",
+        "test": "npm run test:zod",
+        "test:zod": "npm run generate && npm run generate:reflection && npm run test:zod:fixtures && tsc -p tools/zod/test/tsconfig.consumer.json && tsc -p tools/zod/test/tsconfig.json && node --test tools/zod/test/dist/differential.test.js tools/zod/test/dist/unsupported.test.js",
+        "test:zod:fixtures": "node -e \"require('fs').mkdirSync('tools/zod/test/dist', { recursive: true })\" && npx buf build tools/zod/test/fixtures -o tools/zod/test/dist/fixtures.binpb --exclude-path tools/zod/test/fixtures/unsupported && npx buf generate tools/zod/test/fixtures --template tools/zod/test/buf.gen.fixtures.yaml --exclude-path tools/zod/test/fixtures/unsupported && tsc -p tools/zod/test/tsconfig.fixtures.json",
+        "clean": "rm -rf gen/ && rm -rf tools/zod/dist/ && rm -rf tools/zod/test/dist/",
         "prepublishOnly": "npm run build"
     },
     "keywords": [
@@ -57,6 +60,7 @@
         "@bufbuild/buf": "1.66.0",
         "@bufbuild/protobuf": "^2.11.0",
         "@bufbuild/protoplugin": "^2.11.0",
+        "@bufbuild/protovalidate": "^1.2.0",
         "@types/google-protobuf": "^3.15.12",
         "@types/node": "^25.2.0",
         "ts-proto": "^2.11.2",

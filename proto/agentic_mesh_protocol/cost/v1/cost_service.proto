@@ -16,22 +16,16 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.cost.v1;
 
-import "agentic_mesh_protocol/cost/v1/cost.proto";
+import "agentic_mesh_protocol/cost/v1/cost_dto.proto";
 
-// CostService provides operations for tracking and querying operational costs.
+// CostService tracks and queries the operational costs of the missions.
 service CostService {
-  // AddCost records a new cost entry for a mission.
-  rpc AddCost(AddCostRequest) returns (AddCostResponse);
-
-  // DEPRECATED: GetCost — unused in SDK, no callers.
-  rpc GetCost(GetCostRequest) returns (GetCostResponse);
-
-  // DEPRECATED: GetCosts — unused in SDK, no callers.
-  rpc GetCosts(GetCostsRequest) returns (GetCostsResponse);
-
-  // GetCostConfig retrieves cost configuration for a setup version.
-  rpc GetCostConfig(GetCostConfigRequest) returns (GetCostConfigResponse);
-
-  // SetCostConfig stores cost configuration for a setup version.
+  // CreateCost records a cost entry for a mission.
+  rpc CreateCost(CreateCostRequest) returns (CreateCostResponse);
+  // ListCosts retrieves a page of the cost entries of a mission, optionally filtered.
+  rpc ListCosts(ListCostsRequest) returns (ListCostsResponse);
+  // ListCostConfigs retrieves a page of the cost configurations of a setup version.
+  rpc ListCostConfigs(ListCostConfigsRequest) returns (ListCostConfigsResponse);
+  // SetCostConfig replaces the cost configurations of a setup version.
   rpc SetCostConfig(SetCostConfigRequest) returns (SetCostConfigResponse);
 }

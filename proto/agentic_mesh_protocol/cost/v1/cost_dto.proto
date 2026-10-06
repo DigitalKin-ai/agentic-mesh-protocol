@@ -1,0 +1,210 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.cost.v1;
+
+import "agentic_mesh_protocol/cost/v1/cost_enums.proto";
+import "agentic_mesh_protocol/cost/v1/cost_messages.proto";
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
+import "agentic_mesh_protocol/pagination/v1/pagination.proto";
+import "buf/validate/validate.proto";
+
+// ═════════════════════════════════════ CreateCost ════════════════════════════════════ //
+
+// CreateCostRequest records a cost entry for a mission.
+message CreateCostRequest {
+  // mission_id is the mission the cost is attributed to.
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "missions:"
+      min_len: 10
+      max_len: 256
+    }
+  ];
+
+  // setup_version_id is the setup version that incurred the cost.
+  string setup_version_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "setup_versions:"
+      min_len: 16
+      max_len: 256
+    }
+  ];
+
+  // name is the descriptive name of the cost.
+  string name = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 255
+    }
+  ];
+
+  // cost is the total cost value (zero for a free usage).
+  double cost = 4 [(buf.validate.field).double = {
+    gte: 0
+    finite: true
+  }];
+
+  // quantity is the number of units consumed.
+  double quantity = 5 [(buf.validate.field).double = {
+    gte: 0
+    finite: true
+  }];
+
+  // rate is the cost per unit (zero for a free unit).
+  double rate = 6 [(buf.validate.field).double = {
+    gte: 0
+    finite: true
+  }];
+
+  // unit is the unit of measurement (e.g., "tokens", "calls", "GB").
+  string unit = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 64
+    }
+  ];
+
+  // type is the classification of the cost.
+  CostType type = 8 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+}
+
+// CreateCostResponse returns the recorded cost entry.
+message CreateCostResponse {
+  // result holds the recorded Cost, or an OperationError.
+  CostResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "create_cost_response.outcome"
+      message: "result must hold a Cost or an OperationError"
+      expression: "has(this.cost) || has(this.error)"
+    }
+  ];
+}
+
+// ═════════════════════════════════════ ListCosts ════════════════════════════════════ //
+
+// ListCostsRequest lists the cost entries of a mission.
+message ListCostsRequest {
+  // mission_id is the mission whose costs are listed.
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "missions:"
+      min_len: 10
+      max_len: 256
+    }
+  ];
+
+  // filter narrows the listing (absent = every cost of the mission).
+  CostFilter filter = 2;
+
+  // pagination selects the page to return (absent = server default).
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 3;
+}
+
+// ListCostsResponse returns a page of cost entries.
+message ListCostsResponse {
+  // results holds one CostResult per listed cost.
+  repeated CostResult results = 1 [(buf.validate.field).repeated.items.cel = {
+    id: "list_costs_response.outcome"
+    message: "every result must hold a Cost or an OperationError"
+    expression: "has(this.cost) || has(this.error)"
+  }];
+  // bulk summarizes the listing and its pagination.
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
+  // total_cost is the sum of every matching cost, ignoring pagination.
+  double total_cost = 3 [(buf.validate.field).double = {
+    gte: 0
+    finite: true
+  }];
+}
+
+// ═════════════════════════════════ ListCostConfigs ═════════════════════════════════ //
+
+// ListCostConfigsRequest lists the cost configurations of a setup version.
+message ListCostConfigsRequest {
+  // setup_version_id is the setup version whose configurations are listed.
+  string setup_version_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "setup_versions:"
+      min_len: 16
+      max_len: 256
+    }
+  ];
+
+  // pagination selects the page to return (absent = server default).
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 2;
+}
+
+// ListCostConfigsResponse returns a page of cost configurations.
+message ListCostConfigsResponse {
+  // results holds one CostResult per listed configuration.
+  repeated CostResult results = 1 [(buf.validate.field).repeated.items.cel = {
+    id: "list_cost_configs_response.outcome"
+    message: "every result must hold a CostConfig or an OperationError"
+    expression: "has(this.config) || has(this.error)"
+  }];
+  // bulk summarizes the listing and its pagination.
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
+}
+
+// ═════════════════════════════════ SetCostConfig ══════════════════════════════════ //
+
+// SetCostConfigRequest replaces the cost configurations of a setup version.
+message SetCostConfigRequest {
+  option (buf.validate.message).cel = {
+    id: "set_cost_config_request.unique_names"
+    message: "cost configuration names must be unique"
+    expression: "this.configs.map(c, c.name).unique()"
+  };
+
+  // setup_version_id is the setup version whose configurations are replaced.
+  string setup_version_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "setup_versions:"
+      min_len: 16
+      max_len: 256
+    }
+  ];
+
+  // configs is the full set of configurations to store (empty = clear them).
+  repeated CostConfig configs = 2 [(buf.validate.field).repeated.max_items = 100];
+}
+
+// SetCostConfigResponse reports the outcome of every stored configuration.
+message SetCostConfigResponse {
+  // results holds one CostResult per configuration.
+  repeated CostResult results = 1 [(buf.validate.field).repeated.items.cel = {
+    id: "set_cost_config_response.outcome"
+    message: "every result must hold a CostConfig or an OperationError"
+    expression: "has(this.config) || has(this.error)"
+  }];
+  // bulk summarizes the batch write.
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
+}

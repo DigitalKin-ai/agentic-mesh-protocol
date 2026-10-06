@@ -48,10 +48,12 @@ plugins:
 
   # protoc-gen-zod generates Zod schemas from proto definitions
   # Reads buf.validate annotations and converts them to Zod validations
+  # strategy: all — one invocation writes the shared zod_rules.ts runtime once
   - local:
       - node
       - ./tools/zod/dist/index.js
     out: gen/typescript
+    strategy: all
     opt:
       - target=ts
       - include_responses=true

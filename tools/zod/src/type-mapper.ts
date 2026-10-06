@@ -24,12 +24,21 @@ export interface TypeMapperContext {
   currentProtoPath: string;
 }
 
+/** How the rules of a value shape its base type */
+export interface BaseTypeOptions {
+  /** A float/double carries `finite`: NaN and ±Infinity are refused by the base type itself */
+  finite?: boolean;
+  /** An enum carries `defined_only`: the base type may be the declared enum */
+  definedOnly?: boolean;
+}
+
 /**
  * Maps a proto field to its Zod type representation
  */
 export function mapFieldToZod(
   field: DescField,
-  context: TypeMapperContext
+  context: TypeMapperContext,
+  options: BaseTypeOptions = {}
 ): ZodTypeInfo {
   // Handle map fields first
   if (field.fieldKind === "map") {
@@ -38,27 +47,28 @@ export function mapFieldToZod(
 
   // Handle list fields (repeated)
   if (field.fieldKind === "list") {
-    const itemType = mapListItemToZod(field, context);
+    const itemType = mapListItemToZod(field, context, options);
     return {
       zodType: `z.array(${itemType.zodType})`,
       needsImport: itemType.needsImport,
     };
   }
 
-  return mapSingleFieldToZod(field, context);
+  return mapSingleFieldToZod(field, context, options);
 }
 
 /**
  * Maps a list (repeated) field item to Zod
  */
-function mapListItemToZod(
+export function mapListItemToZod(
   field: DescField & { fieldKind: "list" },
-  context: TypeMapperContext
+  context: TypeMapperContext,
+  options: BaseTypeOptions = {}
 ): ZodTypeInfo {
   if (field.listKind === "scalar") {
-    return { zodType: mapScalarToZod(field.scalar) };
+    return { zodType: mapScalarToZod(field.scalar, options) };
   } else if (field.listKind === "enum") {
-    return mapEnumToZod(field.enum, context);
+    return mapEnumToZod(field.enum, context, options);
   } else if (field.listKind === "message") {
     return mapMessageToZod(field.message, context);
   }
@@ -69,6 +79,12 @@ function mapMapFieldToZod(
   field: DescField & { fieldKind: "map" },
   context: TypeMapperContext
 ): ZodTypeInfo {
+  // ts-proto holds a map as a plain object, whose keys are strings whatever the proto key type
+  if (field.mapKey !== ScalarType.STRING) {
+    throw new Error(
+      `${field.parent.typeName}.${field.name}: map keys of type ${ScalarType[field.mapKey]} are not supported by protoc-gen-zod`
+    );
+  }
   const keyType = mapScalarToZod(field.mapKey);
 
   // Map value can be scalar, enum, or message
@@ -91,14 +107,15 @@ function mapMapFieldToZod(
 
 function mapSingleFieldToZod(
   field: DescField,
-  context: TypeMapperContext
+  context: TypeMapperContext,
+  options: BaseTypeOptions
 ): ZodTypeInfo {
   switch (field.fieldKind) {
     case "scalar":
-      return { zodType: mapScalarToZod(field.scalar) };
+      return { zodType: mapScalarToZod(field.scalar, options) };
 
     case "enum":
-      return mapEnumToZod(field.enum, context);
+      return mapEnumToZod(field.enum, context, options);
 
     case "message":
       return mapMessageToZod(field.message, context);
@@ -109,9 +126,9 @@ function mapSingleFieldToZod(
 }
 
 /**
- * Maps a scalar proto type to Zod
+ * Maps a scalar proto type to Zod, restricted to the values the wire can carry
  */
-export function mapScalarToZod(scalar: ScalarType): string {
+export function mapScalarToZod(scalar: ScalarType, options: BaseTypeOptions = {}): string {
   switch (scalar) {
     case ScalarType.STRING:
       return "z.string()";
@@ -122,26 +139,29 @@ export function mapScalarToZod(scalar: ScalarType): string {
     case ScalarType.INT32:
     case ScalarType.SINT32:
     case ScalarType.SFIXED32:
-      return "z.number().int()";
+      return "z.number().int().min(-2147483648).max(2147483647)";
 
     case ScalarType.UINT32:
     case ScalarType.FIXED32:
-      return "z.number().int().nonnegative()";
+      return "z.number().int().min(0).max(4294967295)";
 
     case ScalarType.INT64:
     case ScalarType.SINT64:
     case ScalarType.SFIXED64:
-      // ts-proto with forceLong=string converts int64 to string
-      return "z.string()";
+      // ts-proto with forceLong=string converts int64 to a decimal string
+      return 'z.string().refine((v) => __r.isInt64(v), { message: "must be a decimal integer within int64", abort: true })';
 
     case ScalarType.UINT64:
     case ScalarType.FIXED64:
-      // ts-proto with forceLong=string converts uint64 to string
-      return "z.string()";
+      // ts-proto with forceLong=string converts uint64 to a decimal string
+      return 'z.string().refine((v) => __r.isUint64(v), { message: "must be a decimal integer within uint64", abort: true })';
 
     case ScalarType.FLOAT:
     case ScalarType.DOUBLE:
-      return "z.number()";
+      // z.number() refuses NaN and ±Infinity: only right when the field is `finite`
+      return options.finite
+        ? "z.number()"
+        : 'z.custom<number>((v) => typeof v === "number", { message: "Invalid input: expected number" })';
 
     case ScalarType.BYTES:
       return "z.instanceof(Uint8Array)";
@@ -152,11 +172,12 @@ export function mapScalarToZod(scalar: ScalarType): string {
 }
 
 /**
- * Maps an enum to Zod z.enum()
+ * Maps an enum to Zod z.enum(), or to any int32 for an open enum without `defined_only`
  */
 function mapEnumToZod(
   enumDesc: DescEnum,
-  context: TypeMapperContext
+  context: TypeMapperContext,
+  options: BaseTypeOptions = {}
 ): ZodTypeInfo {
   const enumName = enumDesc.name;
   const enumProtoPath = enumDesc.file.name;
@@ -169,7 +190,10 @@ function mapEnumToZod(
   );
 
   return {
-    zodType: `z.enum(${enumName})`,
+    // z.enum() accepts the declared values and ts-proto's UNRECOGNIZED (-1); an open enum takes any int32
+    zodType: options.definedOnly
+      ? `z.enum(${enumName})`
+      : `z.custom<${enumName}>((v) => Number.isInteger(v) && (v as number) >= -2147483648 && (v as number) <= 2147483647, { message: "Invalid input: expected an int32 enum value" })`,
     needsImport: {
       name: enumName,
       from: importPath,
@@ -267,36 +291,4 @@ function mapMessageToZod(
       from: importPath,
     },
   };
-}
-
-/**
- * Checks if a field should be marked as optional in Zod
- *
- * In Proto3, all fields are implicitly optional with default values:
- * - Scalars default to zero value ("", 0, false)
- * - Messages default to null/undefined
- * - Only fields with buf.validate.required = true should be required in Zod
- */
-export function isFieldOptional(field: DescField): boolean {
-  // In Proto3, all scalar and enum fields are optional (have default values)
-  if (field.fieldKind === "scalar" || field.fieldKind === "enum") {
-    return true;
-  }
-
-  // Proto3 explicit optional keyword
-  if (field.proto.proto3Optional) {
-    return true;
-  }
-
-  // Message fields are implicitly optional in proto3
-  if (field.fieldKind === "message") {
-    return true;
-  }
-
-  // List and map fields are also optional (default to empty)
-  if (field.fieldKind === "list" || field.fieldKind === "map") {
-    return true;
-  }
-
-  return false;
 }

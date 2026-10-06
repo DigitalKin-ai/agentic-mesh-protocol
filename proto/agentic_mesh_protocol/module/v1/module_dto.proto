@@ -1,0 +1,380 @@
+// Copyright 2025 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.module.v1;
+
+import "agentic_mesh_protocol/module/v1/module_messages.proto";
+import "agentic_mesh_protocol/setup/v1/setup_messages.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
+
+// ═══════════════════════════════════ GetModuleInput ═══════════════════════════════════ //
+
+// GetModuleInputRequest retrieves the input schema of a module.
+message GetModuleInputRequest {
+  // module_id is the unique identifier of the module.
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "modules:"
+      min_len: 9
+      max_len: 256
+    }
+  ];
+
+  // llm_format returns the schema in the LLM-friendly format instead of the raw pydantic one.
+  bool llm_format = 2;
+}
+
+// GetModuleInputResponse returns the input schema of a module.
+message GetModuleInputResponse {
+  // result holds the schema, or an OperationError.
+  ModuleResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "get_module_input_response.outcome"
+      message: "result must hold an input_schema or an OperationError"
+      expression: "has(this.input_schema) || has(this.error)"
+    }
+  ];
+}
+
+// ════════════════════════════════ GetModuleSelectInput ════════════════════════════════ //
+
+// GetModuleSelectInputRequest retrieves the select-input schema of a module.
+message GetModuleSelectInputRequest {
+  // module_id is the unique identifier of the module.
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "modules:"
+      min_len: 9
+      max_len: 256
+    }
+  ];
+}
+
+// GetModuleSelectInputResponse returns the select-input schema of a module.
+message GetModuleSelectInputResponse {
+  // result holds the schema, or an OperationError.
+  ModuleResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "get_module_select_input_response.outcome"
+      message: "result must hold a select_input_schema or an OperationError"
+      expression: "has(this.select_input_schema) || has(this.error)"
+    }
+  ];
+}
+
+// ══════════════════════════════════ GetModuleOutput ═══════════════════════════════════ //
+
+// GetModuleOutputRequest retrieves the output schema of a module.
+message GetModuleOutputRequest {
+  // module_id is the unique identifier of the module.
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "modules:"
+      min_len: 9
+      max_len: 256
+    }
+  ];
+
+  // llm_format returns the schema in the LLM-friendly format instead of the raw pydantic one.
+  bool llm_format = 2;
+}
+
+// GetModuleOutputResponse returns the output schema of a module.
+message GetModuleOutputResponse {
+  // result holds the schema, or an OperationError.
+  ModuleResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "get_module_output_response.outcome"
+      message: "result must hold an output_schema or an OperationError"
+      expression: "has(this.output_schema) || has(this.error)"
+    }
+  ];
+}
+
+// ═══════════════════════════════════ GetModuleSetup ═══════════════════════════════════ //
+
+// GetModuleSetupRequest retrieves the setup schema of a module.
+message GetModuleSetupRequest {
+  // module_id is the unique identifier of the module.
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "modules:"
+      min_len: 9
+      max_len: 256
+    }
+  ];
+
+  // llm_format returns the schema in the LLM-friendly format instead of the raw pydantic one.
+  bool llm_format = 2;
+}
+
+// GetModuleSetupResponse returns the setup schema of a module.
+message GetModuleSetupResponse {
+  // result holds the schema, or an OperationError.
+  ModuleResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "get_module_setup_response.outcome"
+      message: "result must hold a setup_schema or an OperationError"
+      expression: "has(this.setup_schema) || has(this.error)"
+    }
+  ];
+}
+
+// ══════════════════════════════════ GetModuleSecret ═══════════════════════════════════ //
+
+// GetModuleSecretRequest retrieves the secret schema of a module.
+message GetModuleSecretRequest {
+  // module_id is the unique identifier of the module.
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "modules:"
+      min_len: 9
+      max_len: 256
+    }
+  ];
+
+  // llm_format returns the schema in the LLM-friendly format instead of the raw pydantic one.
+  bool llm_format = 2;
+}
+
+// GetModuleSecretResponse returns the secret schema of a module.
+message GetModuleSecretResponse {
+  // result holds the schema, or an OperationError.
+  ModuleResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "get_module_secret_response.outcome"
+      message: "result must hold a secret_schema or an OperationError"
+      expression: "has(this.secret_schema) || has(this.error)"
+    }
+  ];
+}
+
+// ═════════════════════════════════ GetModuleUserInfo ══════════════════════════════════ //
+
+// GetModuleUserInfoRequest retrieves the user-info schema of a module.
+message GetModuleUserInfoRequest {
+  // module_id is the unique identifier of the module.
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "modules:"
+      min_len: 9
+      max_len: 256
+    }
+  ];
+
+  // llm_format returns the schema in the LLM-friendly format instead of the raw pydantic one.
+  bool llm_format = 2;
+}
+
+// GetModuleUserInfoResponse returns the user-info schema of a module.
+message GetModuleUserInfoResponse {
+  // result holds the schema, or an OperationError.
+  ModuleResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "get_module_user_info_response.outcome"
+      message: "result must hold a user_info_schema or an OperationError"
+      expression: "has(this.user_info_schema) || has(this.error)"
+    }
+  ];
+}
+
+// ════════════════════════════════ GetConfigSetupModule ════════════════════════════════ //
+
+// GetConfigSetupModuleRequest retrieves the config-setup schema (the fields a caller fills in a setup content) of a module.
+message GetConfigSetupModuleRequest {
+  // module_id is the unique identifier of the module.
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "modules:"
+      min_len: 9
+      max_len: 256
+    }
+  ];
+
+  // llm_format returns the schema in the LLM-friendly format instead of the raw pydantic one.
+  bool llm_format = 2;
+}
+
+// GetConfigSetupModuleResponse returns the config-setup schema of a module.
+message GetConfigSetupModuleResponse {
+  // result holds the schema, or an OperationError.
+  ModuleResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "get_config_setup_module_response.outcome"
+      message: "result must hold a config_setup_schema or an OperationError"
+      expression: "has(this.config_setup_schema) || has(this.error)"
+    }
+  ];
+}
+
+// ═══════════════════════════════════ GetModuleCost ════════════════════════════════════ //
+
+// GetModuleCostRequest retrieves the cost configuration schema of a module.
+message GetModuleCostRequest {
+  // module_id is the unique identifier of the module.
+  string module_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "modules:"
+      min_len: 9
+      max_len: 256
+    }
+  ];
+
+  // llm_format returns the schema in the LLM-friendly format instead of the raw pydantic one.
+  bool llm_format = 2;
+}
+
+// GetModuleCostResponse returns the cost configuration schema of a module.
+message GetModuleCostResponse {
+  // result holds the schema, or an OperationError.
+  ModuleResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "get_module_cost_response.outcome"
+      message: "result must hold a cost_schema or an OperationError"
+      expression: "has(this.cost_schema) || has(this.error)"
+    }
+  ];
+}
+
+// ═════════════════════════════════ ConfigSetupModule ══════════════════════════════════ //
+
+// ConfigSetupModuleRequest asks a module to compute and store the configuration of a setup version.
+message ConfigSetupModuleRequest {
+  // mission_id is the mission the configuration runs for.
+  string mission_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "missions:"
+      min_len: 10
+      max_len: 256
+    }
+  ];
+
+  // setup_version is the setup version to configure.
+  agentic_mesh_protocol.setup.v1.SetupVersion setup_version = 2 [(buf.validate.field).required = true];
+
+  // content is the new content to compute and/or configure.
+  google.protobuf.Struct content = 3 [(buf.validate.field).required = true];
+}
+
+// ConfigSetupModuleResponse returns the configured setup version.
+message ConfigSetupModuleResponse {
+  // result holds the configured SetupVersion, or an OperationError.
+  ModuleResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "config_setup_module_response.outcome"
+      message: "result must hold a SetupVersion or an OperationError"
+      expression: "has(this.setup_version) || has(this.error)"
+    }
+  ];
+}
+
+// ════════════════════════════════════ StartModule ═════════════════════════════════════ //
+
+// StartModuleRequest starts a job of the module with a setup and an input.
+message StartModuleRequest {
+  // setup_id is the setup the job runs with.
+  string setup_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "setups:"
+      min_len: 8
+      max_len: 256
+    }
+  ];
+
+  // mission_id is the mission the job runs for.
+  string mission_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "missions:"
+      min_len: 10
+      max_len: 256
+    }
+  ];
+
+  // input is the input of the job.
+  google.protobuf.Struct input = 3 [(buf.validate.field).required = true];
+}
+
+// StartModuleResponse is one message of the job output stream.
+message StartModuleResponse {
+  // job_id is the unique identifier of the started job.
+  string job_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "jobs:"
+      min_len: 6
+      max_len: 256
+    }
+  ];
+
+  // result holds one output of the job, or an OperationError.
+  ModuleResult result = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "start_module_response.outcome"
+      message: "result must hold an output or an OperationError"
+      expression: "has(this.output) || has(this.error)"
+    }
+  ];
+}
+
+// ═════════════════════════════════════ StopModule ═════════════════════════════════════ //
+
+// StopModuleRequest stops a running job.
+message StopModuleRequest {
+  // job_id is the unique identifier of the job to stop.
+  string job_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "jobs:"
+      min_len: 6
+      max_len: 256
+    }
+  ];
+}
+
+// StopModuleResponse returns the stopped job.
+message StopModuleResponse {
+  // result holds the stopped Job, or an OperationError.
+  ModuleResult result = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "stop_module_response.outcome"
+      message: "result must hold a Job or an OperationError"
+      expression: "has(this.job) || has(this.error)"
+    }
+  ];
+}

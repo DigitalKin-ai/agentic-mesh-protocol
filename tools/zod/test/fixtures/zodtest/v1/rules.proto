@@ -1,0 +1,326 @@
+// Fixtures of the protoc-gen-zod differential test: every rule kind the generator
+// supports that proto/ does not use yet, and the presence cases of the ts-proto shape.
+syntax = "proto3";
+
+package zodtest.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+// Color is a closed set of values.
+enum Color {
+  // COLOR_UNSPECIFIED is the zero value.
+  COLOR_UNSPECIFIED = 0;
+  // RED is red.
+  RED = 1;
+  // GREEN is green.
+  GREEN = 2;
+  // BLUE is blue.
+  BLUE = 3;
+}
+
+// StringCases covers the string rules.
+message StringCases {
+  string const_value = 1 [(buf.validate.field).string.const = "fixed"];
+  string len = 2 [(buf.validate.field).string.len = 3];
+  string len_bytes = 3 [(buf.validate.field).string.len_bytes = 4];
+  string byte_range = 4 [(buf.validate.field).string = {
+    min_bytes: 2
+    max_bytes: 6
+  }];
+  string suffix = 5 [(buf.validate.field).string.suffix = ".txt"];
+  string contains = 6 [(buf.validate.field).string.contains = "mid"];
+  string not_contains = 7 [(buf.validate.field).string.not_contains = ".."];
+  string in_list = 8 [(buf.validate.field).string = {
+    in: [
+      "a",
+      "b"
+    ]
+  }];
+  string not_in_list = 9 [(buf.validate.field).string = {
+    not_in: ["forbidden"]
+  }];
+  string hostname = 10 [(buf.validate.field).string.hostname = true];
+  string ip = 11 [(buf.validate.field).string.ip = true];
+  string ipv4 = 12 [(buf.validate.field).string.ipv4 = true];
+  string ipv6 = 13 [(buf.validate.field).string.ipv6 = true];
+  string address = 14 [(buf.validate.field).string.address = true];
+  string uuid = 15 [(buf.validate.field).string.uuid = true];
+  string host_and_port = 16 [(buf.validate.field).string.host_and_port = true];
+  string flagged_pattern = 17 [(buf.validate.field).string.pattern = "(?i)^abc$"];
+  string code_points = 18 [(buf.validate.field).string = {
+    min_len: 2
+    max_len: 3
+  }];
+  string uri = 19 [(buf.validate.field).string.uri = true];
+  string email = 20 [(buf.validate.field).string.email = true];
+  string empty_uri_ref = 21 [(buf.validate.field).string.uri_ref = true];
+}
+
+// NumberCases covers the numeric rules, 32-bit, 64-bit and floating point.
+message NumberCases {
+  int32 gt_lt = 1 [(buf.validate.field).int32 = {
+    gt: 0
+    lt: 10
+  }];
+  int32 exclusive = 2 [(buf.validate.field).int32 = {
+    gt: 10
+    lt: 0
+  }];
+  int32 const_value = 3 [(buf.validate.field).int32.const = 7];
+  int32 in_list = 4 [(buf.validate.field).int32 = {
+    in: [
+      1,
+      2,
+      3
+    ]
+  }];
+  int32 not_in_list = 5 [(buf.validate.field).int32 = {
+    not_in: [4]
+  }];
+  sint32 sint = 6 [(buf.validate.field).sint32 = {
+    gte: -5
+    lte: 5
+  }];
+  uint32 uint = 7 [(buf.validate.field).uint32.lte = 4000000000];
+  fixed32 fixed = 8 [(buf.validate.field).fixed32.gt = 1];
+  int64 negative = 9 [(buf.validate.field).int64 = {
+    gte: -9223372036854775808
+    lt: 0
+  }];
+  uint64 huge = 10 [(buf.validate.field).uint64.gt = 18446744073709551610];
+  sfixed64 in_sfixed = 11 [(buf.validate.field).sfixed64 = {
+    in: [
+      1,
+      9223372036854775807
+    ]
+  }];
+  double open_double = 12;
+  double at_most = 13 [(buf.validate.field).double.lte = 1.5];
+  double const_double = 14 [(buf.validate.field).double.const = 2.5];
+  double in_doubles = 15 [(buf.validate.field).double = {
+    in: [
+      0.5,
+      1.5
+    ]
+  }];
+  float positive_float = 16 [(buf.validate.field).float = {
+    gt: 0.1
+    finite: true
+  }];
+  bool must_be_true = 17 [(buf.validate.field).bool.const = true];
+  int32 gte_lte_exclusive = 18 [(buf.validate.field).int32 = {
+    gte: 5
+    lte: 1
+  }];
+  int64 small_range = 19 [(buf.validate.field).int64 = {
+    gt: 1
+    lte: 3
+  }];
+}
+
+// EnumCases covers the enum rules and an open enum.
+message EnumCases {
+  Color const_color = 1 [(buf.validate.field).enum.const = 2];
+  Color in_colors = 2 [(buf.validate.field).enum = {
+    in: [
+      1,
+      3
+    ]
+  }];
+  Color open_color = 3;
+  repeated Color colors = 4 [(buf.validate.field).repeated = {
+    unique: true
+    items: {
+      enum: {defined_only: true}
+    }
+  }];
+}
+
+// PresenceCases covers required, ignore, oneofs, lists and maps.
+message PresenceCases {
+  optional string must_be_set = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 3
+  ];
+  optional int32 optional_range = 2 [(buf.validate.field).int32.gte = 5];
+  repeated string required_list = 3 [(buf.validate.field).required = true];
+  int32 if_zero = 4 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).int32.gte = 10
+  ];
+  bytes if_zero_bytes = 5 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).bytes = {
+      min_len: 2
+      max_len: 3
+    }
+  ];
+  string always = 6 [
+    (buf.validate.field).ignore = IGNORE_ALWAYS,
+    (buf.validate.field).string.min_len = 5
+  ];
+  repeated string if_zero_list = 7 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).repeated.min_items = 2
+  ];
+  oneof choice {
+    string pick_text = 8 [(buf.validate.field).string.min_len = 2];
+    int64 pick_number = 9 [(buf.validate.field).int64.gt = 0];
+  }
+  bool required_bool = 10 [(buf.validate.field).required = true];
+  repeated int64 unique_ids = 11 [(buf.validate.field).repeated = {
+    unique: true
+    max_items: 3
+    items: {
+      int64: {gt: 0}
+    }
+  }];
+  repeated string items_if_zero = 12 [(buf.validate.field).repeated.items = {
+    ignore: IGNORE_IF_ZERO_VALUE
+    string: {min_len: 3}
+  }];
+  repeated double unique_doubles = 13 [(buf.validate.field).repeated.unique = true];
+  map<string, string> labels = 14 [(buf.validate.field).required = true];
+  bytes exact_bytes = 15 [(buf.validate.field).bytes.len = 2];
+}
+
+// Inner is a nested message read by CelCases.
+message Inner {
+  string label = 1 [(buf.validate.field).string.max_len = 10];
+}
+
+// CelCases covers the CEL constructs the compiler translates.
+message CelCases {
+  option (buf.validate.message).cel = {
+    id: "cel.exists"
+    message: "one tag must be 'main'"
+    expression: "this.tags.exists(t, t == 'main')"
+  };
+  option (buf.validate.message).cel = {
+    id: "cel.all_sizes"
+    message: "tags are at most 5 characters"
+    expression: "this.tags.all(t, size(t) <= 5)"
+  };
+  option (buf.validate.message).cel = {
+    id: "cel.exists_one"
+    message: "exactly one tag starts with x"
+    expression: "this.tags.exists_one(t, t.startsWith('x'))"
+  };
+  option (buf.validate.message).cel = {
+    id: "cel.filter_map"
+    message: "at most two long tags"
+    expression: "size(this.tags.filter(t, size(t) > 3).map(t, t + '!')) <= 2"
+  };
+  option (buf.validate.message).cel = {
+    id: "cel.ternary_string"
+    expression: "this.count > 3 ? 'count too high' : ''"
+  };
+  option (buf.validate.message).cel = {
+    id: "cel.arith"
+    message: "count arithmetic"
+    expression: "this.count * 2 + 1 < 20 && this.count % 5 != 4 && this.count / 2 >= 0 && -this.count <= 0"
+  };
+  option (buf.validate.message).cel = {
+    id: "cel.mixed"
+    message: "ratio at most count + 0.5"
+    expression: "this.ratio <= double(this.count) + 0.5"
+  };
+  option (buf.validate.message).cel = {
+    id: "cel.nested_default"
+    message: "an unset inner reads as its default"
+    expression: "this.inner.label == '' || this.inner.label.matches('^[a-z]+$')"
+  };
+  option (buf.validate.message).cel = {
+    id: "cel.bytes_size"
+    message: "blob at most 4 bytes"
+    expression: "size(this.blob) <= 4"
+  };
+  option (buf.validate.message).cel = {
+    id: "cel.in_uint"
+    message: "level in list"
+    expression: "this.level in [0u, 1u, 2u]"
+  };
+  option (buf.validate.message).cel = {
+    id: "cel.timestamps"
+    message: "start before end"
+    expression: "!has(this.start) || this.start < this.end"
+  };
+  option (buf.validate.message).cel = {
+    id: "cel.string_conv"
+    message: "code matches count"
+    expression: "this.code == '' || this.code == string(this.count)"
+  };
+  option (buf.validate.message).cel = {
+    id: "cel.formats"
+    message: "contact is an email or empty"
+    expression: "this.contact == '' || this.contact.isEmail()"
+  };
+  option (buf.validate.message).cel = {
+    id: "cel.index"
+    message: "first tag is not 'bad'"
+    expression: "size(this.tags) == 0 || this.tags[0] != 'bad'"
+  };
+  option (buf.validate.message).cel = {
+    id: "cel.presence"
+    message: "has() follows the presence of each kind"
+    expression: "!has(this.blob) || has(this.tags) || has(this.inner)"
+  };
+  option (buf.validate.message).cel_expression = "this.count >= 0";
+
+  repeated string tags = 1 [(buf.validate.field).repeated.max_items = 10];
+  int32 count = 2;
+  double ratio = 3 [(buf.validate.field).double.finite = true];
+  Inner inner = 4;
+  bytes blob = 5;
+  uint64 level = 6;
+  google.protobuf.Timestamp start = 7;
+  google.protobuf.Timestamp end = 8;
+  string code = 9;
+  string contact = 10;
+  string prefixed = 11 [(buf.validate.field).cel = {
+    id: "cel.field_scalar"
+    message: "prefixed must start with p_"
+    expression: "this.startsWith('p_')"
+  }];
+  repeated int32 scores = 12 [(buf.validate.field).cel = {
+    id: "cel.field_list"
+    message: "every score is below 100"
+    expression: "this.all(s, s < 100)"
+  }];
+  optional string note = 13 [(buf.validate.field).cel = {
+    id: "cel.field_optional"
+    message: "note is lowercase letters"
+    expression: "this.matches('^[a-z]*$')"
+  }];
+  repeated Inner inners = 14 [(buf.validate.field).repeated.items.cel = {
+    id: "cel.items"
+    message: "every inner has a label"
+    expression: "has(this.label)"
+  }];
+}
+
+// MessageOneofCases covers (buf.validate.message).oneof.
+message MessageOneofCases {
+  option (buf.validate.message).oneof = {
+    fields: [
+      "a",
+      "b"
+    ]
+    required: true
+  };
+
+  string a = 1 [(buf.validate.field).string.min_len = 2];
+  int32 b = 2;
+  string c = 3;
+}
+
+// TreeNode is a recursive message.
+message TreeNode {
+  string name = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 8
+  }];
+  repeated TreeNode children = 2 [(buf.validate.field).repeated.max_items = 3];
+  TreeNode parent = 3;
+}
