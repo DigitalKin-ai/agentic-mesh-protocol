@@ -168,6 +168,12 @@ message CheckResourceAccessRequest {
       min_len: 7
       max_len: 256
     }];
+    // custom_app_id is the custom app whose access is checked (true when the task may read it).
+    string custom_app_id = 6 [(buf.validate.field).string = {
+      prefix: "custom_apps:"
+      min_len: 13
+      max_len: 256
+    }];
   }
 }
 

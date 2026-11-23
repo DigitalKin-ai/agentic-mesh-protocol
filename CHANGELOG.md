@@ -164,6 +164,92 @@ on the conventions above:
   `score` finite, `source` required and snake_case (`^[a-z][a-z0-9_]*$`, max 64), `source_url` max 2048,
   `modality` required (`defined_only`, not UNSPECIFIED); `SearchDocumentsRequest.sources` items snake_case (max 64).
 
+### Added — custom_app: `CustomAppService` (DEV-1012)
+
+New package `custom_app/v1` (`custom_app_enums`, `custom_app_messages`, `custom_app_dto`,
+`custom_app_service`). Purely additive: `buf breaking` passes against `main`. The SDK uses it for
+the kin's custom app tools (DEV-1013) and the services-provider implements it (DEV-1014).
+
+- Rules: user, organization and mission come from the task metadata, never from the payload. An
+  app belongs to the user and the organization of the task that creates it, never to a mission: the
+  mission only holds the "current app" pointer of the conversation, and `CustomApp.origin_mission_id`
+  is a trace. No message points to a file of the files service, which belongs to a mission or a
+  setup: a version carries no reference to its artefacts — an agent reads the sources file by file
+  (`ReadCustomAppFile`), and the build is served to the browser by the HTTP API, never to an agent —
+  and the theme has no logo. An app the caller cannot read answers
+  `NOT_FOUND`, like an app that does not exist. Rights, visibility and deletion of an app are
+  deliberately absent: they go through the HTTP API, so no gRPC path lets a kin share or delete an app.
+- Enums: `CustomAppRight` (`READ`, `DATA_WRITE`, `FULL_EDIT`), `CustomAppOwnerKind` (`USER`,
+  `ORGANIZATION`), `CustomAppFieldType` (`STRING`, `TEXT`, `NUMBER`, `BOOLEAN`, `DATE`, `COLOR`, `URL`,
+  `SELECT`). Visibility reuses `common.v1.Visibility` (`PRIVATE` = granted rights only, `INTERNAL` =
+  read access for the whole organization).
+- Model: an app is a small project of code files (TSX) compiled by the build against a precompiled,
+  versioned runtime, plus typed tables (they become the app database schema, PostgreSQL tables and
+  `jsonb` keys) and a theme (design variables). The code is free text checked by the build (allowed
+  imports, compilation, types): the protocol names no library nor component, so the runtime evolves
+  without a protocol release.
+- Enums: `CustomAppRight` (`READ`, `DATA_WRITE`, `FULL_EDIT`), `CustomAppOwnerKind` (`USER`,
+  `ORGANIZATION`), `CustomAppFieldType` (`STRING`, `TEXT`, `NUMBER`, `BOOLEAN`, `DATE`, `COLOR`, `URL`,
+  `SELECT`), `CustomAppScaffoldKind` (`LIST`, `FORM`, `DETAIL`). Visibility reuses
+  `common.v1.Visibility` (`PRIVATE` = granted rights only, `INTERNAL` = read access for the whole organization).
+- Messages: `CustomApp` (registry entry, with `caller_right` and `published_version`),
+  `CustomAppField`, `CustomAppTable`, `CustomAppFileInfo` (`path`, `size`, `sha256`), `CustomAppTheme`
+  (`variables`), `CustomAppStructure` (`tables`, `files`, `theme`,
+  `runtime_version`, `draft_revision`), `CustomAppRoute` (`id`, `path`, `title`, `tables`, `shareable`,
+  read from `src/routes.ts` by the build), `CustomAppVersion` (`version`, `runtime_version`, `routes`,
+  `built_by`, `created_at`), `CustomAppRecord`,
+  `CustomAppBuildError` (`path`, `line`, `column`, `message`), `CustomAppRuntime` (from the runtime
+  manifest: `runtime_version`, `rules`, `imports`, `theme_variables`, `fonts`, `topics`, and `topic` +
+  `detail` when a topic is asked for), and the outcomes `CustomAppResult`, `CustomAppRecordResult`.
+  Added beyond the ticket's list, because the shape needs them: `CustomAppThemeVariable` (`name`,
+  `value`; see below), `CustomAppBuildErrors` (a `oneof` cannot hold a repeated field),
+  `CustomAppBuildResult` (`identifier` + `oneof` version / build errors / `OperationError`),
+  `CustomAppRecordData` (a record to write: `id` empty = create), `CustomAppTags` (presence of the
+  tags in a partial update), `CustomAppRuntimeImport`, `CustomAppRuntimeThemeVariable` and
+  `CustomAppRuntimeResult`.
+- `CustomAppTheme.variables` is `repeated CustomAppThemeVariable` (`name` = 1, `value` = 2) rather
+  than the `map<string, string>` of the ticket: the Zod generator translates no rule on a map field
+  (`UnsupportedRuleError`), and a list can be bounded and validated. The wire encoding is identical to
+  a `map<string, string>`; the JSON form is a list of `{name, value}` instead of an object.
+- RPCs — registry and current app: `CreateCustomApp` (optional `template`, absent = the starter of
+  the runtime; the app becomes the current app), `GetCustomApp` (published structure, and the draft
+  when asked for and `FULL_EDIT`), `ListCustomApps` (`results` + `bulk`), `SearchCustomApps` (ranked
+  `repeated CustomApp results`, `limit` ≤ 50, no total nor offset, like
+  `ContextService.SearchDocuments`), `UpdateCustomAppInfo` (partial update of `name`, `purpose`,
+  `audience`, `tags`), `OpenCustomApp`, `GetCurrentCustomApp` (`result` absent = no current app).
+- RPCs — draft structure, one operation (a file, a table or the theme) per call: `WriteCustomAppFile`,
+  `EditCustomAppFile` (replaces a passage occurring exactly once), `DeleteCustomAppFile`,
+  `SetCustomAppTable`, `RemoveCustomAppTable`, `SetCustomAppTheme`, `ScaffoldCustomAppFile` (a standard
+  `LIST` / `FORM` / `DETAIL` screen generated server-side from a table; returns the path written), all
+  `FULL_EDIT`; each returns the new `draft_revision` and takes an optional `expected_draft_revision`
+  (a stale one fails with `ABORTED`; absent, the last write wins). `ReadCustomAppFile` and
+  `ListCustomAppFiles` read the published version (`READ`) or, with `draft`, the draft (`FULL_EDIT`).
+  `BuildCustomApp` (`FULL_EDIT`) returns the new `CustomAppVersion`, published at once, or the
+  `CustomAppBuildError` list; a draft over 1 MB in total is one of these build errors, with an empty
+  `path`. A build that cannot run returns an `OperationError` (documented on
+  `CustomAppBuildResult.error`): `UNAVAILABLE` (builder busy, request not taken within 15 s; retry),
+  `RESOURCE_EXHAUSTED` (a build already running on the app, or too many concurrent builds in the
+  organization), `DEADLINE_EXCEEDED` (build stopped after 10 s), `NOT_FOUND`, `PERMISSION_DENIED`.
+- RPCs — content: `ListCustomAppRecords` (`READ`), `UpsertCustomAppRecords` and `DeleteCustomAppRecords`
+  (`DATA_WRITE`, at most 100 records, one `CustomAppRecordResult` per record + `bulk`).
+- RPCs — runtime: `GetCustomAppRuntime` (optional `runtime_version`, absent = current; optional
+  `topic`), open to every member of the organization, no app needed; returns a `CustomAppRuntimeResult`.
+- Validation: `custom_apps:` ids (min 13, max 256); table, field and route names
+  `^[a-z][a-z0-9_]{0,39}$`; file paths `^src/[a-zA-Z0-9_\-/]+\.(tsx|ts|css)$` (max 256), file content
+  and edit passages ≤ 200 KB (`max_bytes: 204800`), at most 200 files per structure (the 1 MB total is
+  checked server-side); `sha256` `^[0-9a-f]{64}$`; theme variable names `^[a-z][a-z0-9-]{0,63}$`,
+  values ≤ 256 characters without `;`, `{`, `}`, `<`, `>` (`^[^;{}<>]*$`), at most 100 variables;
+  `owner_id` `^(users|organizations):.+$`; `purpose` ≤ 1000; at most 20 tags of 64 characters;
+  at most 50 routes per version; batches ≤ 100; search ≤ 50.
+  CEL rules: `custom_app.chronology`, `custom_app_record.chronology`, `custom_app_field.select_options`,
+  `custom_app_field.options_only_for_select`, `custom_app_table.unique_fields`,
+  `custom_app_theme.unique_variables`, `custom_app_structure.unique_tables`,
+  `custom_app_structure.unique_files`, `custom_app_version.unique_route_ids`,
+  `custom_app_version.unique_route_paths`, `update_custom_app_info_request.not_empty`,
+  `upsert_custom_app_records_request.unique_ids`.
+- user_profile: `CheckResourceAccessRequest.resource` gains `custom_app_id = 6` (`custom_apps:`),
+  allowed when the task may read the app. New `oneof` member: wire-compatible.
+
 ### Added — ported from `feat/structure`
 
 - setup: `visibility`, `documentation`, `structure`, `structure_key`, `ChangeVisibility`,
@@ -265,6 +351,11 @@ Zod schemas (TypeScript). The conventions are documented in `CLAUDE.md` (Validat
   `@bufbuild/protovalidate` dev dependency `^1.2.0` → `^1.3.0`: the lockfile is not committed, so CI
   resolved 1.3.0 and the differential test failed on `zodtest.v1.PresenceCases.unique_doubles`.
 - `tools/zod/test`: `PATTERN_SAMPLES` covers `^[a-z][a-z0-9_]*$` (context sources).
+- `tools/zod/test` (custom_app): `PATTERN_SAMPLES` covers `^(users|organizations):.+$`,
+  `^[a-z][a-z0-9_]{0,39}$`, `^src/[a-zA-Z0-9_\-/]+\.(tsx|ts|css)$`, `^[0-9a-f]{64}$`,
+  `^[a-z][a-z0-9-]{0,63}$` and `^[^;{}<>]*$`; `PATTERN_BREAKERS` adds `a;b` and `</style>` (no
+  variant broke `^[^;{}<>]*$`); `BASE_OVERRIDES` gives `CustomAppField` a valid base (no option on a
+  non-SELECT field) for `custom_app_field.options_only_for_select`.
 - `package.json`: `test`, `test:zod` and `test:zod:fixtures` scripts; `@bufbuild/protovalidate`
   dev dependency.
 - `proto/buf.yaml`: adds the `PROTOVALIDATE` lint rule; drops the lint exceptions no longer needed

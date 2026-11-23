@@ -1,0 +1,774 @@
+// Copyright 2026 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.custom_app.v1;
+
+import "agentic_mesh_protocol/common/v1/common_enums.proto";
+import "agentic_mesh_protocol/custom_app/v1/custom_app_enums.proto";
+import "agentic_mesh_protocol/custom_app/v1/custom_app_messages.proto";
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
+import "agentic_mesh_protocol/pagination/v1/pagination.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
+
+// The user, the organization and the mission of every request are resolved server-side from the
+// task metadata, never read from the payload.
+
+// ════════════════════════════════════ CreateCustomApp ════════════════════════════════════ //
+
+// CreateCustomAppRequest creates a custom app owned by the user of the task.
+message CreateCustomAppRequest {
+  // template is the runtime template the app starts from, in lower snake case (absent = the starter
+  // of the current runtime, the only template of milestone 1).
+  optional string template = 1 [(buf.validate.field).string = {
+    max_len: 64
+    pattern: "^[a-z][a-z0-9_]*$"
+  }];
+
+  // name is the display name of the app.
+  string name = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 255
+    }
+  ];
+
+  // purpose describes what the app is for, in a few sentences.
+  string purpose = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 1000
+    }
+  ];
+
+  // audience describes who the app is meant for (absent = not stated).
+  optional string audience = 4 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 255
+  }];
+
+  // tags categorize the app for search.
+  repeated string tags = 5 [(buf.validate.field).repeated = {
+    max_items: 20
+    items: {
+      string: {
+        min_len: 1
+        max_len: 64
+      }
+    }
+  }];
+}
+
+// CreateCustomAppResponse returns the created app, which becomes the current app of the mission.
+message CreateCustomAppResponse {
+  // result holds the created CustomApp, or an OperationError.
+  CustomAppResult result = 1 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ GetCustomApp ════════════════════════════════════ //
+
+// GetCustomAppRequest retrieves a custom app and its structure (READ).
+message GetCustomAppRequest {
+  // custom_app_id is the unique identifier of the app.
+  string custom_app_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "custom_apps:"
+      min_len: 13
+      max_len: 256
+    }
+  ];
+
+  // include_draft also returns the draft structure, when the caller holds FULL_EDIT.
+  bool include_draft = 2;
+}
+
+// GetCustomAppResponse returns the app with its published structure and, if asked for, its draft.
+message GetCustomAppResponse {
+  // result holds the CustomApp, or an OperationError.
+  CustomAppResult result = 1 [(buf.validate.field).required = true];
+
+  // published is the structure of the published version (absent = never published, or an error).
+  CustomAppStructure published = 2;
+
+  // draft is the draft structure (absent = not asked for, the caller does not hold FULL_EDIT, or an error).
+  CustomAppStructure draft = 3;
+}
+
+// ════════════════════════════════════ ListCustomApps ════════════════════════════════════ //
+
+// ListCustomAppsRequest lists the custom apps the caller can read.
+message ListCustomAppsRequest {
+  // visibility keeps the apps carrying this scope (absent = no filter).
+  optional agentic_mesh_protocol.common.v1.Visibility visibility = 1 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+
+  // pagination selects the page to return (absent = server default); pagination.order accepts
+  // "name", "created_at" and "updated_at".
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 2;
+}
+
+// ListCustomAppsResponse returns a page of apps.
+message ListCustomAppsResponse {
+  // results holds one CustomAppResult per listed app.
+  repeated CustomAppResult results = 1;
+  // bulk summarizes the listing and its pagination.
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ SearchCustomApps ════════════════════════════════════ //
+
+// SearchCustomAppsRequest searches the custom apps the caller can read.
+message SearchCustomAppsRequest {
+  // query is the search, in the user's own words.
+  string query = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 1000
+    }
+  ];
+
+  // limit is the maximum number of apps to return, at most 50 (0 = server default: 10). There is no
+  // offset: results ranked by relevance shift between calls. Ask for more apps instead.
+  int32 limit = 2 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 50
+  }];
+}
+
+// SearchCustomAppsResponse returns the matching apps, most relevant first.
+message SearchCustomAppsResponse {
+  // results holds the matching apps, most relevant first. Empty when nothing matched, which is an
+  // answer and not an error. No total and no per-item error: an app the caller cannot read is not returned.
+  repeated CustomApp results = 1 [(buf.validate.field).repeated.max_items = 50];
+}
+
+// ════════════════════════════════════ UpdateCustomAppInfo ════════════════════════════════════ //
+
+// CustomAppTags is the new list of tags of an app (empty = remove every tag).
+message CustomAppTags {
+  // values are the tags.
+  repeated string values = 1 [(buf.validate.field).repeated = {
+    max_items: 20
+    items: {
+      string: {
+        min_len: 1
+        max_len: 64
+      }
+    }
+  }];
+}
+
+// UpdateCustomAppInfoRequest updates the information of a custom app (FULL_EDIT); every absent
+// field is left unchanged.
+message UpdateCustomAppInfoRequest {
+  option (buf.validate.message).cel = {
+    id: "update_custom_app_info_request.not_empty"
+    message: "at least one of name, purpose, audience or tags must be set"
+    expression: "has(this.name) || has(this.purpose) || has(this.audience) || has(this.tags)"
+  };
+
+  // custom_app_id is the unique identifier of the app.
+  string custom_app_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "custom_apps:"
+      min_len: 13
+      max_len: 256
+    }
+  ];
+
+  // name is the new display name.
+  optional string name = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 255
+  }];
+
+  // purpose is the new purpose.
+  optional string purpose = 3 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 1000
+  }];
+
+  // audience is the new audience (empty = no longer stated).
+  optional string audience = 4 [(buf.validate.field).string.max_len = 255];
+
+  // tags replaces the tags of the app.
+  CustomAppTags tags = 5;
+}
+
+// UpdateCustomAppInfoResponse returns the updated app.
+message UpdateCustomAppInfoResponse {
+  // result holds the updated CustomApp, or an OperationError.
+  CustomAppResult result = 1 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ OpenCustomApp ════════════════════════════════════ //
+
+// OpenCustomAppRequest makes a custom app the current app of the mission of the task (READ).
+message OpenCustomAppRequest {
+  // custom_app_id is the unique identifier of the app.
+  string custom_app_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "custom_apps:"
+      min_len: 13
+      max_len: 256
+    }
+  ];
+}
+
+// OpenCustomAppResponse returns the opened app.
+message OpenCustomAppResponse {
+  // result holds the opened CustomApp, or an OperationError.
+  CustomAppResult result = 1 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ GetCurrentCustomApp ════════════════════════════════════ //
+
+// GetCurrentCustomAppRequest retrieves the current app of the mission of the task.
+message GetCurrentCustomAppRequest {}
+
+// GetCurrentCustomAppResponse returns the current app of the mission, if any.
+message GetCurrentCustomAppResponse {
+  // result holds the current CustomApp, or an OperationError (absent = the mission has no current app).
+  CustomAppResult result = 1;
+}
+
+// Every structure write applies one operation (a file, a table or the theme) to the draft and
+// returns the new draft_revision. With expected_draft_revision set, a write on a draft at another
+// revision fails with ABORTED and changes nothing (the model reads the file again); without it,
+// the last write wins.
+
+// ════════════════════════════════════ WriteCustomAppFile ════════════════════════════════════ //
+
+// WriteCustomAppFileRequest creates a file of the draft, or replaces its whole content (FULL_EDIT).
+message WriteCustomAppFileRequest {
+  // custom_app_id is the unique identifier of the app.
+  string custom_app_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "custom_apps:"
+      min_len: 13
+      max_len: 256
+    }
+  ];
+
+  // path is the path of the file, under src/ (e.g. "src/pages/Contacts.tsx").
+  string path = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 256
+      pattern: "^src/[a-zA-Z0-9_\\-/]+\\.(tsx|ts|css)$"
+    }
+  ];
+
+  // content is the whole content of the file (at most 200 KB).
+  string content = 3 [(buf.validate.field).string.max_bytes = 204800];
+
+  // expected_draft_revision makes the write fail unless the draft is at this revision (absent = no check).
+  optional int32 expected_draft_revision = 4 [(buf.validate.field).int32.gte = 0];
+}
+
+// WriteCustomAppFileResponse returns the app and the new draft revision.
+message WriteCustomAppFileResponse {
+  // result holds the CustomApp, or an OperationError.
+  CustomAppResult result = 1 [(buf.validate.field).required = true];
+  // draft_revision is the revision of the draft after the operation (0 on error).
+  int32 draft_revision = 2 [(buf.validate.field).int32.gte = 0];
+}
+
+// ════════════════════════════════════ EditCustomAppFile ════════════════════════════════════ //
+
+// EditCustomAppFileRequest replaces one passage of a file of the draft (FULL_EDIT). It fails when
+// old_text does not occur exactly once in the file.
+message EditCustomAppFileRequest {
+  // custom_app_id is the unique identifier of the app.
+  string custom_app_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "custom_apps:"
+      min_len: 13
+      max_len: 256
+    }
+  ];
+
+  // path is the path of the file to edit.
+  string path = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 256
+      pattern: "^src/[a-zA-Z0-9_\\-/]+\\.(tsx|ts|css)$"
+    }
+  ];
+
+  // old_text is the passage to replace; it must occur exactly once in the file.
+  string old_text = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_bytes = 204800
+  ];
+
+  // new_text is the passage that replaces old_text (empty = delete the passage).
+  string new_text = 4 [(buf.validate.field).string.max_bytes = 204800];
+
+  // expected_draft_revision makes the write fail unless the draft is at this revision (absent = no check).
+  optional int32 expected_draft_revision = 5 [(buf.validate.field).int32.gte = 0];
+}
+
+// EditCustomAppFileResponse returns the app and the new draft revision.
+message EditCustomAppFileResponse {
+  // result holds the CustomApp, or an OperationError.
+  CustomAppResult result = 1 [(buf.validate.field).required = true];
+  // draft_revision is the revision of the draft after the operation (0 on error).
+  int32 draft_revision = 2 [(buf.validate.field).int32.gte = 0];
+}
+
+// ════════════════════════════════════ ReadCustomAppFile ════════════════════════════════════ //
+
+// ReadCustomAppFileRequest reads a file of the published version (READ), or of the draft (FULL_EDIT).
+message ReadCustomAppFileRequest {
+  // custom_app_id is the unique identifier of the app.
+  string custom_app_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "custom_apps:"
+      min_len: 13
+      max_len: 256
+    }
+  ];
+
+  // path is the path of the file to read.
+  string path = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 256
+      pattern: "^src/[a-zA-Z0-9_\\-/]+\\.(tsx|ts|css)$"
+    }
+  ];
+
+  // draft reads the draft instead of the published version (needs FULL_EDIT).
+  bool draft = 3;
+}
+
+// ReadCustomAppFileResponse returns the content of the file.
+message ReadCustomAppFileResponse {
+  // result holds the CustomApp, or an OperationError (NOT_FOUND for an unknown file as for an unreadable app).
+  CustomAppResult result = 1 [(buf.validate.field).required = true];
+
+  // file describes the file read (absent on error).
+  CustomAppFileInfo file = 2;
+
+  // content is the content of the file (empty on error).
+  string content = 3 [(buf.validate.field).string.max_bytes = 204800];
+
+  // draft_revision is the revision of the draft the file was read from (0 for the published version or on error).
+  int32 draft_revision = 4 [(buf.validate.field).int32.gte = 0];
+}
+
+// ════════════════════════════════════ ListCustomAppFiles ════════════════════════════════════ //
+
+// ListCustomAppFilesRequest lists the files of the published version (READ), or of the draft (FULL_EDIT).
+message ListCustomAppFilesRequest {
+  // custom_app_id is the unique identifier of the app.
+  string custom_app_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "custom_apps:"
+      min_len: 13
+      max_len: 256
+    }
+  ];
+
+  // draft lists the draft instead of the published version (needs FULL_EDIT).
+  bool draft = 2;
+}
+
+// ListCustomAppFilesResponse returns every file of the app, ordered by path.
+message ListCustomAppFilesResponse {
+  // result holds the CustomApp, or an OperationError.
+  CustomAppResult result = 1 [(buf.validate.field).required = true];
+
+  // files are the files of the app, ordered by path (empty on error).
+  repeated CustomAppFileInfo files = 2 [(buf.validate.field).repeated.max_items = 200];
+
+  // draft_revision is the revision of the draft listed (0 for the published version or on error).
+  int32 draft_revision = 3 [(buf.validate.field).int32.gte = 0];
+}
+
+// ════════════════════════════════════ DeleteCustomAppFile ════════════════════════════════════ //
+
+// DeleteCustomAppFileRequest deletes a file of the draft (FULL_EDIT).
+message DeleteCustomAppFileRequest {
+  // custom_app_id is the unique identifier of the app.
+  string custom_app_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "custom_apps:"
+      min_len: 13
+      max_len: 256
+    }
+  ];
+
+  // path is the path of the file to delete.
+  string path = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 256
+      pattern: "^src/[a-zA-Z0-9_\\-/]+\\.(tsx|ts|css)$"
+    }
+  ];
+
+  // expected_draft_revision makes the write fail unless the draft is at this revision (absent = no check).
+  optional int32 expected_draft_revision = 3 [(buf.validate.field).int32.gte = 0];
+}
+
+// DeleteCustomAppFileResponse returns the app and the new draft revision.
+message DeleteCustomAppFileResponse {
+  // result holds the CustomApp, or an OperationError.
+  CustomAppResult result = 1 [(buf.validate.field).required = true];
+  // draft_revision is the revision of the draft after the operation (0 on error).
+  int32 draft_revision = 2 [(buf.validate.field).int32.gte = 0];
+}
+
+// ════════════════════════════════════ SetCustomAppTable ════════════════════════════════════ //
+
+// SetCustomAppTableRequest adds a table to the draft, or replaces the table of the same name (FULL_EDIT).
+message SetCustomAppTableRequest {
+  // custom_app_id is the unique identifier of the app.
+  string custom_app_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "custom_apps:"
+      min_len: 13
+      max_len: 256
+    }
+  ];
+
+  // table is the table to set.
+  CustomAppTable table = 2 [(buf.validate.field).required = true];
+
+  // expected_draft_revision makes the write fail unless the draft is at this revision (absent = no check).
+  optional int32 expected_draft_revision = 3 [(buf.validate.field).int32.gte = 0];
+}
+
+// SetCustomAppTableResponse returns the app and the new draft revision.
+message SetCustomAppTableResponse {
+  // result holds the CustomApp, or an OperationError.
+  CustomAppResult result = 1 [(buf.validate.field).required = true];
+  // draft_revision is the revision of the draft after the operation (0 on error).
+  int32 draft_revision = 2 [(buf.validate.field).int32.gte = 0];
+}
+
+// ════════════════════════════════════ RemoveCustomAppTable ════════════════════════════════════ //
+
+// RemoveCustomAppTableRequest removes a table from the draft (FULL_EDIT).
+message RemoveCustomAppTableRequest {
+  // custom_app_id is the unique identifier of the app.
+  string custom_app_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "custom_apps:"
+      min_len: 13
+      max_len: 256
+    }
+  ];
+
+  // name is the name of the table to remove.
+  string name = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 40
+      pattern: "^[a-z][a-z0-9_]{0,39}$"
+    }
+  ];
+
+  // expected_draft_revision makes the write fail unless the draft is at this revision (absent = no check).
+  optional int32 expected_draft_revision = 3 [(buf.validate.field).int32.gte = 0];
+}
+
+// RemoveCustomAppTableResponse returns the app and the new draft revision.
+message RemoveCustomAppTableResponse {
+  // result holds the CustomApp, or an OperationError.
+  CustomAppResult result = 1 [(buf.validate.field).required = true];
+  // draft_revision is the revision of the draft after the operation (0 on error).
+  int32 draft_revision = 2 [(buf.validate.field).int32.gte = 0];
+}
+
+// ════════════════════════════════════ SetCustomAppTheme ════════════════════════════════════ //
+
+// SetCustomAppThemeRequest replaces the theme of the draft (FULL_EDIT).
+message SetCustomAppThemeRequest {
+  // custom_app_id is the unique identifier of the app.
+  string custom_app_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "custom_apps:"
+      min_len: 13
+      max_len: 256
+    }
+  ];
+
+  // theme is the new theme, replacing the whole current one.
+  CustomAppTheme theme = 2 [(buf.validate.field).required = true];
+
+  // expected_draft_revision makes the write fail unless the draft is at this revision (absent = no check).
+  optional int32 expected_draft_revision = 3 [(buf.validate.field).int32.gte = 0];
+}
+
+// SetCustomAppThemeResponse returns the app and the new draft revision.
+message SetCustomAppThemeResponse {
+  // result holds the CustomApp, or an OperationError.
+  CustomAppResult result = 1 [(buf.validate.field).required = true];
+  // draft_revision is the revision of the draft after the operation (0 on error).
+  int32 draft_revision = 2 [(buf.validate.field).int32.gte = 0];
+}
+
+// ════════════════════════════════════ ScaffoldCustomAppFile ════════════════════════════════════ //
+
+// ScaffoldCustomAppFileRequest writes a standard TSX screen generated server-side from the schema of a
+// table, without the model (FULL_EDIT). The file then belongs to the app like any other.
+message ScaffoldCustomAppFileRequest {
+  // custom_app_id is the unique identifier of the app.
+  string custom_app_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "custom_apps:"
+      min_len: 13
+      max_len: 256
+    }
+  ];
+
+  // table is the name of the table of the draft the screen is generated from.
+  string table = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 40
+      pattern: "^[a-z][a-z0-9_]{0,39}$"
+    }
+  ];
+
+  // kind is the kind of screen to generate.
+  CustomAppScaffoldKind kind = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // path is the path of the file to write (absent = a server default derived from the table and the kind).
+  optional string path = 4 [(buf.validate.field).string = {
+    max_len: 256
+    pattern: "^src/[a-zA-Z0-9_\\-/]+\\.(tsx|ts|css)$"
+  }];
+
+  // expected_draft_revision makes the write fail unless the draft is at this revision (absent = no check).
+  optional int32 expected_draft_revision = 5 [(buf.validate.field).int32.gte = 0];
+}
+
+// ScaffoldCustomAppFileResponse returns the app, the path written and the new draft revision.
+message ScaffoldCustomAppFileResponse {
+  // result holds the CustomApp, or an OperationError.
+  CustomAppResult result = 1 [(buf.validate.field).required = true];
+
+  // path is the path of the file written (absent on error).
+  optional string path = 2 [(buf.validate.field).string = {
+    max_len: 256
+    pattern: "^src/[a-zA-Z0-9_\\-/]+\\.(tsx|ts|css)$"
+  }];
+
+  // draft_revision is the revision of the draft after the operation (0 on error).
+  int32 draft_revision = 3 [(buf.validate.field).int32.gte = 0];
+}
+
+// ════════════════════════════════════ BuildCustomApp ════════════════════════════════════ //
+
+// BuildCustomAppRequest builds a new version of a custom app from its draft and publishes it at once (FULL_EDIT).
+message BuildCustomAppRequest {
+  // custom_app_id is the unique identifier of the app.
+  string custom_app_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "custom_apps:"
+      min_len: 13
+      max_len: 256
+    }
+  ];
+}
+
+// BuildCustomAppResponse returns the built version, or the problems found in the draft.
+message BuildCustomAppResponse {
+  // result holds the CustomAppVersion, the CustomAppBuildErrors, or an OperationError.
+  CustomAppBuildResult result = 1 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ ListCustomAppRecords ════════════════════════════════════ //
+
+// ListCustomAppRecordsRequest lists the records of a table of a custom app (READ).
+message ListCustomAppRecordsRequest {
+  // custom_app_id is the unique identifier of the app.
+  string custom_app_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "custom_apps:"
+      min_len: 13
+      max_len: 256
+    }
+  ];
+
+  // table is the name of the table.
+  string table = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 40
+      pattern: "^[a-z][a-z0-9_]{0,39}$"
+    }
+  ];
+
+  // filter keeps the records whose fields equal the given values, keyed by field name (absent = no filter).
+  google.protobuf.Struct filter = 3;
+
+  // pagination selects the page to return (absent = server default); pagination.order accepts
+  // "created_at", "updated_at" and the field names of the table.
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 4;
+}
+
+// ListCustomAppRecordsResponse returns a page of records.
+message ListCustomAppRecordsResponse {
+  // results holds one CustomAppRecordResult per listed record.
+  repeated CustomAppRecordResult results = 1;
+  // bulk summarizes the listing and its pagination.
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ UpsertCustomAppRecords ════════════════════════════════════ //
+
+// UpsertCustomAppRecordsRequest creates and updates records of a table of a custom app (DATA_WRITE).
+message UpsertCustomAppRecordsRequest {
+  option (buf.validate.message).cel = {
+    id: "upsert_custom_app_records_request.unique_ids"
+    message: "a record cannot be updated twice in the same batch"
+    expression: "this.records.filter(r, r.id != '').map(r, r.id).unique()"
+  };
+
+  // custom_app_id is the unique identifier of the app.
+  string custom_app_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "custom_apps:"
+      min_len: 13
+      max_len: 256
+    }
+  ];
+
+  // table is the name of the table.
+  string table = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 40
+      pattern: "^[a-z][a-z0-9_]{0,39}$"
+    }
+  ];
+
+  // records are the records to write: a record without id is created, a record with an id is updated.
+  repeated CustomAppRecordData records = 3 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 100
+  }];
+}
+
+// UpsertCustomAppRecordsResponse reports the outcome of every written record.
+message UpsertCustomAppRecordsResponse {
+  // results holds one CustomAppRecordResult per written record, in the request order.
+  repeated CustomAppRecordResult results = 1 [(buf.validate.field).repeated.max_items = 100];
+  // bulk summarizes the batch write.
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ DeleteCustomAppRecords ════════════════════════════════════ //
+
+// DeleteCustomAppRecordsRequest deletes records of a table of a custom app (DATA_WRITE).
+message DeleteCustomAppRecordsRequest {
+  // custom_app_id is the unique identifier of the app.
+  string custom_app_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "custom_apps:"
+      min_len: 13
+      max_len: 256
+    }
+  ];
+
+  // table is the name of the table.
+  string table = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 40
+      pattern: "^[a-z][a-z0-9_]{0,39}$"
+    }
+  ];
+
+  // ids are the identifiers of the records to delete.
+  repeated string ids = 3 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 100
+    unique: true
+    items: {
+      string: {
+        min_len: 1
+        max_len: 256
+      }
+    }
+  }];
+}
+
+// DeleteCustomAppRecordsResponse reports the outcome of every deleted record.
+message DeleteCustomAppRecordsResponse {
+  // results holds one CustomAppRecordResult per deleted record, in the request order.
+  repeated CustomAppRecordResult results = 1 [(buf.validate.field).repeated.max_items = 100];
+  // bulk summarizes the batch deletion.
+  agentic_mesh_protocol.pagination.v1.BulkResponse bulk = 2 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ GetCustomAppRuntime ════════════════════════════════════ //
+
+// GetCustomAppRuntimeRequest describes the runtime the apps are built against, from its manifest.
+// Open to every member of the organization of the task: no app is needed.
+message GetCustomAppRuntimeRequest {
+  // runtime_version is the version to describe (absent = the current version).
+  optional string runtime_version = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 128
+  }];
+
+  // topic asks for the detail of one topic, with examples, e.g. "data", "forms", "charts" or "theme"
+  // (absent = the overview: rules, imports, theme variables, fonts and topics).
+  optional string topic = 2 [(buf.validate.field).string = {
+    max_len: 64
+    pattern: "^[a-z][a-z0-9_]*$"
+  }];
+}
+
+// GetCustomAppRuntimeResponse returns the runtime description.
+message GetCustomAppRuntimeResponse {
+  // result holds the CustomAppRuntime, or an OperationError.
+  CustomAppRuntimeResult result = 1 [(buf.validate.field).required = true];
+}

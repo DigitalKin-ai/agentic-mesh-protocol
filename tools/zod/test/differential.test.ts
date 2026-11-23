@@ -73,6 +73,12 @@ const PATTERN_SAMPLES: Record<string, string> = {
   "^[A-Z][A-Z0-9_]*$": "NOT_FOUND",
   "^([a-z][a-z0-9_]*)?$": "name",
   "^[a-z][a-z0-9_]*$": "google_drive",
+  "^(users|organizations):.+$": "users:u1",
+  "^[a-z][a-z0-9_]{0,39}$": "due_date",
+  "^src/[a-zA-Z0-9_\\-/]+\\.(tsx|ts|css)$": "src/pages/Contacts.tsx",
+  "^[0-9a-f]{64}$": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "^[a-z][a-z0-9-]{0,63}$": "color-primary",
+  "^[^;{}<>]*$": "#1A2B3C",
   "(?i)^abc$": "AbC",
 };
 
@@ -82,6 +88,7 @@ const PATTERN_BREAKERS = [
   " ", "a b", "..", "a..b", "a/../b", "-", "\n", "x\ry", "A", "a", "é", "1abc", "UPPER", "lower_case",
   "a:b", "[x]", "missions:", "missions:x", "setups:y", "setup_versions:z", "fr", "fr-FR", "english",
   "NOT_FOUND", "not_found", "task:1/2", "ABC", "abc", "abcd", "file.", ".hidden", "name.tar.gz",
+  "a;b", "</style>",
 ];
 
 const EMAIL_CASES = [
@@ -121,6 +128,10 @@ const BASE_OVERRIDES: Record<string, (init: Init) => void> = {
   },
   "zodtest.v1.MessageOneofCases": (init) => {
     delete init.b;
+  },
+  // custom_app_field.options_only_for_select: the base type is not SELECT, so it carries no option
+  "agentic_mesh_protocol.custom_app.v1.CustomAppField": (init) => {
+    init.options = [];
   },
 };
 

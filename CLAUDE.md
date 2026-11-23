@@ -147,7 +147,7 @@ Shared packages:
 
 - `pagination/v1` — `PaginationRequest` (order, descending, limit 1–100, offset), `PaginationResponse`,
   `BulkResponse` (totals + page of a listing or batch) and `OperationError` (code + message)
-- `common/v1` — `Visibility` (PUBLIC / PRIVATE / INTERNAL), shared by setups, modules, records and files
+- `common/v1` — `Visibility` (PUBLIC / PRIVATE / INTERNAL), shared by setups, modules, records, files and custom apps
 
 ### Response Pattern
 
@@ -156,9 +156,9 @@ Shared packages:
 - A listing or batch RPC returns `repeated <Domain>Result results` plus a `BulkResponse bulk`
   (total processed, total failed, pagination for listings).
 - Listing requests take an optional `PaginationRequest pagination` (absent = server default page).
-- Exception — a ranked search (`ContextService.SearchDocuments`) returns its items directly
-  (`repeated Citation results`) and takes a bounded `limit`: no per-item error, no total count,
-  no offset (results fused by rank are not stable between calls).
+- Exception — a ranked search (`ContextService.SearchDocuments`, `CustomAppService.SearchCustomApps`)
+  returns its items directly (`repeated Citation results`, `repeated CustomApp results`) and takes a
+  bounded `limit`: no per-item error, no total count, no offset (results fused by rank are not stable between calls).
 
 ### Service Domains
 
@@ -186,6 +186,16 @@ Shared packages:
    RPCs: AssociateTask, StartStream, Stream (BiDi, in-band `stream.*` sentinels), SendSignal.
 9. **ContextService** (`context.v1`) — enterprise knowledge retrieval (Google Drive, Notion...).
    RPCs: SearchDocuments (one `Citation` per matching document, relevance-ordered, at most 50; identity resolved server-side).
+10. **CustomAppService** (`custom_app.v1`) — custom apps a kin creates, edits, builds and fills: code files
+    (TSX) compiled against a precompiled runtime, plus typed tables and a theme.
+    Registry and current app: CreateCustomApp, GetCustomApp, ListCustomApps, SearchCustomApps, UpdateCustomAppInfo,
+    OpenCustomApp, GetCurrentCustomApp. Draft (one file, table or theme per call; `draft_revision` returned,
+    optional `expected_draft_revision`): WriteCustomAppFile, EditCustomAppFile, ReadCustomAppFile, ListCustomAppFiles,
+    DeleteCustomAppFile, SetCustomAppTable, RemoveCustomAppTable, SetCustomAppTheme, ScaffoldCustomAppFile,
+    BuildCustomApp (a successful build publishes). Content: ListCustomAppRecords, UpsertCustomAppRecords,
+    DeleteCustomAppRecords. Runtime: GetCustomAppRuntime (any member of the organization).
+    An app never belongs to a mission (the mission only holds the current-app pointer); an unreadable app
+    answers NOT_FOUND. Rights, visibility and deletion of an app are HTTP-only, absent from the protocol.
 
 ### Key Architectural Patterns
 
@@ -349,7 +359,7 @@ This covers proto files (messages, fields, enums, RPCs, validation rules), the g
 - Flag every wire, JSON or generated-code breaking change with **BREAKING** and give the
   before → after mapping (RPC, message, field, enum value, file) consumers need to migrate.
 - Name the domain the entry belongs to (setup, registry, module, storage, filesystem, cost,
-  user_profile, gateway, context, pagination, common).
+  user_profile, gateway, context, custom_app, pagination, common).
 - On release, move the `[Unreleased]` entries under a `## [x.y.z] - YYYY-MM-DD` heading.
 
 ## Git Conventions
@@ -380,7 +390,7 @@ generated Zod schemas (TypeScript, `tools/zod`). Conventions:
 
 - **IDs**: standard string rules `prefix` + `min_len` (prefix length + 1) + `max_len: 256`:
   `modules:`, `jobs:`, `setups:`, `setup_versions:`, `missions:`, `users:`, `organizations:`,
-  `files:`, `storage:`, `cards:`. Task IDs (Gateway) match `^[A-Za-z0-9_:.-]+$`, at most 256 characters.
+  `files:`, `storage:`, `cards:`, `custom_apps:`. Task IDs (Gateway) match `^[A-Za-z0-9_:.-]+$`, at most 256 characters.
 - **`required`** is used only in its protovalidate meaning: a non-empty string, a non-zero number or
   enum, a present message, a non-empty list. Never on a `bool` (it would force `true`) nor on a filter.
 - **Optional scalars** of a request are declared `optional` (explicit presence): their rules apply

@@ -1,0 +1,636 @@
+// Copyright 2026 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.custom_app.v1;
+
+import "agentic_mesh_protocol/common/v1/common_enums.proto";
+import "agentic_mesh_protocol/custom_app/v1/custom_app_enums.proto";
+import "agentic_mesh_protocol/pagination/v1/bulk.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+// ═════════════════════════════════════ Registry ════════════════════════════════════ //
+
+// CustomApp is the registry entry of a custom app. An app never belongs to a mission: the mission
+// it was created in is kept as a trace only (origin_mission_id).
+message CustomApp {
+  option (buf.validate.message).cel = {
+    id: "custom_app.chronology"
+    message: "created_at must not be after updated_at"
+    expression: "this.created_at <= this.updated_at"
+  };
+
+  // id is the unique identifier of the app.
+  string id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "custom_apps:"
+      min_len: 13
+      max_len: 256
+    }
+  ];
+
+  // name is the display name of the app.
+  string name = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 255
+  ];
+
+  // purpose describes what the app is for, in a few sentences.
+  string purpose = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 1000
+  ];
+
+  // audience describes who the app is meant for (empty = not stated).
+  string audience = 4 [(buf.validate.field).string.max_len = 255];
+
+  // tags categorize the app for search.
+  repeated string tags = 5 [(buf.validate.field).repeated = {
+    max_items: 20
+    items: {
+      string: {
+        min_len: 1
+        max_len: 64
+      }
+    }
+  }];
+
+  // owner_kind is the kind of owner of the app.
+  CustomAppOwnerKind owner_kind = 6 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // owner_id is the user or the organization owning the app, depending on owner_kind.
+  string owner_id = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 256
+      pattern: "^(users|organizations):.+$"
+    }
+  ];
+
+  // organization_id is the organization the app belongs to.
+  string organization_id = 8 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "organizations:"
+      min_len: 15
+      max_len: 256
+    }
+  ];
+
+  // visibility is the read-access scope of the app: PRIVATE = only the granted rights,
+  // INTERNAL = read access for the whole organization.
+  agentic_mesh_protocol.common.v1.Visibility visibility = 9 [(buf.validate.field).enum.defined_only = true];
+
+  // caller_right is the right of the caller on the app (an app the caller cannot read is never returned).
+  CustomAppRight caller_right = 10 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // published_version is the version currently served to the users (0 = never published).
+  int32 published_version = 11 [(buf.validate.field).int32.gte = 0];
+
+  // created_by_setup_id is the setup of the kin that created the app (absent = created outside a kin).
+  optional string created_by_setup_id = 12 [(buf.validate.field).string = {
+    prefix: "setups:"
+    min_len: 8
+    max_len: 256
+  }];
+
+  // origin_mission_id is the mission the app was created in. A trace only: it grants nothing and
+  // does not attach the app to the mission (absent = created outside a mission).
+  optional string origin_mission_id = 13 [(buf.validate.field).string = {
+    prefix: "missions:"
+    min_len: 10
+    max_len: 256
+  }];
+
+  // created_at is the creation date of the app.
+  google.protobuf.Timestamp created_at = 14 [(buf.validate.field).required = true];
+
+  // updated_at is the last update date of the app.
+  google.protobuf.Timestamp updated_at = 15 [(buf.validate.field).required = true];
+}
+
+// ════════════════════════════════════ Structure ════════════════════════════════════ //
+
+// CustomAppField is a typed field of a custom app table. Its name becomes a database identifier.
+message CustomAppField {
+  option (buf.validate.message).cel = {
+    id: "custom_app_field.select_options"
+    message: "a SELECT field needs at least one option"
+    expression: "this.type != 8 || size(this.options) > 0"
+  };
+  option (buf.validate.message).cel = {
+    id: "custom_app_field.options_only_for_select"
+    message: "only a SELECT field can carry options"
+    expression: "this.type == 8 || size(this.options) == 0"
+  };
+
+  // name is the identifier of the field, unique within its table (lower snake case, at most 40 characters).
+  string name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 40
+      pattern: "^[a-z][a-z0-9_]{0,39}$"
+    }
+  ];
+
+  // label is the display name of the field.
+  string label = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 255
+  ];
+
+  // type is the type of the values of the field.
+  CustomAppFieldType type = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // required makes the field mandatory in every record of the table.
+  bool required = 4;
+
+  // options are the values a SELECT field accepts (empty for every other type).
+  repeated string options = 5 [(buf.validate.field).repeated = {
+    max_items: 100
+    unique: true
+    items: {
+      string: {
+        min_len: 1
+        max_len: 255
+      }
+    }
+  }];
+}
+
+// CustomAppTable is a typed table of a custom app. It becomes a table of the app database.
+message CustomAppTable {
+  option (buf.validate.message).cel = {
+    id: "custom_app_table.unique_fields"
+    message: "two fields of a table cannot share the same name"
+    expression: "this.fields.map(f, f.name).unique()"
+  };
+
+  // name is the identifier of the table, unique within the app (lower snake case, at most 40 characters).
+  string name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 40
+      pattern: "^[a-z][a-z0-9_]{0,39}$"
+    }
+  ];
+
+  // label is the display name of the table.
+  string label = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 255
+  ];
+
+  // fields are the fields of the table, in display order.
+  repeated CustomAppField fields = 3 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 100
+  }];
+}
+
+// CustomAppFileInfo describes a source file of a custom app, without its content.
+message CustomAppFileInfo {
+  // path is the path of the file in the app project, under src/ (e.g. "src/pages/Contacts.tsx").
+  string path = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 256
+      pattern: "^src/[a-zA-Z0-9_\\-/]+\\.(tsx|ts|css)$"
+    }
+  ];
+
+  // size is the size of the content, in bytes (at most 200 KB).
+  int32 size = 2 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 204800
+  }];
+
+  // sha256 is the SHA-256 digest of the content, in lowercase hexadecimal.
+  string sha256 = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 64
+      pattern: "^[0-9a-f]{64}$"
+    }
+  ];
+}
+
+// CustomAppThemeVariable is the value of a design variable of the theme (color, font, radius, spacing...).
+message CustomAppThemeVariable {
+  // name is the name of the variable, as listed by the runtime, without the leading "--" (e.g. "color-primary").
+  string name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 64
+      pattern: "^[a-z][a-z0-9-]{0,63}$"
+    }
+  ];
+
+  // value is the CSS value of the variable (e.g. "#1A2B3C"). It cannot hold ";", "{", "}", "<" nor ">".
+  string value = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 256
+      pattern: "^[^;{}<>]*$"
+    }
+  ];
+}
+
+// CustomAppTheme holds the design values of a custom app. The build injects them into the app;
+// a variable left unset keeps the neutral default of the runtime. On the wire, variables is encoded
+// exactly like a map<string, string> (name = key, value = value).
+message CustomAppTheme {
+  option (buf.validate.message).cel = {
+    id: "custom_app_theme.unique_variables"
+    message: "two variables of a theme cannot share the same name"
+    expression: "this.variables.map(v, v.name).unique()"
+  };
+
+  // variables are the values of the design variables of the app.
+  repeated CustomAppThemeVariable variables = 1 [(buf.validate.field).repeated.max_items = 100];
+}
+
+// CustomAppStructure is the content of a custom app: its typed tables, its source files and its theme.
+// Tables are typed because they become the app database schema, checked by the protocol. The code is
+// free text checked by the build (allowed imports, compilation, types): the protocol names no library
+// nor component, so the runtime evolves without a protocol release.
+message CustomAppStructure {
+  option (buf.validate.message).cel = {
+    id: "custom_app_structure.unique_tables"
+    message: "two tables of an app cannot share the same name"
+    expression: "this.tables.map(t, t.name).unique()"
+  };
+  option (buf.validate.message).cel = {
+    id: "custom_app_structure.unique_files"
+    message: "two files of an app cannot share the same path"
+    expression: "this.files.map(f, f.path).unique()"
+  };
+
+  // tables are the typed tables of the app.
+  repeated CustomAppTable tables = 1 [(buf.validate.field).repeated.max_items = 50];
+
+  // files are the source files of the app (at most 200; 1 MB in total, checked server-side).
+  repeated CustomAppFileInfo files = 2 [(buf.validate.field).repeated.max_items = 200];
+
+  // theme holds the design values of the app (absent = the neutral defaults of the runtime).
+  CustomAppTheme theme = 3;
+
+  // runtime_version is the version of the runtime the app is built against.
+  string runtime_version = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 128
+  ];
+
+  // draft_revision is the revision of the draft, incremented by every structure write.
+  int32 draft_revision = 5 [(buf.validate.field).int32.gte = 0];
+}
+
+// ════════════════════════════════════ Versions ════════════════════════════════════ //
+
+// CustomAppRoute is a page of a built version, as declared in src/routes.ts and read by the build.
+message CustomAppRoute {
+  // id is the identifier of the page, unique within the version (lower snake case, at most 40 characters).
+  string id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 40
+      pattern: "^[a-z][a-z0-9_]{0,39}$"
+    }
+  ];
+
+  // path is the path of the page in the app router (e.g. "/" or "/personas").
+  string path = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "/"
+      max_len: 256
+    }
+  ];
+
+  // title is the display title of the page.
+  string title = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 255
+  ];
+
+  // tables are the tables the page reads: a share link opening the page grants read access to them only.
+  repeated string tables = 4 [(buf.validate.field).repeated = {
+    max_items: 50
+    unique: true
+    items: {
+      string: {
+        max_len: 40
+        pattern: "^[a-z][a-z0-9_]{0,39}$"
+      }
+    }
+  }];
+
+  // shareable allows the page in a share link (false = the page never enters a link).
+  bool shareable = 5;
+}
+
+// CustomAppVersion is a built version of a custom app. A successful build publishes it at once.
+message CustomAppVersion {
+  option (buf.validate.message).cel = {
+    id: "custom_app_version.unique_route_ids"
+    message: "two routes of a version cannot share the same id"
+    expression: "this.routes.map(r, r.id).unique()"
+  };
+  option (buf.validate.message).cel = {
+    id: "custom_app_version.unique_route_paths"
+    message: "two routes of a version cannot share the same path"
+    expression: "this.routes.map(r, r.path).unique()"
+  };
+
+  // version is the number of the version, incremented by every successful build.
+  int32 version = 1 [(buf.validate.field).int32.gte = 1];
+
+  // runtime_version is the version of the runtime the version was built against.
+  string runtime_version = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 128
+  ];
+
+  // routes are the pages of the version, read from src/routes.ts.
+  repeated CustomAppRoute routes = 3 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 50
+  }];
+
+  // built_by is the user the version was built for.
+  string built_by = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "users:"
+      min_len: 7
+      max_len: 256
+    }
+  ];
+
+  // created_at is the date of the build.
+  google.protobuf.Timestamp created_at = 5 [(buf.validate.field).required = true];
+}
+
+// CustomAppBuildError is a problem that prevents the draft from being built (compilation, types,
+// imports, routes).
+message CustomAppBuildError {
+  // path is the file the problem is in (empty = not tied to a file).
+  string path = 1 [(buf.validate.field).string.max_len = 256];
+
+  // line is the 1-based line of the problem in the file (0 = unknown).
+  int32 line = 2 [(buf.validate.field).int32.gte = 0];
+
+  // column is the 1-based column of the problem in the line (0 = unknown).
+  int32 column = 3 [(buf.validate.field).int32.gte = 0];
+
+  // message is a human-readable description of the problem.
+  string message = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 2048
+  ];
+}
+
+// CustomAppBuildErrors lists every problem that prevented a build.
+message CustomAppBuildErrors {
+  // errors are the problems found in the draft.
+  repeated CustomAppBuildError errors = 1 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 100
+  }];
+}
+
+// ════════════════════════════════════ Records ════════════════════════════════════ //
+
+// CustomAppRecord is a record of a custom app table.
+message CustomAppRecord {
+  option (buf.validate.message).cel = {
+    id: "custom_app_record.chronology"
+    message: "created_at must not be after updated_at"
+    expression: "this.created_at <= this.updated_at"
+  };
+
+  // id is the identifier of the record within its table.
+  string id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 256
+  ];
+
+  // data holds the values of the record, keyed by field name.
+  google.protobuf.Struct data = 2 [(buf.validate.field).required = true];
+
+  // created_at is the creation date of the record.
+  google.protobuf.Timestamp created_at = 3 [(buf.validate.field).required = true];
+
+  // updated_at is the last update date of the record.
+  google.protobuf.Timestamp updated_at = 4 [(buf.validate.field).required = true];
+}
+
+// CustomAppRecordData is a record to write: created without id, updated with one.
+message CustomAppRecordData {
+  // id is the record to update (empty = create a new record).
+  string id = 1 [(buf.validate.field).string.max_len = 256];
+
+  // data holds the values of the record, keyed by field name.
+  google.protobuf.Struct data = 2 [(buf.validate.field).required = true];
+}
+
+// ═════════════════════════════════════ Results ════════════════════════════════════ //
+
+// CustomAppResult is the outcome of an operation on a single custom app.
+message CustomAppResult {
+  // identifier is the identifier of the processed item.
+  string identifier = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 256
+  ];
+
+  // outcome holds the processed app, or the error that prevented processing it. An app the caller
+  // cannot read fails with NOT_FOUND, exactly like an app that does not exist.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // custom_app is the processed app.
+    CustomApp custom_app = 2;
+    // error describes why the item could not be processed.
+    agentic_mesh_protocol.pagination.v1.OperationError error = 3;
+  }
+}
+
+// CustomAppRecordResult is the outcome of an operation on a single record.
+message CustomAppRecordResult {
+  // identifier is the identifier of the processed record. A record to create that failed has no
+  // id yet: its identifier is its 0-based position in the request batch, e.g. "3".
+  string identifier = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 256
+  ];
+
+  // outcome holds the processed record, or the error that prevented processing it.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // record is the processed record.
+    CustomAppRecord record = 2;
+    // error describes why the item could not be processed.
+    agentic_mesh_protocol.pagination.v1.OperationError error = 3;
+  }
+}
+
+// CustomAppBuildResult is the outcome of a build.
+message CustomAppBuildResult {
+  // identifier is the identifier of the built app.
+  string identifier = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 256
+  ];
+
+  // outcome holds the new version, the problems found in the draft, or the error that prevented the build.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // version is the version built from the draft.
+    CustomAppVersion version = 2;
+    // build_errors lists the problems that prevented the draft from being built.
+    CustomAppBuildErrors build_errors = 3;
+    // error describes why the build could not run. Its code is one of:
+    // - NOT_FOUND: the app does not exist, or the caller cannot read it;
+    // - PERMISSION_DENIED: the caller can read the app but does not hold FULL_EDIT;
+    // - UNAVAILABLE: the builder did not take the request within 15 s; retry in a few seconds;
+    // - RESOURCE_EXHAUSTED: a build is already running on the app, or the organization already runs
+    //   its maximum of concurrent builds; retry once a build ends;
+    // - DEADLINE_EXCEEDED: the build ran over 10 s and was stopped.
+    // A draft over 1 MB in total is not an error here: it is reported in build_errors, as a
+    // CustomAppBuildError with an empty path, like any problem of the draft the model must fix.
+    agentic_mesh_protocol.pagination.v1.OperationError error = 4;
+  }
+}
+
+// ═════════════════════════════════════ Runtime ════════════════════════════════════ //
+
+// CustomAppRuntimeImport is a module the code of an app may import.
+message CustomAppRuntimeImport {
+  // name is the import specifier, e.g. a package name.
+  string name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 214
+  ];
+
+  // summary describes what the module offers, for the model.
+  string summary = 2 [(buf.validate.field).string.max_len = 1000];
+}
+
+// CustomAppRuntimeThemeVariable is a design variable the theme of an app can set.
+message CustomAppRuntimeThemeVariable {
+  // name is the name of the variable, without the leading "--" (e.g. "color-primary").
+  string name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 64
+      pattern: "^[a-z][a-z0-9-]{0,63}$"
+    }
+  ];
+
+  // summary describes what the variable styles.
+  string summary = 2 [(buf.validate.field).string.max_len = 1000];
+
+  // default_value is the neutral value applied when the theme leaves the variable unset.
+  string default_value = 3 [(buf.validate.field).string.max_len = 256];
+}
+
+// CustomAppRuntime describes a version of the runtime to the model, from the manifest published with
+// it. Without a topic it holds the overview; with a topic, the detail of that topic only.
+message CustomAppRuntime {
+  // runtime_version is the version of the runtime described.
+  string runtime_version = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 128
+  ];
+
+  // rules are the rules the model follows when writing the code of an app, in Markdown (overview only).
+  string rules = 2 [(buf.validate.field).string.max_len = 65536];
+
+  // imports are the modules the code may import (overview only).
+  repeated CustomAppRuntimeImport imports = 3 [(buf.validate.field).repeated.max_items = 500];
+
+  // theme_variables are the design variables a theme can set (overview only).
+  repeated CustomAppRuntimeThemeVariable theme_variables = 4 [(buf.validate.field).repeated.max_items = 100];
+
+  // fonts are the font families the runtime serves (overview only).
+  repeated string fonts = 5 [(buf.validate.field).repeated = {
+    max_items: 100
+    items: {
+      string: {
+        min_len: 1
+        max_len: 128
+      }
+    }
+  }];
+
+  // topics are the topics whose detail can be asked for, e.g. "data", "forms", "charts" (overview only).
+  repeated string topics = 6 [(buf.validate.field).repeated = {
+    max_items: 50
+    items: {
+      string: {
+        max_len: 64
+        pattern: "^[a-z][a-z0-9_]*$"
+      }
+    }
+  }];
+
+  // topic is the topic described by detail (empty = the overview).
+  string topic = 7 [(buf.validate.field).string = {
+    max_len: 64
+    pattern: "^([a-z][a-z0-9_]*)?$"
+  }];
+
+  // detail is the detail of the topic, with examples, in Markdown (empty = the overview).
+  string detail = 8 [(buf.validate.field).string.max_len = 65536];
+}
+
+// CustomAppRuntimeResult is the outcome of a runtime lookup.
+message CustomAppRuntimeResult {
+  // identifier is the runtime version asked for ("current" when none was given).
+  string identifier = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 256
+  ];
+
+  // outcome holds the runtime description, or the error that prevented reading it (unknown version or topic).
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // runtime is the runtime description.
+    CustomAppRuntime runtime = 2;
+    // error describes why the runtime could not be described.
+    agentic_mesh_protocol.pagination.v1.OperationError error = 3;
+  }
+}

@@ -1,0 +1,79 @@
+// Copyright 2026 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.custom_app.v1;
+
+import "agentic_mesh_protocol/custom_app/v1/custom_app_dto.proto";
+
+// CustomAppService lets a kin create, edit, build and fill custom apps. An app is a small project of
+// code files (TSX) compiled against a precompiled runtime, plus typed tables and a theme. The user,
+// the organization and the mission come from the task metadata, never from the payload. An app never
+// belongs to a mission: the mission only holds the pointer to the current app of the conversation.
+// An app the caller cannot read answers NOT_FOUND, like an app that does not exist. Rights,
+// visibility and deletion of an app are deliberately absent: they go through the HTTP API, from the
+// creator's screen.
+service CustomAppService {
+  // CreateCustomApp creates an app from a template; it becomes the current app of the mission.
+  rpc CreateCustomApp(CreateCustomAppRequest) returns (CreateCustomAppResponse);
+  // GetCustomApp retrieves an app with its published structure and, for FULL_EDIT, its draft (READ).
+  rpc GetCustomApp(GetCustomAppRequest) returns (GetCustomAppResponse);
+  // ListCustomApps retrieves a page of the apps the caller can read.
+  rpc ListCustomApps(ListCustomAppsRequest) returns (ListCustomAppsResponse);
+  // SearchCustomApps retrieves the apps the caller can read that match a query, most relevant first.
+  rpc SearchCustomApps(SearchCustomAppsRequest) returns (SearchCustomAppsResponse);
+  // UpdateCustomAppInfo updates the name, purpose, audience or tags of an app (FULL_EDIT).
+  rpc UpdateCustomAppInfo(UpdateCustomAppInfoRequest) returns (UpdateCustomAppInfoResponse);
+  // OpenCustomApp makes an app the current app of the mission of the task (READ).
+  rpc OpenCustomApp(OpenCustomAppRequest) returns (OpenCustomAppResponse);
+  // GetCurrentCustomApp retrieves the current app of the mission of the task, if any.
+  rpc GetCurrentCustomApp(GetCurrentCustomAppRequest) returns (GetCurrentCustomAppResponse);
+
+  // WriteCustomAppFile creates a file of the draft or replaces its content (FULL_EDIT).
+  rpc WriteCustomAppFile(WriteCustomAppFileRequest) returns (WriteCustomAppFileResponse);
+  // EditCustomAppFile replaces a unique passage of a file of the draft (FULL_EDIT).
+  rpc EditCustomAppFile(EditCustomAppFileRequest) returns (EditCustomAppFileResponse);
+  // ReadCustomAppFile reads a file of the published version (READ) or of the draft (FULL_EDIT).
+  rpc ReadCustomAppFile(ReadCustomAppFileRequest) returns (ReadCustomAppFileResponse);
+  // ListCustomAppFiles lists the files of the published version (READ) or of the draft (FULL_EDIT).
+  rpc ListCustomAppFiles(ListCustomAppFilesRequest) returns (ListCustomAppFilesResponse);
+  // DeleteCustomAppFile deletes a file of the draft (FULL_EDIT).
+  rpc DeleteCustomAppFile(DeleteCustomAppFileRequest) returns (DeleteCustomAppFileResponse);
+  // SetCustomAppTable adds or replaces a table of the draft (FULL_EDIT).
+  rpc SetCustomAppTable(SetCustomAppTableRequest) returns (SetCustomAppTableResponse);
+  // RemoveCustomAppTable removes a table from the draft (FULL_EDIT).
+  rpc RemoveCustomAppTable(RemoveCustomAppTableRequest) returns (RemoveCustomAppTableResponse);
+  // SetCustomAppTheme replaces the theme of the draft (FULL_EDIT).
+  rpc SetCustomAppTheme(SetCustomAppThemeRequest) returns (SetCustomAppThemeResponse);
+  // ScaffoldCustomAppFile writes a standard screen generated from the schema of a table (FULL_EDIT).
+  rpc ScaffoldCustomAppFile(ScaffoldCustomAppFileRequest) returns (ScaffoldCustomAppFileResponse);
+  // BuildCustomApp builds and publishes a new version from the draft, or reports the problems found in
+  // it, a draft over 1 MB in total included (FULL_EDIT). A build that cannot run fails with UNAVAILABLE
+  // (builder busy for 15 s, retry), RESOURCE_EXHAUSTED (a build already running on the app, or too
+  // many builds at once in the organization), DEADLINE_EXCEEDED (stopped after 10 s), NOT_FOUND or
+  // PERMISSION_DENIED: see CustomAppBuildResult.error.
+  rpc BuildCustomApp(BuildCustomAppRequest) returns (BuildCustomAppResponse);
+
+  // ListCustomAppRecords retrieves a page of the records of a table, optionally filtered (READ).
+  rpc ListCustomAppRecords(ListCustomAppRecordsRequest) returns (ListCustomAppRecordsResponse);
+  // UpsertCustomAppRecords creates and updates up to 100 records of a table (DATA_WRITE).
+  rpc UpsertCustomAppRecords(UpsertCustomAppRecordsRequest) returns (UpsertCustomAppRecordsResponse);
+  // DeleteCustomAppRecords deletes up to 100 records of a table (DATA_WRITE).
+  rpc DeleteCustomAppRecords(DeleteCustomAppRecordsRequest) returns (DeleteCustomAppRecordsResponse);
+
+  // GetCustomAppRuntime describes the runtime (rules, imports, theme variables, fonts, topics) to any
+  // member of the organization; no app is needed.
+  rpc GetCustomAppRuntime(GetCustomAppRuntimeRequest) returns (GetCustomAppRuntimeResponse);
+}
