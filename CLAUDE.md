@@ -147,7 +147,8 @@ Shared packages:
 
 - `pagination/v1` — `PaginationRequest` (order, descending, limit 1–100, offset), `PaginationResponse`,
   `BulkResponse` (totals + page of a listing or batch) and `OperationError` (code + message)
-- `common/v1` — `Visibility` (PUBLIC / PRIVATE / INTERNAL), shared by setups, modules, records and files
+- `common/v1` — `Visibility` (PUBLIC / PRIVATE / INTERNAL), shared by setups, modules, records and files;
+  `OrgRole` (ORG_ADMIN / ORG_MEMBER), the caller's Clerk organization role
 
 ### Response Pattern
 
@@ -159,6 +160,13 @@ Shared packages:
 - Exception — a ranked search (`ContextService.SearchDocuments`) returns its items directly
   (`repeated Citation results`) and takes a bounded `limit`: no per-item error, no total count,
   no offset (results fused by rank are not stable between calls).
+- Exception — `GraphService` (`graph.v1`) keeps the "item or error" shape with a richer error:
+  every response is `oneof outcome { <result>; GraphError error }` (a stream ends with a trailer
+  or a `GraphError` frame). `GraphError` carries what the tool needs to correct itself (reason,
+  hints, closest terms, gate report, per-operation problems, versions), which
+  `OperationError` cannot. Refusals come back in-band with an OK status; gRPC statuses stay for
+  transport and infrastructure failures (`SHARD_UNAVAILABLE` and `GRAPH_SUSPECT` come as `UNAVAILABLE`, so the SDK retries them). `ApplyBatch` is all or nothing, so it has one outcome,
+  not one per item.
 
 ### Service Domains
 
@@ -186,6 +194,14 @@ Shared packages:
    RPCs: AssociateTask, StartStream, Stream (BiDi, in-band `stream.*` sentinels), SendSignal.
 9. **ContextService** (`context.v1`) — enterprise knowledge retrieval (Google Drive, Notion...).
    RPCs: SearchDocuments (one `Citation` per matching document, relevance-ordered, at most 50; identity resolved server-side).
+10. **GraphService** (`graph.v1`) — named RDF graphs with ACL, compare-and-set versions, SPARQL gates
+    and bounded SPARQL. RPCs: CreateGraph, GetGraph, ListGraphs, DropGraph, ApplyPatch, ApplyBatch,
+    Validate, Query (server streaming), RegisterQueries, RunNamedQuery (server streaming),
+    DiffVersions (server streaming), Import (client streaming), Export (server streaming), Snapshot,
+    ListVersions, RestoreVersion, PinOntology, GetOntology, RegisterGates, ListGates, GetQuerySet,
+    SetGraphRules, GetGraphAcl, SetGraphAcl, SetGraphResponsible, ListAclHistory. **GraphAdminService** (internal, never exposed to modules,
+    gRPC-status errors): PurgeContext, PurgeOrganization, ReleaseUserGraphs, RebuildIndex,
+    GetShardHealth, AdoptStorageGraph.
 
 ### Key Architectural Patterns
 
@@ -349,7 +365,7 @@ This covers proto files (messages, fields, enums, RPCs, validation rules), the g
 - Flag every wire, JSON or generated-code breaking change with **BREAKING** and give the
   before → after mapping (RPC, message, field, enum value, file) consumers need to migrate.
 - Name the domain the entry belongs to (setup, registry, module, storage, filesystem, cost,
-  user_profile, gateway, context, pagination, common).
+  user_profile, gateway, context, graph, pagination, common).
 - On release, move the `[Unreleased]` entries under a `## [x.y.z] - YYYY-MM-DD` heading.
 
 ## Git Conventions
@@ -380,7 +396,7 @@ generated Zod schemas (TypeScript, `tools/zod`). Conventions:
 
 - **IDs**: standard string rules `prefix` + `min_len` (prefix length + 1) + `max_len: 256`:
   `modules:`, `jobs:`, `setups:`, `setup_versions:`, `missions:`, `users:`, `organizations:`,
-  `files:`, `storage:`, `cards:`. Task IDs (Gateway) match `^[A-Za-z0-9_:.-]+$`, at most 256 characters.
+  `files:`, `storage:`, `cards:`, `graph:`, `graph_patch:`, `graph_commit:`. Task IDs (Gateway) match `^[A-Za-z0-9_:.-]+$`, at most 256 characters.
 - **`required`** is used only in its protovalidate meaning: a non-empty string, a non-zero number or
   enum, a present message, a non-empty list. Never on a `bool` (it would force `true`) nor on a filter.
 - **Optional scalars** of a request are declared `optional` (explicit presence): their rules apply

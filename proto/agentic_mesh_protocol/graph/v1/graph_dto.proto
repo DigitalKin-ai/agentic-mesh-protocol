@@ -1,0 +1,1837 @@
+// Copyright 2026 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.graph.v1;
+
+import "agentic_mesh_protocol/common/v1/common_enums.proto";
+import "agentic_mesh_protocol/graph/v1/graph_enums.proto";
+import "agentic_mesh_protocol/graph/v1/graph_messages.proto";
+import "agentic_mesh_protocol/pagination/v1/pagination.proto";
+import "buf/validate/validate.proto";
+
+// ════════════════════════════════════ CreateGraph ════════════════════════════════════ //
+
+// CreateGraphRequest creates an empty graph.
+message CreateGraphRequest {
+  option (buf.validate.message).cel = {
+    id: "create_graph.visibility_users_only"
+    message: "visibility can only be chosen for a USERS graph"
+    expression: "this.ref.scope == 3 || this.visibility == 0"
+  };
+  option (buf.validate.message).cel = {
+    id: "create_graph.users_not_public"
+    message: "a USERS graph cannot be PUBLIC"
+    expression: "this.ref.scope != 3 || this.visibility != 1"
+  };
+  option (buf.validate.message).cel = {
+    id: "create_graph.strict_needs_ontology"
+    message: "a STRICT graph needs ontology_sha256"
+    expression: "this.schema_mode != 1 || has(this.ontology_sha256)"
+  };
+
+  // ref names the new graph.
+  GraphRef ref = 1 [(buf.validate.field).required = true];
+
+  // visibility is the read rule (UNSPECIFIED = server default for the scope).
+  agentic_mesh_protocol.common.v1.Visibility visibility = 2 [(buf.validate.field).enum.defined_only = true];
+
+  // schema_mode is the governance mode.
+  SchemaMode schema_mode = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // ontology_sha256 is an ontology pinned in the caller's organization (PinOntology); required for STRICT.
+  optional string ontology_sha256 = 4 [(buf.validate.field).string.pattern = "^[0-9a-f]{64}$"];
+
+  // idempotency_key makes a retry return the stored result.
+  string idempotency_key = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 16
+      max_len: 128
+    }
+  ];
+
+  // gate_set_sha256 is a gate set registered in the caller's organization (RegisterGates);
+  // empty = built-ins only.
+  optional string gate_set_sha256 = 6 [(buf.validate.field).string.pattern = "^[0-9a-f]{64}$"];
+}
+
+// CreateGraphResult is a created graph.
+message CreateGraphResult {
+  // graph is the created graph.
+  GraphInfo graph = 1 [(buf.validate.field).required = true];
+
+  // idempotent_replay is true when the key matched an earlier creation.
+  bool idempotent_replay = 2;
+}
+
+// CreateGraphResponse returns the created graph, or why it was refused.
+message CreateGraphResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // result is the created graph.
+    CreateGraphResult result = 1;
+    // error is why the call was refused (nothing was written).
+    GraphError error = 2;
+  }
+}
+
+// ════════════════════════════════════ GetGraph ════════════════════════════════════ //
+
+// GetGraphRequest describes one graph.
+message GetGraphRequest {
+  // ref names the graph.
+  GraphRef ref = 1 [(buf.validate.field).required = true];
+
+  // include_gate_report adds the verdict receipt of the head version.
+  bool include_gate_report = 2;
+
+  // include_limits adds the limits.
+  bool include_limits = 3;
+
+  // include_acl adds the ACL (VIEW is enough to see it).
+  bool include_acl = 4;
+
+  // include_effective_gates (5) was removed: ListGates with `graph` pages through them.
+  reserved 5;
+  reserved "include_effective_gates";
+
+  // include_stats adds the top classes and predicates (GraphInfo.stats).
+  bool include_stats = 6;
+}
+
+// GraphDetails describes one graph with the optional parts GetGraphRequest asked for.
+message GraphDetails {
+  // graph is the graph.
+  GraphInfo graph = 1 [(buf.validate.field).required = true];
+
+  // limits are the limits (include_limits).
+  GraphLimits limits = 2;
+
+  // acl is the ACL (include_acl).
+  GraphAcl acl = 3;
+
+  // last_gate_report is the verdict receipt of the head version (include_gate_report).
+  GateReport last_gate_report = 4;
+
+  // ontology is the pinned ontology (STRICT).
+  OntologyRef ontology = 5;
+}
+
+// GetGraphResponse returns the graph description, or why it was refused.
+message GetGraphResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // details describes the graph.
+    GraphDetails details = 1;
+    // error is why the call was refused (nothing was written).
+    GraphError error = 2;
+  }
+}
+
+// ════════════════════════════════════ ListGraphs ════════════════════════════════════ //
+
+// ListGraphsRequest returns the graph map: every graph the caller can read, of every responsible
+// user (the personal INTERNAL graphs an entry opens to the caller included), with metadata and
+// optional stats but never the triples. The caller picks graph_uids from it, then queries them with
+// a GraphFilter. Graphs of another organization's setups appear only through setup_target.
+message ListGraphsRequest {
+  option (buf.validate.message).cel = {
+    id: "list_graphs_request.setup_target_scope"
+    message: "setup_id and setup_version_id need scopes to contain SETUP_VERSIONS"
+    expression: "(!has(this.setup_id) && !has(this.setup_version_id)) || 2 in this.scopes"
+  };
+  option (buf.validate.message).cel = {
+    id: "list_graphs_request.stats_page_size"
+    message: "with include_stats, pagination.limit must be set and at most 50"
+    expression: "!this.include_stats || (has(this.pagination) && this.pagination.limit <= 50)"
+  };
+
+  // scopes restricts the map to these scopes (empty = every scope).
+  repeated GraphScope scopes = 1 [(buf.validate.field).repeated = {
+    max_items: 3
+    unique: true
+    items: {
+      enum: {
+        defined_only: true
+        not_in: [0]
+      }
+    }
+  }];
+
+  // visibilities filters on visibility (empty = all).
+  repeated agentic_mesh_protocol.common.v1.Visibility visibilities = 2 [(buf.validate.field).repeated = {
+    max_items: 3
+    items: {
+      enum: {
+        defined_only: true
+        not_in: [0]
+      }
+    }
+  }];
+
+  // graph_id_prefix filters on the graph_id prefix.
+  optional string graph_id_prefix = 3 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 255
+  }];
+
+  // pagination is the page (default order: updated_at descending; at most 100, 50 with stats).
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 4;
+
+  // setup_target lists the graphs of another setup (needs SETUP_VERSIONS in scopes).
+  oneof setup_target {
+    // setup_id lists the graphs of that setup's current version.
+    string setup_id = 5 [(buf.validate.field).string = {
+      prefix: "setups:"
+      min_len: 8
+      max_len: 256
+    }];
+    // setup_version_id lists the graphs of one setup version (e.g. a PUBLIC setup of another organization).
+    string setup_version_id = 6 [(buf.validate.field).string = {
+      prefix: "setup_versions:"
+      min_len: 16
+      max_len: 256
+    }];
+  }
+
+  // responsible_user_ids filters on the responsible user.
+  repeated string responsible_user_ids = 7 [(buf.validate.field).repeated = {
+    max_items: 20
+    unique: true
+    items: {
+      string: {
+        prefix: "users:"
+        min_len: 7
+        max_len: 256
+      }
+    }
+  }];
+
+  // include_stats adds the top classes and predicates of each graph (GraphInfo.stats).
+  bool include_stats = 8;
+}
+
+// GraphPage is a page of graphs.
+message GraphPage {
+  // graphs are the graphs of the page.
+  repeated GraphInfo graphs = 1 [(buf.validate.field).repeated.max_items = 100];
+
+  // pagination is the page information.
+  agentic_mesh_protocol.pagination.v1.PaginationResponse pagination = 2;
+}
+
+// ListGraphsResponse returns a page of graphs, or why the listing was refused.
+message ListGraphsResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // page is the page of graphs.
+    GraphPage page = 1;
+    // error is why the call was refused (nothing was written).
+    GraphError error = 2;
+  }
+}
+
+// ════════════════════════════════════ DropGraph ════════════════════════════════════ //
+
+// DropGraphRequest makes a graph unreachable now; the physical purge is asynchronous.
+message DropGraphRequest {
+  // ref names the graph.
+  GraphRef ref = 1 [(buf.validate.field).required = true];
+
+  // expected_version is the head the caller expects (compare-and-set).
+  int64 expected_version = 2 [(buf.validate.field).int64.gte = 1];
+
+  // idempotency_key makes a retry return the stored result.
+  string idempotency_key = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 16
+      max_len: 128
+    }
+  ];
+}
+
+// DropResult confirms a drop.
+message DropResult {
+  // ref is the dropped graph.
+  GraphRef ref = 1 [(buf.validate.field).required = true];
+
+  // dropped_version is the version minted by the drop.
+  int64 dropped_version = 2 [(buf.validate.field).int64.gte = 1];
+
+  // purge_pending is true while the journal and index purge runs.
+  bool purge_pending = 3;
+}
+
+// DropGraphResponse confirms the drop, or says why it was refused.
+message DropGraphResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // dropped confirms the drop.
+    DropResult dropped = 1;
+    // error is why the call was refused (nothing was written).
+    GraphError error = 2;
+  }
+}
+
+// ════════════════════════════════════ ApplyPatch ════════════════════════════════════ //
+
+// ApplyPatchRequest applies one atomic patch to one graph.
+message ApplyPatchRequest {
+  option (buf.validate.message).cel = {
+    id: "apply_patch.visibility_users_only"
+    message: "visibility can only be chosen for a USERS graph"
+    expression: "this.ref.scope == 3 || this.visibility == 0"
+  };
+  option (buf.validate.message).cel = {
+    id: "apply_patch.create_needs_mode"
+    message: "create_if_missing needs schema_mode"
+    expression: "!this.create_if_missing || this.schema_mode != 0"
+  };
+  option (buf.validate.message).cel = {
+    id: "apply_patch.users_not_public"
+    message: "a USERS graph cannot be PUBLIC"
+    expression: "this.ref.scope != 3 || this.visibility != 1"
+  };
+  option (buf.validate.message).cel = {
+    id: "apply_patch.strict_needs_ontology"
+    message: "creating a STRICT graph needs ontology_sha256"
+    expression: "!this.create_if_missing || this.schema_mode != 1 || has(this.ontology_sha256)"
+  };
+
+  // ref names the graph.
+  GraphRef ref = 1 [(buf.validate.field).required = true];
+
+  // expected_version is the compare-and-set token. Absent: allowed only for an OPEN graph, or
+  // with create_if_missing on an absent graph. 0: the graph must not exist. N: the head must be N,
+  // else the outcome is a VERSION_CONFLICT error.
+  optional int64 expected_version = 2 [(buf.validate.field).int64.gte = 0];
+
+  // idempotency_key: same key + same request digest returns the stored WriteResult
+  // (idempotent_replay); same key + different digest is refused (IDEMPOTENCY_KEY_REUSED).
+  string idempotency_key = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 16
+      max_len: 128
+    }
+  ];
+
+  // patch is the content of the patch.
+  PatchBody patch = 4 [(buf.validate.field).required = true];
+
+  // dry_run validates only (gates, CAS, quota); nothing is written.
+  bool dry_run = 5;
+
+  // create_if_missing creates the graph when absent.
+  bool create_if_missing = 6;
+
+  // visibility is stamped when the write creates the graph; ignored otherwise.
+  agentic_mesh_protocol.common.v1.Visibility visibility = 7 [(buf.validate.field).enum.defined_only = true];
+
+  // call_gates run after the built-in and bound gates (ids must be new).
+  repeated GateDefinition call_gates = 8 [(buf.validate.field).repeated.max_items = 10];
+
+  // schema_mode is used when create_if_missing creates the graph.
+  SchemaMode schema_mode = 9 [(buf.validate.field).enum.defined_only = true];
+
+  // ontology_sha256 is bound when create_if_missing creates the graph.
+  optional string ontology_sha256 = 10 [(buf.validate.field).string.pattern = "^[0-9a-f]{64}$"];
+
+  // gate_set_sha256 is bound when create_if_missing creates the graph.
+  optional string gate_set_sha256 = 11 [(buf.validate.field).string.pattern = "^[0-9a-f]{64}$"];
+
+  // provenance is stored with the version.
+  WriteProvenance provenance = 12;
+}
+
+// ApplyPatchResponse returns the write result of the patch, or why it was refused.
+message ApplyPatchResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // result is the write result.
+    WriteResult result = 1;
+    // error is why the call was refused (nothing was written).
+    GraphError error = 2;
+  }
+}
+
+// ════════════════════════════════════ ApplyBatch ════════════════════════════════════ //
+
+// BatchItem is one patch of an ApplyBatch, on an existing graph.
+message BatchItem {
+  // ref names the graph; a graph appears at most once in a batch.
+  GraphRef ref = 1 [(buf.validate.field).required = true];
+
+  // expected_version is the compare-and-set token of this graph (required for a STRICT graph).
+  optional int64 expected_version = 2 [(buf.validate.field).int64.gte = 1];
+
+  // patch is the content of the patch.
+  PatchBody patch = 3 [(buf.validate.field).required = true];
+}
+
+// ApplyBatchRequest writes 2 to 16 DISTINCT, UNRELATED graphs of one organization, all or
+// nothing. Each graph is checked alone (its CAS, its gates): no cross-graph gate, no context
+// graph. The versions committed together share one commit_id. The 1 000-operation limit applies to
+// the whole batch: a batch over it is refused with PATCH_TOO_LARGE.
+message ApplyBatchRequest {
+  option (buf.validate.message).cel = {
+    id: "apply_batch.distinct_graphs"
+    message: "a graph may appear only once in a batch"
+    expression: "this.items.map(i, string(i.ref.scope) + '|' + string(size(i.ref.graph_id)) + ':' + i.ref.graph_id + '|' + string(size(i.ref.setup_id)) + ':' + i.ref.setup_id + '|' + i.ref.setup_version_id).unique()"
+  };
+
+  // items are the patches; refs that resolve to the same graph server-side are refused
+  // (BATCH_DUPLICATE_GRAPH).
+  repeated BatchItem items = 1 [(buf.validate.field).repeated = {
+    min_items: 2
+    max_items: 16
+  }];
+
+  // idempotency_key covers the whole batch.
+  string idempotency_key = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 16
+      max_len: 128
+    }
+  ];
+
+  // dry_run validates every item; nothing is written.
+  bool dry_run = 3;
+
+  // provenance is stored with every version of the batch.
+  WriteProvenance provenance = 4;
+}
+
+// BatchResult is the result of every item of a committed (or dry-run) batch, in request order.
+message BatchResult {
+  // commit_id is shared by the versions committed together (absent for a dry run or a batch
+  // that changed nothing).
+  optional string commit_id = 1 [(buf.validate.field).string = {
+    prefix: "graph_commit:"
+    min_len: 14
+    max_len: 256
+  }];
+
+  // results are the write results, in request order.
+  repeated WriteResult results = 2 [(buf.validate.field).repeated.max_items = 16];
+
+  // idempotent_replay is true when the key matched an earlier batch.
+  bool idempotent_replay = 3;
+
+  // timing are the server timings of the whole batch.
+  ServerTiming timing = 4;
+}
+
+// ApplyBatchResponse returns the batch result, or why the whole batch was refused
+// (GraphError.batch_item_index names the item at fault; nothing was written).
+message ApplyBatchResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // result is the batch result.
+    BatchResult result = 1;
+    // error is why the call was refused (nothing was written).
+    GraphError error = 2;
+  }
+}
+
+// ════════════════════════════════════ Validate ════════════════════════════════════ //
+
+// ValidateRequest dry-runs a patch or audits a whole graph.
+message ValidateRequest {
+  // ref names the graph.
+  GraphRef ref = 1 [(buf.validate.field).required = true];
+
+  // subject is what to validate.
+  oneof subject {
+    option (buf.validate.oneof).required = true;
+    // patch is dry-run on top of the head (WOULD_PASS / WOULD_FAIL).
+    PatchBody patch = 2;
+    // whole_graph audits the whole graph (AUDIT_PASS / AUDIT_FAIL); only `true` is meaningful.
+    bool whole_graph = 3 [(buf.validate.field).bool.const = true];
+  }
+
+  // call_gates run after the built-in and bound gates.
+  repeated GateDefinition call_gates = 4 [(buf.validate.field).repeated.max_items = 10];
+
+  // gate_ids restricts to these gates (empty = every applicable gate).
+  repeated string gate_ids = 5 [(buf.validate.field).repeated = {
+    max_items: 64
+    items: {
+      string: {
+        max_len: 128
+        pattern: "^[A-Z0-9][A-Z0-9_-]*(:[A-Za-z0-9_.-]+)?$"
+      }
+    }
+  }];
+}
+
+// ValidationResult is the verdict of a dry run or an audit (a WOULD_FAIL verdict is a result, not an error).
+message ValidationResult {
+  // verdict is the outcome.
+  ValidationVerdict verdict = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // report is the verdict receipt.
+  GateReport report = 2;
+
+  // operation_problems are the problems per operation.
+  repeated OperationProblem operation_problems = 3 [(buf.validate.field).repeated.max_items = 100];
+
+  // graph_version is the version the verdict was computed on (pass it as expected_version).
+  int64 graph_version = 4 [(buf.validate.field).int64.gte = 0];
+
+  // next_version is the version a commit would produce.
+  int64 next_version = 5 [(buf.validate.field).int64.gte = 1];
+
+  // expected_version_required is true when a write must carry expected_version.
+  bool expected_version_required = 6;
+
+  // timing are the server timings.
+  ServerTiming timing = 7;
+}
+
+// ValidateResponse returns the verdict, or why the validation could not run.
+message ValidateResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // result is the verdict.
+    ValidationResult result = 1;
+    // error is why the call was refused (nothing was written).
+    GraphError error = 2;
+  }
+}
+
+// ════════════════════════════════════ Query ════════════════════════════════════ //
+
+// QueryRequest runs a read-only SPARQL query over a closed dataset.
+message QueryRequest {
+  option (buf.validate.message).cel = {
+    id: "query.unique_bindings"
+    message: "each binding name must be unique"
+    expression: "this.bindings.map(b, b.name).unique()"
+  };
+
+  // dataset is the closed set of graphs read; the default graph is their union. FROM, FROM NAMED
+  // and SERVICE are refused.
+  oneof dataset {
+    option (buf.validate.oneof).required = true;
+    // graphs are named graphs (personal, organization, setup, including a PUBLIC or shared setup
+    // of another organization); each needs VIEW (VIEW_CURRENT without at_version), else the query
+    // is refused with GRAPH_NOT_FOUND.
+    DatasetGraphs graphs = 1;
+    // readable selects graphs among those the caller can read (see GraphFilter), current versions only.
+    GraphFilter readable = 11;
+  }
+
+  // include_ontology adds the pinned ontology graph to the dataset (strict graphs only).
+  bool include_ontology = 2;
+
+  // sparql is a SELECT, ASK, CONSTRUCT or DESCRIBE.
+  string sparql = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 16384
+    }
+  ];
+
+  // timeout_ms is the deadline (absent = server default 5 000).
+  optional uint32 timeout_ms = 4 [(buf.validate.field).uint32 = {
+    gte: 1
+    lte: 30000
+  }];
+
+  // max_rows caps the rows (absent = server default 10 000).
+  optional uint32 max_rows = 5 [(buf.validate.field).uint32 = {
+    gte: 1
+    lte: 100000
+  }];
+
+  // max_bytes caps the bytes over all frames (absent = server default 4 MiB).
+  optional uint64 max_bytes = 6 [(buf.validate.field).uint64 = {
+    gte: 1
+    lte: 67108864
+  }];
+
+  // encoding is the SELECT encoding.
+  SolutionEncoding encoding = 7 [(buf.validate.field).enum.defined_only = true];
+
+  // construct_format is the CONSTRUCT / DESCRIBE format.
+  RdfFormat construct_format = 8 [(buf.validate.field).enum.defined_only = true];
+
+  // bindings pre-bind variables; values are bound, never interpolated.
+  repeated Binding bindings = 9 [(buf.validate.field).repeated.max_items = 32];
+
+  // check_only parses and checks the query without running it.
+  bool check_only = 10;
+
+  // page_token continues a result from QueryTrailer.next_page_token: it freezes the graph
+  // versions read, so every page sees the same data. A paged query needs ORDER BY. The result is
+  // paged, never the graphs (a COUNT or a join stays exact).
+  optional string page_token = 12 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 2048
+  }];
+}
+
+// DatasetGraphs lists the graphs of a dataset by name (graphs the caller can name, see GraphRef).
+message DatasetGraphs {
+  // graphs are the named graphs, each optionally read at a past version.
+  repeated DatasetGraph graphs = 1 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 16
+  }];
+}
+
+// GraphFilter selects a dataset among the graphs the caller can read, without naming them: the
+// graphs ListGraphs would return for the same filter, at their current version. At least one scope
+// is required; graph_uids picked from the graph map narrow it further. A selection beyond
+// GraphLimits.max_dataset_graphs or max_dataset_triples is refused with DATASET_TOO_LARGE.
+message GraphFilter {
+  // scopes are the scopes to search (at least one).
+  repeated GraphScope scopes = 1 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 3
+    unique: true
+    items: {
+      enum: {
+        defined_only: true
+        not_in: [0]
+      }
+    }
+  }];
+
+  // graph_uids keeps only these graphs, taken from ListGraphs.
+  repeated string graph_uids = 2 [(buf.validate.field).repeated = {
+    max_items: 100
+    unique: true
+    items: {
+      string: {
+        prefix: "graph:"
+        min_len: 7
+        max_len: 256
+      }
+    }
+  }];
+
+  // graph_id_prefix keeps the graphs whose graph_id starts with it.
+  optional string graph_id_prefix = 3 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 255
+  }];
+
+  // responsible_user_ids keeps the graphs of these responsible users.
+  repeated string responsible_user_ids = 4 [(buf.validate.field).repeated = {
+    max_items: 20
+    unique: true
+    items: {
+      string: {
+        prefix: "users:"
+        min_len: 7
+        max_len: 256
+      }
+    }
+  }];
+}
+
+// GraphVersionRead reports which version of one dataset graph a query read.
+message GraphVersionRead {
+  // ref is the graph as the caller names it (absent for a graph it cannot name, e.g. another
+  // user's personal graph).
+  GraphRef ref = 1;
+
+  // graph_iri is the server-minted IRI of the graph.
+  string graph_iri = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "urn:dk:graph:"
+      min_len: 14
+      max_len: 256
+    }
+  ];
+
+  // version is the version read (snapshot isolation per query).
+  int64 version = 3 [(buf.validate.field).int64.gte = 0];
+
+  // past_version is true when the graph was rebuilt for at_version.
+  bool past_version = 4;
+
+  // graph_uid is the registry id of the graph.
+  string graph_uid = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "graph:"
+      min_len: 7
+      max_len: 256
+    }
+  ];
+
+  // responsible_user_id is the responsible user of the graph.
+  string responsible_user_id = 6 [(buf.validate.field).string.max_len = 256];
+}
+
+// QueryHeader is the first frame of a query stream.
+message QueryHeader {
+  // form is the query form.
+  QueryForm form = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // variables are the SELECT variables, in order.
+  repeated string variables = 2 [(buf.validate.field).repeated = {
+    max_items: 1000
+    items: {
+      string: {
+        max_len: 64
+        pattern: "^[A-Za-z_][A-Za-z0-9_]*$"
+      }
+    }
+  }];
+
+  // graphs_read are the graphs and versions read, one per dataset graph. The dataset is also
+  // exposed as named graphs: `GRAPH ?g { … }` binds ?g to a graph_iri listed here, which is how a
+  // row says which graph it comes from.
+  repeated GraphVersionRead graphs_read = 3 [(buf.validate.field).repeated.max_items = 100];
+
+  // ontology_included is true when the ontology graph was in the dataset.
+  bool ontology_included = 4;
+}
+
+// Solution is one SELECT row.
+message Solution {
+  // values are aligned with QueryHeader.variables; an empty Term is unbound.
+  repeated Term values = 1 [(buf.validate.field).repeated.max_items = 1000];
+}
+
+// SolutionPage is a page of SELECT rows. The server splits pages by size so that one frame stays
+// under 1 MiB; a single row larger than that ends the result with truncated_by = MAX_BYTES.
+message SolutionPage {
+  // rows are the rows of the page.
+  repeated Solution rows = 1 [(buf.validate.field).repeated.max_items = 1000];
+}
+
+// QueryTrailer is the last frame of a query stream.
+message QueryTrailer {
+  // row_count is the number of rows sent.
+  int64 row_count = 1 [(buf.validate.field).int64.gte = 0];
+
+  // bytes is the number of bytes sent.
+  int64 bytes = 2 [(buf.validate.field).int64.gte = 0];
+
+  // truncated is true when the result stopped early.
+  bool truncated = 3;
+
+  // truncated_by is why the result stopped early.
+  TruncationReason truncated_by = 4 [(buf.validate.field).enum.defined_only = true];
+
+  // timing are the server timings.
+  ServerTiming timing = 5;
+
+  // billed_cpu_ms is the CPU time billed for the query.
+  double billed_cpu_ms = 6 [(buf.validate.field).double = {
+    gte: 0
+    finite: true
+  }];
+
+  // next_page_token continues the result (absent on the last page).
+  optional string next_page_token = 7 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 2048
+  }];
+}
+
+// QueryResponse is one frame of a query stream: header, data frames, trailer.
+message QueryResponse {
+  // frame is the frame.
+  oneof frame {
+    option (buf.validate.oneof).required = true;
+    // header is the first frame (of each page, for a paged query); a refused request has only an
+    // error frame.
+    QueryHeader header = 1;
+    // solutions is a page of SELECT rows (encoding TERMS).
+    SolutionPage solutions = 2;
+    // boolean is the ASK answer.
+    bool boolean = 3;
+    // chunk is CONSTRUCT / DESCRIBE output, or SELECT with SPARQL_JSON / SPARQL_TSV.
+    DataChunk chunk = 4;
+    // trailer is the last frame, always (unless the stream ends with a non-OK status).
+    QueryTrailer trailer = 5;
+    // error ends the stream in place of the trailer: the request was refused, or failed after
+    // some frames were sent.
+    GraphError error = 6;
+  }
+}
+
+// ════════════════════════════════════ RegisterQueries ════════════════════════════════════ //
+
+// RegisterQueriesRequest registers a named query set in the caller's organization. Guard,
+// budget and parameter types are checked once, here.
+message RegisterQueriesRequest {
+  option (buf.validate.message).cel = {
+    id: "register_queries.unique_ids"
+    message: "query ids must be unique"
+    expression: "this.queries.map(q, q.query_id).unique()"
+  };
+
+  // queries are the queries of the set.
+  repeated NamedQuery queries = 1 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 64
+  }];
+
+  // ontology_sha256 is the ontology the queries are checked against (strict vocabulary);
+  // empty = open mode.
+  optional string ontology_sha256 = 2 [(buf.validate.field).string.pattern = "^[0-9a-f]{64}$"];
+}
+
+// QuerySet is a registered named query set.
+message QuerySet {
+  // queries are the queries as registered (form and sha filled); one page for GetQuerySet.
+  repeated NamedQuery queries = 1 [(buf.validate.field).repeated.max_items = 64];
+
+  // query_set_sha256 identifies the set (content-addressed, immutable).
+  string query_set_sha256 = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[0-9a-f]{64}$"
+  ];
+
+  // pagination is the page information (GetQuerySet only).
+  agentic_mesh_protocol.pagination.v1.PaginationResponse pagination = 3;
+}
+
+// RegisterQueriesResponse returns the registered set, or why it was refused.
+message RegisterQueriesResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // query_set is the registered set.
+    QuerySet query_set = 1;
+    // error is why the call was refused (nothing was written).
+    GraphError error = 2;
+  }
+}
+
+// ════════════════════════════════════ RunNamedQuery ════════════════════════════════════ //
+
+// RunNamedQueryRequest runs one query of a registered set with bound parameters.
+message RunNamedQueryRequest {
+  option (buf.validate.message).cel = {
+    id: "run_named_query.unique_parameters"
+    message: "each parameter name must be unique"
+    expression: "this.parameters.map(b, b.name).unique()"
+  };
+
+  // query_set_sha256 is the registered set.
+  string query_set_sha256 = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[0-9a-f]{64}$"
+  ];
+
+  // query_id is the query of the set.
+  string query_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 128
+      pattern: "^[A-Za-z][A-Za-z0-9_.-]*$"
+    }
+  ];
+
+  // dataset is the closed set of graphs read (same rules as QueryRequest.dataset).
+  oneof dataset {
+    option (buf.validate.oneof).required = true;
+    // graphs are named graphs.
+    DatasetGraphs graphs = 3;
+    // readable selects graphs among those the caller can read.
+    GraphFilter readable = 11;
+  }
+
+  // include_ontology adds the pinned ontology graph to the dataset.
+  bool include_ontology = 4;
+
+  // parameters are the parameter values; bound, never interpolated.
+  repeated Binding parameters = 5 [(buf.validate.field).repeated.max_items = 32];
+
+  // timeout_ms is the deadline (absent = the query's budget_ms, else server default).
+  optional uint32 timeout_ms = 6 [(buf.validate.field).uint32 = {
+    gte: 1
+    lte: 30000
+  }];
+
+  // max_rows caps the rows (absent = server default).
+  optional uint32 max_rows = 7 [(buf.validate.field).uint32 = {
+    gte: 1
+    lte: 100000
+  }];
+
+  // max_bytes caps the bytes over all frames (absent = server default).
+  optional uint64 max_bytes = 8 [(buf.validate.field).uint64 = {
+    gte: 1
+    lte: 67108864
+  }];
+
+  // encoding is the SELECT encoding.
+  SolutionEncoding encoding = 9 [(buf.validate.field).enum.defined_only = true];
+
+  // construct_format is the CONSTRUCT / DESCRIBE format.
+  RdfFormat construct_format = 10 [(buf.validate.field).enum.defined_only = true];
+
+  // page_token continues a result (same rules as QueryRequest.page_token).
+  optional string page_token = 12 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 2048
+  }];
+}
+
+// RunNamedQueryResponse is one frame of a named-query stream (same frames as QueryResponse).
+message RunNamedQueryResponse {
+  // frame is the frame.
+  oneof frame {
+    option (buf.validate.oneof).required = true;
+    // header is the first frame (of each page, for a paged query); a refused request has only an
+    // error frame.
+    QueryHeader header = 1;
+    // solutions is a page of SELECT rows (encoding TERMS).
+    SolutionPage solutions = 2;
+    // boolean is the ASK answer.
+    bool boolean = 3;
+    // chunk is CONSTRUCT / DESCRIBE output, or SELECT with SPARQL_JSON / SPARQL_TSV.
+    DataChunk chunk = 4;
+    // trailer is the last frame, always (unless the stream ends with a non-OK status).
+    QueryTrailer trailer = 5;
+    // error ends the stream in place of the trailer: the request was refused, or failed after
+    // some frames were sent.
+    GraphError error = 6;
+  }
+}
+
+// ════════════════════════════════════ DiffVersions ════════════════════════════════════ //
+
+// DiffVersionsRequest streams the net difference between two versions of a graph, merged from
+// the journal deltas (a triple added then removed in between does not appear).
+message DiffVersionsRequest {
+  option (buf.validate.message).cel = {
+    id: "diff_versions.order"
+    message: "from_version must be lower than to_version"
+    expression: "this.from_version < this.to_version"
+  };
+
+  // ref names the graph.
+  GraphRef ref = 1 [(buf.validate.field).required = true];
+
+  // from_version is the older version (0 = the empty graph before creation); required, as 0 is
+  // a real value.
+  optional int64 from_version = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int64.gte = 0
+  ];
+
+  // to_version is the newer version.
+  int64 to_version = 3 [(buf.validate.field).int64.gte = 1];
+}
+
+// DiffHeader is the first frame of a diff stream.
+message DiffHeader {
+  // graph is the graph at the head.
+  GraphInfo graph = 1 [(buf.validate.field).required = true];
+
+  // from_version is the older version.
+  int64 from_version = 2 [(buf.validate.field).int64.gte = 0];
+
+  // to_version is the newer version.
+  int64 to_version = 3 [(buf.validate.field).int64.gte = 1];
+}
+
+// DiffPage is a page of changed triples, split by size like SolutionPage.
+message DiffPage {
+  // added are triples present at to_version and absent at from_version.
+  repeated Triple added = 1 [(buf.validate.field).repeated.max_items = 1000];
+
+  // removed are triples present at from_version and absent at to_version.
+  repeated Triple removed = 2 [(buf.validate.field).repeated.max_items = 1000];
+}
+
+// DiffTrailer is the last frame of a diff stream.
+message DiffTrailer {
+  // added_count is the number of triples added.
+  int64 added_count = 1 [(buf.validate.field).int64.gte = 0];
+
+  // removed_count is the number of triples removed.
+  int64 removed_count = 2 [(buf.validate.field).int64.gte = 0];
+
+  // versions_merged is the number of journal deltas merged.
+  int64 versions_merged = 3 [(buf.validate.field).int64.gte = 0];
+
+  // timing are the server timings.
+  ServerTiming timing = 4;
+}
+
+// DiffVersionsResponse is one frame of a diff stream: header, pages, trailer.
+message DiffVersionsResponse {
+  // frame is the frame.
+  oneof frame {
+    option (buf.validate.oneof).required = true;
+    // header is the first frame (of each page, for a paged query); a refused request has only an
+    // error frame.
+    DiffHeader header = 1;
+    // page is a page of changed triples.
+    DiffPage page = 2;
+    // trailer is the last frame, always.
+    DiffTrailer trailer = 3;
+    // error ends the stream in place of the trailer: the request was refused, or failed after
+    // some pages were sent.
+    GraphError error = 4;
+  }
+}
+
+// ════════════════════════════════════ Import ════════════════════════════════════ //
+
+// ImportHeader is the first frame of an import.
+message ImportHeader {
+  option (buf.validate.message).cel = {
+    id: "import_header.visibility_users_only"
+    message: "visibility can only be chosen for a USERS graph"
+    expression: "this.ref.scope == 3 || this.visibility == 0"
+  };
+  option (buf.validate.message).cel = {
+    id: "import_header.create_needs_mode"
+    message: "create_if_missing needs schema_mode"
+    expression: "!this.create_if_missing || this.schema_mode != 0"
+  };
+  option (buf.validate.message).cel = {
+    id: "import_header.users_not_public"
+    message: "a USERS graph cannot be PUBLIC"
+    expression: "this.ref.scope != 3 || this.visibility != 1"
+  };
+  option (buf.validate.message).cel = {
+    id: "import_header.strict_needs_ontology"
+    message: "creating a STRICT graph needs ontology_sha256"
+    expression: "!this.create_if_missing || this.schema_mode != 1 || has(this.ontology_sha256)"
+  };
+
+  // ref names the graph.
+  GraphRef ref = 1 [(buf.validate.field).required = true];
+
+  // mode is MERGE or REPLACE.
+  ImportMode mode = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // format is the serialization of the document.
+  RdfFormat format = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // compression is the compression of the chunk stream.
+  ChunkCompression compression = 4 [(buf.validate.field).enum.defined_only = true];
+
+  // expected_version is the compare-and-set token (same rules as ApplyPatchRequest).
+  optional int64 expected_version = 5 [(buf.validate.field).int64.gte = 0];
+
+  // idempotency_key makes a retry return the stored result.
+  string idempotency_key = 6 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 16
+      max_len: 128
+    }
+  ];
+
+  // create_if_missing creates the graph when absent.
+  bool create_if_missing = 7;
+
+  // visibility is stamped when the import creates the graph.
+  agentic_mesh_protocol.common.v1.Visibility visibility = 8 [(buf.validate.field).enum.defined_only = true];
+
+  // base_iri resolves relative IRIs of the document.
+  optional string base_iri = 9 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 2048
+  }];
+
+  // file_id is a server-side source instead of DataChunk frames: a Filesystem file the caller may read.
+  optional string file_id = 10 [(buf.validate.field).string = {
+    prefix: "files:"
+    min_len: 7
+    max_len: 256
+  }];
+
+  // declared_bytes is the uncompressed size announced by the client (checked at commit).
+  optional int64 declared_bytes = 11 [(buf.validate.field).int64.gte = 0];
+
+  // sha256 is the uncompressed sha256 announced by the client (checked at commit).
+  optional string sha256 = 12 [(buf.validate.field).string.pattern = "^[0-9a-f]{64}$"];
+
+  // dry_run validates only; nothing is written.
+  bool dry_run = 13;
+
+  // schema_mode is used when create_if_missing creates the graph.
+  SchemaMode schema_mode = 14 [(buf.validate.field).enum.defined_only = true];
+
+  // ontology_sha256 is bound when create_if_missing creates the graph.
+  optional string ontology_sha256 = 15 [(buf.validate.field).string.pattern = "^[0-9a-f]{64}$"];
+
+  // gate_set_sha256 is bound when create_if_missing creates the graph.
+  optional string gate_set_sha256 = 16 [(buf.validate.field).string.pattern = "^[0-9a-f]{64}$"];
+
+  // provenance is stored with the version.
+  WriteProvenance provenance = 17;
+}
+
+// ImportCommit is the last frame of an import.
+message ImportCommit {
+  // total_chunks is the number of chunks sent.
+  int64 total_chunks = 1 [(buf.validate.field).int64.gte = 0];
+}
+
+// ImportRequest is one frame of an import: header, chunks, commit.
+message ImportRequest {
+  // frame is the frame.
+  oneof frame {
+    option (buf.validate.oneof).required = true;
+    // header is the first frame, exactly once.
+    ImportHeader header = 1;
+    // chunk is zero or more frames, seq strictly increasing from 0 (absent with header.file_id).
+    DataChunk chunk = 2;
+    // commit is the last frame, exactly once.
+    ImportCommit commit = 3;
+  }
+}
+
+// ImportResponse returns the write result of the import, or why it was refused.
+message ImportResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // result is the write result.
+    WriteResult result = 1;
+    // error is why the call was refused (nothing was written).
+    GraphError error = 2;
+  }
+}
+
+// ════════════════════════════════════ Export ════════════════════════════════════ //
+
+// ExportRequest dumps the head (or a past version).
+message ExportRequest {
+  // ref names the graph.
+  GraphRef ref = 1 [(buf.validate.field).required = true];
+
+  // format is the serialization.
+  RdfFormat format = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // compression is the compression of the chunk stream.
+  ChunkCompression compression = 3 [(buf.validate.field).enum.defined_only = true];
+
+  // version exports a past version (snapshot + journal replay); absent = head.
+  optional int64 version = 4 [(buf.validate.field).int64.gte = 1];
+
+  // include_ontology adds the pinned ontology.
+  bool include_ontology = 5;
+
+  // destination is STREAM or FILESYSTEM.
+  ExportDestination destination = 6 [(buf.validate.field).enum.defined_only = true];
+
+  // file_name is the file name when destination is FILESYSTEM.
+  optional string file_name = 7 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 255
+  }];
+}
+
+// ExportHeader is the first frame of an export.
+message ExportHeader {
+  // graph is the graph.
+  GraphInfo graph = 1 [(buf.validate.field).required = true];
+
+  // format is the serialization.
+  RdfFormat format = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // compression is the compression of the chunk stream.
+  ChunkCompression compression = 3 [(buf.validate.field).enum.defined_only = true];
+
+  // version is the version exported.
+  int64 version = 4 [(buf.validate.field).int64.gte = 0];
+}
+
+// ExportTrailer is the last frame of an export.
+message ExportTrailer {
+  // total_chunks is the number of chunks sent.
+  int64 total_chunks = 1 [(buf.validate.field).int64.gte = 0];
+
+  // total_bytes is the number of uncompressed bytes.
+  int64 total_bytes = 2 [(buf.validate.field).int64.gte = 0];
+
+  // sha256 is the sha256 of the uncompressed document.
+  string sha256 = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[0-9a-f]{64}$"
+  ];
+
+  // triple_count is the number of triples exported.
+  int64 triple_count = 4 [(buf.validate.field).int64.gte = 0];
+
+  // file_id is set when destination is FILESYSTEM.
+  optional string file_id = 5 [(buf.validate.field).string = {
+    prefix: "files:"
+    min_len: 7
+    max_len: 256
+  }];
+
+  // timing are the server timings.
+  ServerTiming timing = 6;
+}
+
+// ExportResponse is one frame of an export: header, chunks, trailer.
+message ExportResponse {
+  // frame is the frame.
+  oneof frame {
+    option (buf.validate.oneof).required = true;
+    // header is the first frame (of each page, for a paged query); a refused request has only an
+    // error frame.
+    ExportHeader header = 1;
+    // chunk is a part of the document.
+    DataChunk chunk = 2;
+    // trailer is the last frame, always.
+    ExportTrailer trailer = 3;
+    // error ends the stream in place of the trailer: the request was refused, or failed after
+    // some chunks were sent.
+    GraphError error = 4;
+  }
+}
+
+// ════════════════════════════════════ Snapshot ════════════════════════════════════ //
+
+// SnapshotRequest materializes the head as a restorable snapshot.
+message SnapshotRequest {
+  // ref names the graph.
+  GraphRef ref = 1 [(buf.validate.field).required = true];
+
+  // label names the snapshot.
+  optional string label = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 128
+  }];
+
+  // export_to_filesystem also exports the snapshot as a Filesystem file.
+  bool export_to_filesystem = 3;
+
+  // idempotency_key makes a retry return the stored result.
+  string idempotency_key = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 16
+      max_len: 128
+    }
+  ];
+}
+
+// SnapshotResult describes a snapshot.
+message SnapshotResult {
+  // version is the version snapshotted.
+  VersionInfo version = 1 [(buf.validate.field).required = true];
+
+  // snapshot_id identifies the snapshot.
+  string snapshot_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 256
+  ];
+
+  // file_id is the exported file (export_to_filesystem).
+  optional string file_id = 3 [(buf.validate.field).string = {
+    prefix: "files:"
+    min_len: 7
+    max_len: 256
+  }];
+}
+
+// SnapshotResponse returns the snapshot, or why it was refused.
+message SnapshotResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // snapshot is the snapshot.
+    SnapshotResult snapshot = 1;
+    // error is why the call was refused (nothing was written).
+    GraphError error = 2;
+  }
+}
+
+// ════════════════════════════════════ ListVersions ════════════════════════════════════ //
+
+// ListVersionsRequest lists the version history of a graph.
+message ListVersionsRequest {
+  option (buf.validate.message).cel = {
+    id: "list_versions_request.receipts_page_size"
+    message: "with include_receipts, pagination.limit must be set and at most 10"
+    expression: "!this.include_receipts || (has(this.pagination) && this.pagination.limit <= 10)"
+  };
+
+  // ref names the graph.
+  GraphRef ref = 1 [(buf.validate.field).required = true];
+
+  // pagination is the page (default order: version descending).
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 2;
+
+  // snapshots_only keeps the snapshotted versions only.
+  bool snapshots_only = 3;
+
+  // include_receipts adds the verdict receipt of each version.
+  bool include_receipts = 4;
+}
+
+// VersionPage is a page of versions.
+message VersionPage {
+  // versions are the versions of the page.
+  repeated VersionInfo versions = 1 [(buf.validate.field).repeated.max_items = 100];
+
+  // pagination is the page information.
+  agentic_mesh_protocol.pagination.v1.PaginationResponse pagination = 2;
+
+  // oldest_restorable_version is the oldest version RestoreVersion, at_version and historical
+  // Export can reach.
+  int64 oldest_restorable_version = 3 [(buf.validate.field).int64.gte = 0];
+}
+
+// ListVersionsResponse returns a page of versions, or why the listing was refused.
+message ListVersionsResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // page is the page of versions.
+    VersionPage page = 1;
+    // error is why the call was refused (nothing was written).
+    GraphError error = 2;
+  }
+}
+
+// ════════════════════════════════════ RestoreVersion ════════════════════════════════════ //
+
+// RestoreVersionRequest mints head + 1 equal to target_version (gated, CAS).
+message RestoreVersionRequest {
+  // ref names the graph.
+  GraphRef ref = 1 [(buf.validate.field).required = true];
+
+  // target_version is the version to restore.
+  int64 target_version = 2 [(buf.validate.field).int64.gte = 1];
+
+  // expected_version is the head the caller expects.
+  int64 expected_version = 3 [(buf.validate.field).int64.gte = 1];
+
+  // idempotency_key makes a retry return the stored result.
+  string idempotency_key = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 16
+      max_len: 128
+    }
+  ];
+
+  // dry_run validates only; nothing is written.
+  bool dry_run = 5;
+
+  // provenance is stored with the version.
+  WriteProvenance provenance = 6;
+}
+
+// RestoreVersionResponse returns the write result of the restore, or why it was refused.
+message RestoreVersionResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // result is the write result.
+    WriteResult result = 1;
+    // error is why the call was refused (nothing was written).
+    GraphError error = 2;
+  }
+}
+
+// ════════════════════════════════════ PinOntology ════════════════════════════════════ //
+
+// PinOntologyRequest stores a strict ontology in the caller's organization, content-addressed
+// by its canonical sha256.
+message PinOntologyRequest {
+  // expected_sha256 is the canonical sha256 the caller expects (refused on mismatch).
+  string expected_sha256 = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[0-9a-f]{64}$"
+  ];
+
+  // format is the serialization of the ontology.
+  RdfFormat format = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // source is where the ontology comes from.
+  oneof source {
+    option (buf.validate.oneof).required = true;
+    // content is the ontology document, at most 3.5 MiB so the request stays under the 4 MiB
+    // gRPC receive limit (a larger ontology goes through file_id).
+    bytes content = 3 [(buf.validate.field).bytes.max_len = 3670016];
+    // file_id is a Filesystem file the caller may read.
+    string file_id = 4 [(buf.validate.field).string = {
+      prefix: "files:"
+      min_len: 7
+      max_len: 256
+    }];
+  }
+}
+
+// PinOntologyResult is a pinned ontology.
+message PinOntologyResult {
+  // ontology is the pinned ontology.
+  OntologyRef ontology = 1 [(buf.validate.field).required = true];
+
+  // already_pinned is true when the same sha was already pinned in the organization.
+  bool already_pinned = 2;
+}
+
+// PinOntologyResponse returns the pinned ontology, or why it was refused.
+message PinOntologyResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // result is the pinned ontology.
+    PinOntologyResult result = 1;
+    // error is why the call was refused (nothing was written).
+    GraphError error = 2;
+  }
+}
+
+// ════════════════════════════════════ GetOntology ════════════════════════════════════ //
+
+// GetOntologyRequest reads a pinned ontology.
+message GetOntologyRequest {
+  // sha256 is the ontology.
+  string sha256 = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[0-9a-f]{64}$"
+  ];
+
+  // include_content adds the document.
+  bool include_content = 2;
+
+  // format is the serialization of the content.
+  RdfFormat format = 3 [(buf.validate.field).enum.defined_only = true];
+}
+
+// OntologyDocument is a pinned ontology with its content.
+message OntologyDocument {
+  // ontology is the ontology.
+  OntologyRef ontology = 1 [(buf.validate.field).required = true];
+
+  // content is the document (include_content), at most 3.5 MiB (a larger ontology is read with Export).
+  bytes content = 2 [(buf.validate.field).bytes.max_len = 3670016];
+}
+
+// GetOntologyResponse returns the ontology, or why it was refused.
+message GetOntologyResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // document is the ontology.
+    OntologyDocument document = 1;
+    // error is why the call was refused (nothing was written).
+    GraphError error = 2;
+  }
+}
+
+// ════════════════════════════════════ RegisterGates ════════════════════════════════════ //
+
+// RegisterGatesRequest registers a custom gate set in the caller's organization.
+message RegisterGatesRequest {
+  option (buf.validate.message).cel = {
+    id: "register_gates.unique_ids"
+    message: "gate ids must be unique"
+    expression: "this.gates.map(g, g.gate_id).unique()"
+  };
+
+  // gates are checked at registration (parse, form, function matrix, budget, vocabulary of
+  // ontology_sha256).
+  repeated GateDefinition gates = 1 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 64
+  }];
+
+  // ontology_sha256 is the ontology the gates are checked against; empty = open mode.
+  optional string ontology_sha256 = 2 [(buf.validate.field).string.pattern = "^[0-9a-f]{64}$"];
+}
+
+// GateSet is a set of gates: built-ins and/or one registered set (one page for ListGates).
+message GateSet {
+  // gates are the gates (scope class and sha filled).
+  repeated GateDefinition gates = 1 [(buf.validate.field).repeated.max_items = 64];
+
+  // gate_set_sha256 identifies the registered set (absent = built-ins only).
+  optional string gate_set_sha256 = 2 [(buf.validate.field).string.pattern = "^[0-9a-f]{64}$"];
+
+  // pagination is the page information (ListGates only).
+  agentic_mesh_protocol.pagination.v1.PaginationResponse pagination = 3;
+}
+
+// RegisterGatesResponse returns the registered set, or why it was refused.
+message RegisterGatesResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // gate_set is the registered set.
+    GateSet gate_set = 1;
+    // error is why the call was refused (nothing was written).
+    GraphError error = 2;
+  }
+}
+
+// ════════════════════════════════════ ListGates ════════════════════════════════════ //
+
+// ListGatesRequest lists built-in gates and/or the gates of one registered set.
+message ListGatesRequest {
+  option (buf.validate.message).cel = {
+    id: "list_gates_request.page_size"
+    message: "pagination.limit must be at most 50"
+    expression: "!has(this.pagination) || this.pagination.limit <= 50"
+  };
+
+  // include_builtins adds the built-in gates.
+  bool include_builtins = 1;
+
+  // stage filters on a stage.
+  GateStage stage = 2 [(buf.validate.field).enum.defined_only = true];
+
+  // schema_mode filters the built-ins of a mode.
+  SchemaMode schema_mode = 3 [(buf.validate.field).enum.defined_only = true];
+
+  // gate_set_sha256 is a registered set; empty = built-ins only.
+  optional string gate_set_sha256 = 4 [(buf.validate.field).string.pattern = "^[0-9a-f]{64}$"];
+
+  // graph lists the gates in effect on that graph (built-ins of its mode + its bound set).
+  GraphRef graph = 5;
+
+  // sparql_sha256s fetches gates by the sha recorded in a verdict, including built-in versions
+  // that are no longer current, so an old verdict can be replayed.
+  repeated string sparql_sha256s = 6 [(buf.validate.field).repeated = {
+    max_items: 50
+    items: {
+      string: {pattern: "^[0-9a-f]{64}$"}
+    }
+  }];
+
+  // pagination is the page (default order: gate_id; at most 50 gates a page).
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 7;
+}
+
+// ListGatesResponse returns the gates, or why the listing was refused.
+message ListGatesResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // gate_set is the gates listed.
+    GateSet gate_set = 1;
+    // error is why the call was refused (nothing was written).
+    GraphError error = 2;
+  }
+}
+
+// ════════════════════════════════════ GetGraphAcl ════════════════════════════════════ //
+
+// GetGraphAclRequest reads the ACL of a graph.
+message GetGraphAclRequest {
+  // ref names the graph.
+  GraphRef ref = 1 [(buf.validate.field).required = true];
+}
+
+// GetGraphAclResponse returns the ACL, or why the call was refused.
+message GetGraphAclResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // acl is the ACL.
+    GraphAcl acl = 1;
+    // error is why the call was refused (nothing was written).
+    GraphError error = 2;
+  }
+}
+
+// ════════════════════════════════════ SetGraphAcl ════════════════════════════════════ //
+
+// SetGraphAclRequest replaces the active entries of a graph ACL.
+message SetGraphAclRequest {
+  option (buf.validate.message).cel = {
+    id: "set_graph_acl_request.visibility_users_only"
+    message: "visibility can only be chosen for a USERS graph"
+    expression: "this.ref.scope == 3 || this.visibility == 0"
+  };
+  option (buf.validate.message).cel = {
+    id: "set_graph_acl_request.users_not_public"
+    message: "a USERS graph cannot be PUBLIC"
+    expression: "this.ref.scope != 3 || this.visibility != 1"
+  };
+  option (buf.validate.message).cel = {
+    id: "set_graph_acl_request.unique_entries"
+    message: "an entry (subject, action) may appear only once"
+    expression: "this.entries.map(e, e.user_id + '|' + e.org_id + '|' + string(e.role) + '|' + string(e.action)).unique()"
+  };
+
+  // ref names the graph.
+  GraphRef ref = 1 [(buf.validate.field).required = true];
+
+  // visibility is the new read rule (UNSPECIFIED = unchanged).
+  agentic_mesh_protocol.common.v1.Visibility visibility = 2 [(buf.validate.field).enum.defined_only = true];
+
+  // entries are the desired ACTIVE entries (subject + action); entries no longer listed become
+  // ENTRY_REVOKED.
+  repeated AclEntry entries = 3 [(buf.validate.field).repeated.max_items = 64];
+
+  // expected_acl_version is the compare-and-set token (GraphAcl.acl_version).
+  int64 expected_acl_version = 4 [(buf.validate.field).int64.gte = 1];
+
+  // idempotency_key makes a retry after a lost response return the stored result instead of
+  // failing on a moved acl_version.
+  string idempotency_key = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 16
+      max_len: 128
+    }
+  ];
+}
+
+// SetGraphAclResponse returns the ACL, or why the call was refused.
+message SetGraphAclResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // acl is the ACL.
+    GraphAcl acl = 1;
+    // error is why the call was refused (nothing was written).
+    GraphError error = 2;
+  }
+}
+
+// ════════════════════════════════════ SetGraphResponsible ════════════════════════════════════ //
+
+// SetGraphResponsibleRequest changes the single responsible user of a graph (refused for USERS graphs).
+message SetGraphResponsibleRequest {
+  // ref names the graph.
+  GraphRef ref = 1 [(buf.validate.field).required = true];
+
+  // responsible_user_id is the new responsible user (a member of the graph's organization).
+  string responsible_user_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "users:"
+      min_len: 7
+      max_len: 256
+    }
+  ];
+
+  // expected_acl_version is the compare-and-set token (GraphAcl.acl_version).
+  int64 expected_acl_version = 3 [(buf.validate.field).int64.gte = 1];
+
+  // idempotency_key makes a retry after a lost response return the stored result.
+  string idempotency_key = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 16
+      max_len: 128
+    }
+  ];
+}
+
+// SetGraphResponsibleResponse returns the ACL, or why the call was refused.
+message SetGraphResponsibleResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // acl is the ACL.
+    GraphAcl acl = 1;
+    // error is why the call was refused (nothing was written).
+    GraphError error = 2;
+  }
+}
+
+// ════════════════════════════════════ SetGraphRules ════════════════════════════════════ //
+
+// SetGraphRules binds another ontology and/or gate set to an existing graph (e.g. a new version
+// of the client's schema). The whole graph is audited against the new rules first: it passes and
+// a RULES version is minted, or nothing changes and the outcome is a GATE_VIOLATION error with the
+// report. The schema mode never changes in place: an OPEN graph becomes STRICT only through an
+// Import REPLACE into a new strict graph, so an ontology on an OPEN graph is refused
+// (SCHEMA_MODE_MISMATCH), and a STRICT graph always keeps an ontology.
+message SetGraphRulesRequest {
+  option (buf.validate.message).cel = {
+    id: "set_graph_rules_request.not_empty"
+    message: "set ontology_sha256, gate_set_sha256 or clear_gate_set"
+    expression: "has(this.ontology_sha256) || has(this.gate_set_sha256) || this.clear_gate_set"
+  };
+  option (buf.validate.message).cel = {
+    id: "set_graph_rules_request.gate_set_or_clear"
+    message: "set gate_set_sha256 or clear_gate_set, not both"
+    expression: "!(has(this.gate_set_sha256) && this.clear_gate_set)"
+  };
+
+  // ref names the graph.
+  GraphRef ref = 1 [(buf.validate.field).required = true];
+
+  // ontology_sha256 is the new ontology, pinned in the caller's organization (absent = unchanged).
+  optional string ontology_sha256 = 2 [(buf.validate.field).string.pattern = "^[0-9a-f]{64}$"];
+
+  // gate_set_sha256 is the new gate set, registered in the caller's organization (absent = unchanged).
+  optional string gate_set_sha256 = 3 [(buf.validate.field).string.pattern = "^[0-9a-f]{64}$"];
+
+  // expected_version is the head the caller expects (compare-and-set).
+  int64 expected_version = 4 [(buf.validate.field).int64.gte = 1];
+
+  // idempotency_key makes a retry return the stored outcome.
+  string idempotency_key = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 16
+      max_len: 128
+    }
+  ];
+
+  // dry_run runs the audit only; nothing is bound.
+  bool dry_run = 6;
+
+  // provenance is stored with the version.
+  WriteProvenance provenance = 7;
+
+  // clear_gate_set unbinds the gate set: only the built-ins of the graph's mode remain.
+  bool clear_gate_set = 8;
+}
+
+// SetGraphRulesResponse returns the RULES version, or why the new rules were refused.
+message SetGraphRulesResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // result is the write result (graph with its new bindings, audit report, version).
+    WriteResult result = 1;
+    // error is why the call was refused (nothing was written).
+    GraphError error = 2;
+  }
+}
+
+// ════════════════════════════════════ GetQuerySet ════════════════════════════════════ //
+
+// GetQuerySetRequest reads a registered named query set (its queries and parameters), a page at a time.
+message GetQuerySetRequest {
+  option (buf.validate.message).cel = {
+    id: "get_query_set_request.page_size"
+    message: "pagination.limit must be at most 50"
+    expression: "!has(this.pagination) || this.pagination.limit <= 50"
+  };
+
+  // query_set_sha256 is the registered set.
+  string query_set_sha256 = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[0-9a-f]{64}$"
+  ];
+
+  // pagination is the page (default order: query_id; at most 50 queries a page).
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 2;
+}
+
+// GetQuerySetResponse returns the set, or why it was refused.
+message GetQuerySetResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // query_set is the registered set.
+    QuerySet query_set = 1;
+    // error is why the call was refused (NAMED_QUERY_NOT_FOUND for an unknown set).
+    GraphError error = 2;
+  }
+}
+
+// ════════════════════════════════════ ListAclHistory ════════════════════════════════════ //
+
+// ListAclHistoryRequest pages through every change of a graph's access control, newest first.
+message ListAclHistoryRequest {
+  // ref names the graph.
+  GraphRef ref = 1 [(buf.validate.field).required = true];
+
+  // pagination is the page (default order: occurred_at descending).
+  agentic_mesh_protocol.pagination.v1.PaginationRequest pagination = 2;
+}
+
+// AclHistoryPage is a page of access-control changes.
+message AclHistoryPage {
+  // events are the changes of the page, newest first.
+  repeated AclHistoryEvent events = 1 [(buf.validate.field).repeated.max_items = 100];
+
+  // pagination is the page information.
+  agentic_mesh_protocol.pagination.v1.PaginationResponse pagination = 2;
+}
+
+// ListAclHistoryResponse returns a page of changes, or why the listing was refused.
+message ListAclHistoryResponse {
+  // outcome is the result, or why the call was refused.
+  oneof outcome {
+    option (buf.validate.oneof).required = true;
+    // page is the page of changes.
+    AclHistoryPage page = 1;
+    // error is why the call was refused (nothing was read).
+    GraphError error = 2;
+  }
+}

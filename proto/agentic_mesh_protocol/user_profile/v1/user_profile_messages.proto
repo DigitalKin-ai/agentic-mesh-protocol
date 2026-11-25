@@ -16,6 +16,7 @@ syntax = "proto3";
 
 package agentic_mesh_protocol.user_profile.v1;
 
+import "agentic_mesh_protocol/common/v1/common_enums.proto";
 import "agentic_mesh_protocol/pagination/v1/bulk.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/struct.proto";
@@ -140,6 +141,10 @@ message UserProfile {
 
   // credits lists the credit lots of the user.
   repeated CreditLot credits = 11 [(buf.validate.field).repeated.max_items = 1000];
+
+  // org_role is the role of the user in organization_id for the calling task (server-derived,
+  // never from input; UNSPECIFIED = member).
+  agentic_mesh_protocol.common.v1.OrgRole org_role = 12 [(buf.validate.field).enum.defined_only = true];
 }
 
 // UserProfileResult is the outcome of a user profile operation.

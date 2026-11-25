@@ -1,0 +1,1402 @@
+// Copyright 2026 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.graph.v1;
+
+import "agentic_mesh_protocol/common/v1/common_enums.proto";
+import "agentic_mesh_protocol/graph/v1/graph_enums.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+// ═════════════════════════════════════ Addressing ════════════════════════════════════ //
+
+// GraphRef names a graph the caller can name: a scope KIND plus a caller-chosen id. With USERS it
+// is always the caller's own personal graph; another user's graph is reached through a GraphFilter
+// (Query) or ListGraphs, never by name. A graph is unique per (resolved context, organization,
+// graph_id): `users:…` does not carry the organization. The graph IRI is minted server-side
+// (GraphInfo.graph_iri) and is never derived from caller text.
+message GraphRef {
+  option (buf.validate.message).cel = {
+    id: "graph_ref.setup_target_scope"
+    message: "setup_id and setup_version_id are only allowed with scope SETUP_VERSIONS"
+    expression: "(!has(this.setup_id) && !has(this.setup_version_id)) || this.scope == 2"
+  };
+
+  // scope is the kind of context the graph belongs to.
+  GraphScope scope = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // graph_id is the caller-chosen name of the graph within its context (no '/', no control character).
+  string graph_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 255
+      pattern: "^[^\\x00-\\x1F/]+$"
+    }
+  ];
+
+  // setup_target picks a setup other than the calling task's own (SETUP_VERSIONS only). Absent:
+  // the current version of the setup the calling task's mission runs.
+  oneof setup_target {
+    // setup_id targets the CURRENT version of that setup: write by the setup owner, or read.
+    string setup_id = 3 [(buf.validate.field).string = {
+      prefix: "setups:"
+      min_len: 8
+      max_len: 256
+    }];
+    // setup_version_id targets one setup version, read-only (a past version never changes).
+    string setup_version_id = 4 [(buf.validate.field).string = {
+      prefix: "setup_versions:"
+      min_len: 16
+      max_len: 256
+    }];
+  }
+}
+
+// DatasetGraph is one graph of a query dataset, optionally read as it was at a past version.
+message DatasetGraph {
+  // ref names the graph; the caller needs VIEW (VIEW_CURRENT without at_version), else the query
+  // is refused with GRAPH_NOT_FOUND.
+  GraphRef ref = 1 [(buf.validate.field).required = true];
+
+  // at_version reads the graph as it was at that version (snapshot + journal replay into a
+  // capped temporary graph). Absent: the head.
+  optional int64 at_version = 2 [(buf.validate.field).int64.gte = 1];
+}
+
+// ResolvedContext is the context id the services provider resolved for one scope kind.
+message ResolvedContext {
+  // scope is the scope kind.
+  GraphScope scope = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // context_id is the resolved id, e.g. "users:abc".
+  string context_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 256
+      pattern: "^(setup_versions|users|organizations):.+$"
+    }
+  ];
+}
+
+// Principal is the caller identity resolved by the services provider from x-task-id. NEVER sent
+// by a module: the provider serializes it into the x-dk-principal-bin metadata of its call to
+// the graph microservice (mTLS hop), which trusts nothing else.
+message Principal {
+  option (buf.validate.message).cel = {
+    id: "principal.unique_contexts"
+    message: "one resolved context per scope"
+    expression: "this.resolved_contexts.map(c, c.scope).unique()"
+  };
+
+  // user_id is the calling user.
+  string user_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "users:"
+      min_len: 7
+      max_len: 256
+    }
+  ];
+
+  // organization_id is the organization of the calling task.
+  string organization_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "organizations:"
+      min_len: 15
+      max_len: 256
+    }
+  ];
+
+  // org_role is the Clerk org role frozen on the message row at creation (UNSPECIFIED = member).
+  agentic_mesh_protocol.common.v1.OrgRole org_role = 3 [(buf.validate.field).enum.defined_only = true];
+
+  // mission_id is the mission of the calling task (provenance only: no graph belongs to a mission).
+  string mission_id = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "missions:"
+      min_len: 10
+      max_len: 256
+    }
+  ];
+
+  // setup_id is the setup the mission runs (absent for a mission without setup).
+  optional string setup_id = 5 [(buf.validate.field).string = {
+    prefix: "setups:"
+    min_len: 8
+    max_len: 256
+  }];
+
+  // setup_version_id is the CURRENT version of setup_id (same resolution as storage); audit only.
+  optional string setup_version_id = 6 [(buf.validate.field).string = {
+    prefix: "setup_versions:"
+    min_len: 16
+    max_len: 256
+  }];
+
+  // task_id is the authenticated task.
+  string task_id = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 256
+      pattern: "^[A-Za-z0-9_:.-]+$"
+    }
+  ];
+
+  // mission_type is `chat` or `task` (missions.type).
+  string mission_type = 8 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      in: [
+        "chat",
+        "task"
+      ]
+    }
+  ];
+
+  // resolved_contexts are the context ids resolved for the call, one per scope kind.
+  repeated ResolvedContext resolved_contexts = 9 [(buf.validate.field).repeated.max_items = 3];
+}
+
+// ═════════════════════════════════════ RDF terms ════════════════════════════════════ //
+
+// Literal is an RDF 1.2 literal.
+message Literal {
+  option (buf.validate.message).cel = {
+    id: "literal.direction_needs_language"
+    message: "a base direction needs a language tag"
+    expression: "this.direction == '' || this.language != ''"
+  };
+
+  // lexical is the lexical form, at most 64 KiB everywhere (Import included): larger content
+  // belongs in a Filesystem file referenced by IRI.
+  string lexical = 1 [(buf.validate.field).string.max_len = 65536];
+
+  // datatype is the absolute datatype IRI; empty = xsd:string (rdf:langString when language is set).
+  string datatype = 2 [(buf.validate.field).string.max_len = 2048];
+
+  // language is a BCP 47 tag; empty = none.
+  string language = 3 [(buf.validate.field).string = {
+    max_len: 35
+    pattern: "^([A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*)?$"
+  }];
+
+  // direction is the RDF 1.2 base direction: "", "ltr" or "rtl".
+  string direction = 4 [(buf.validate.field).string = {
+    in: [
+      "",
+      "ltr",
+      "rtl"
+    ]
+  }];
+}
+
+// Term is one RDF term. An empty Term (no branch set) is an unbound value in a Solution, and
+// is refused wherever a term is expected (Triple, TriplePattern, ReplaceValues, Binding).
+// RDF 1.2 triple terms are not supported in v1 (tag 4 is reserved for them): they would make
+// Term recursive, and the Python tool engine cannot round-trip them.
+message Term {
+  reserved 4;
+  reserved "triple";
+
+  // value is the term itself.
+  oneof value {
+    // iri is an absolute IRI.
+    string iri = 1 [(buf.validate.field).string = {
+      min_len: 1
+      max_len: 4096
+    }];
+    // blank_node is a blank node label, scoped to one request or one result.
+    string blank_node = 2 [(buf.validate.field).string = {
+      min_len: 1
+      max_len: 256
+    }];
+    // literal is a literal.
+    Literal literal = 3;
+  }
+}
+
+// Triple is an RDF triple.
+message Triple {
+  option (buf.validate.message).cel = {
+    id: "triple.subject_kind"
+    message: "the subject must be an IRI or a blank node"
+    expression: "has(this.subject.iri) || has(this.subject.blank_node)"
+  };
+  option (buf.validate.message).cel = {
+    id: "triple.predicate_kind"
+    message: "the predicate must be an IRI"
+    expression: "has(this.predicate.iri)"
+  };
+  option (buf.validate.message).cel = {
+    id: "triple.object_bound"
+    message: "the object must be a term"
+    expression: "has(this.object.iri) || has(this.object.blank_node) || has(this.object.literal)"
+  };
+
+  // subject is an IRI or a blank node.
+  Term subject = 1 [(buf.validate.field).required = true];
+
+  // predicate is an IRI.
+  Term predicate = 2 [(buf.validate.field).required = true];
+
+  // object is any term.
+  Term object = 3 [(buf.validate.field).required = true];
+}
+
+// TriplePattern matches triples for removal: an absent position is a wildcard. The subject or
+// the predicate must be bound (no "remove everything": use Import REPLACE or DropGraph), and a
+// set position must hold a term.
+message TriplePattern {
+  option (buf.validate.message).cel = {
+    id: "triple_pattern.bound"
+    message: "subject or predicate must be bound"
+    expression: "has(this.subject.iri) || has(this.subject.blank_node) || has(this.predicate.iri)"
+  };
+  option (buf.validate.message).cel = {
+    id: "triple_pattern.subject_kind"
+    message: "a set subject must be an IRI or a blank node"
+    expression: "!has(this.subject) || has(this.subject.iri) || has(this.subject.blank_node)"
+  };
+  option (buf.validate.message).cel = {
+    id: "triple_pattern.predicate_kind"
+    message: "a set predicate must be an IRI"
+    expression: "!has(this.predicate) || has(this.predicate.iri)"
+  };
+  option (buf.validate.message).cel = {
+    id: "triple_pattern.object_bound"
+    message: "a set object must be a term"
+    expression: "!has(this.object) || has(this.object.iri) || has(this.object.blank_node) || has(this.object.literal)"
+  };
+
+  // subject is the subject to match (absent = any).
+  Term subject = 1;
+
+  // predicate is the predicate to match (absent = any).
+  Term predicate = 2;
+
+  // object is the object to match (absent = any).
+  Term object = 3;
+}
+
+// Binding binds one SPARQL variable to a value. The value is bound, never interpolated into
+// the query text.
+message Binding {
+  option (buf.validate.message).cel = {
+    id: "binding.value_bound"
+    message: "the value must be a term"
+    expression: "has(this.value.iri) || has(this.value.blank_node) || has(this.value.literal)"
+  };
+
+  // name is the variable, without '?'.
+  string name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 64
+      pattern: "^[A-Za-z_][A-Za-z0-9_]*$"
+    }
+  ];
+
+  // value is the bound term.
+  Term value = 2 [(buf.validate.field).required = true];
+}
+
+// ═════════════════════════════════════ Patches ════════════════════════════════════ //
+
+// ReplaceValues replaces every value of (subject, predicate) by values (functional-property edit).
+message ReplaceValues {
+  option (buf.validate.message).cel = {
+    id: "replace_values.subject_kind"
+    message: "the subject must be an IRI or a blank node"
+    expression: "has(this.subject.iri) || has(this.subject.blank_node)"
+  };
+  option (buf.validate.message).cel = {
+    id: "replace_values.predicate_kind"
+    message: "the predicate must be an IRI"
+    expression: "has(this.predicate.iri)"
+  };
+
+  // subject is the subject whose values are replaced.
+  Term subject = 1 [(buf.validate.field).required = true];
+
+  // predicate is the predicate whose values are replaced.
+  Term predicate = 2 [(buf.validate.field).required = true];
+
+  // values are the new values (empty = remove every value); each must be a term.
+  repeated Term values = 3 [(buf.validate.field).repeated = {
+    max_items: 1000
+    items: {
+      cel: {
+        id: "replace_values.value_bound"
+        message: "each value must be a term"
+        expression: "has(this.iri) || has(this.blank_node) || has(this.literal)"
+      }
+    }
+  }];
+}
+
+// PatchOperation is one operation of a patch.
+message PatchOperation {
+  // op is the operation.
+  oneof op {
+    option (buf.validate.oneof).required = true;
+    // add adds one triple.
+    Triple add = 1;
+    // remove removes one triple.
+    Triple remove = 2;
+    // remove_matching removes every triple matching a pattern.
+    TriplePattern remove_matching = 3;
+    // replace_values replaces the values of (subject, predicate).
+    ReplaceValues replace_values = 4;
+  }
+}
+
+// PatchBody is the content of a patch: typed operations or a SPARQL Update, not both.
+message PatchBody {
+  option (buf.validate.message).cel = {
+    id: "patch_body.one_body"
+    message: "set operations or sparql_update, not both, and not neither"
+    expression: "(size(this.operations) > 0) != (this.sparql_update != '')"
+  };
+
+  // operations are applied in order (bulk loads go through Import).
+  repeated PatchOperation operations = 1 [(buf.validate.field).repeated.max_items = 1000];
+
+  // sparql_update is a SPARQL 1.1 Update subset: INSERT DATA, DELETE DATA, DELETE WHERE,
+  // DELETE/INSERT … WHERE. Refused: GRAPH, WITH, USING, LOAD, CLEAR, CREATE, DROP, COPY, MOVE,
+  // ADD, SERVICE.
+  string sparql_update = 2 [(buf.validate.field).string.max_len = 262144];
+}
+
+// WriteProvenance is what the caller declares about a write, stored with the version
+// (pseudonymized with the author on account deletion).
+message WriteProvenance {
+  // model is the model that produced the write (e.g. "claude-opus-5-5").
+  optional string model = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 128
+  }];
+
+  // reasoning_ref points to the reasoning behind the write (a storage or file id).
+  optional string reasoning_ref = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 512
+  }];
+}
+
+// OperationProblem is one problem attached to one operation (validate and per-operation refusals).
+message OperationProblem {
+  // details (5) was removed, like GraphError.details: no tool-specific field in the contract.
+  reserved 5;
+  reserved "details";
+
+  // operation_index is the index of the operation in the patch; absent = the whole patch.
+  optional int32 operation_index = 1 [(buf.validate.field).int32.gte = 0];
+
+  // reason is the machine-readable reason.
+  GraphErrorReason reason = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // message is a human-readable explanation.
+  string message = 3 [(buf.validate.field).string.max_len = 2048];
+
+  // hints are corrective suggestions (closest term, expected datatype, edge to remove).
+  repeated string hints = 4 [(buf.validate.field).repeated = {
+    max_items: 5
+    items: {
+      string: {max_len: 1024}
+    }
+  }];
+}
+
+// ═════════════════════════════════════ Gates ════════════════════════════════════ //
+
+// GateDefinition is a SPARQL rule evaluated on a write or an audit.
+message GateDefinition {
+  // gate_id identifies the gate; built-ins are "CLOSED-VOCAB", "ACYCLIC:dependsOn", …
+  string gate_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 128
+      pattern: "^[A-Z0-9][A-Z0-9_-]*(:[A-Za-z0-9_.-]+)?$"
+    }
+  ];
+
+  // version is the version of the gate, recorded in every verdict.
+  string version = 2 [(buf.validate.field).string.max_len = 128];
+
+  // sparql is an ASK or SELECT; placeholders {{base}}, {{data}}, {{ontology}} are expanded
+  // server-side and $focus is bound for a LOCAL gate. Empty for a built-in (its normative SPARQL
+  // is returned by ListGates).
+  string sparql = 3 [(buf.validate.field).string.max_len = 16384];
+
+  // pass_when is the PASS rule.
+  GatePassRule pass_when = 4 [(buf.validate.field).enum.defined_only = true];
+
+  // stages are the stages the gate runs at (empty = every stage).
+  repeated GateStage stages = 5 [(buf.validate.field).repeated = {
+    max_items: 4
+    unique: true
+    items: {
+      enum: {
+        defined_only: true
+        not_in: [0]
+      }
+    }
+  }];
+
+  // graph_patterns are fnmatch patterns over graph_id (empty = every graph).
+  repeated string graph_patterns = 6 [(buf.validate.field).repeated = {
+    max_items: 16
+    items: {
+      string: {
+        min_len: 1
+        max_len: 255
+      }
+    }
+  }];
+
+  // max_rows caps the offending rows reported (absent = server default, 20).
+  optional int32 max_rows = 7 [(buf.validate.field).int32 = {
+    gte: 1
+    lte: 50
+  }];
+
+  // severity is what a FAIL does (UNSPECIFIED = BLOCKING).
+  GateSeverity severity = 8 [(buf.validate.field).enum.defined_only = true];
+
+  // description says what the gate protects, shown to agents.
+  string description = 9 [(buf.validate.field).string.max_len = 2048];
+
+  // builtin is true for a server built-in (output only).
+  bool builtin = 10;
+
+  // scope_class is how much of the graph the gate reads (UNSPECIFIED = classified by the server
+  // at registration; the effective class is returned).
+  GateScopeClass scope_class = 11 [(buf.validate.field).enum.defined_only = true];
+
+  // budget_ms is the evaluation budget of the gate; a gate over budget fails closed
+  // (GateVerdict.over_budget). Absent = the default budget of its class.
+  optional uint32 budget_ms = 12 [(buf.validate.field).uint32 = {
+    gte: 1
+    lte: 30000
+  }];
+
+  // sparql_sha256 is the sha256 of the normalized SPARQL (output only), recorded in verdicts.
+  optional string sparql_sha256 = 13 [(buf.validate.field).string.pattern = "^[0-9a-f]{64}$"];
+}
+
+// GateVerdict is the outcome of one gate on one write or audit.
+message GateVerdict {
+  // gate_id is the gate evaluated.
+  string gate_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 128
+  ];
+
+  // version is the gate version evaluated.
+  string version = 2 [(buf.validate.field).string.max_len = 128];
+
+  // status is PASS, FAIL or GATE_ERROR.
+  GateStatus status = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // severity is the severity of the gate.
+  GateSeverity severity = 4 [(buf.validate.field).enum.defined_only = true];
+
+  // row_count is the number of offending rows found.
+  int64 row_count = 5 [(buf.validate.field).int64.gte = 0];
+
+  // rows are at most GateDefinition.max_rows offending rows, each a {variable: rendered term} object.
+  repeated google.protobuf.Struct rows = 6 [(buf.validate.field).repeated.max_items = 50];
+
+  // hints are corrective suggestions.
+  repeated string hints = 7 [(buf.validate.field).repeated = {
+    max_items: 10
+    items: {
+      string: {max_len: 1024}
+    }
+  }];
+
+  // elapsed_ms is the evaluation time.
+  double elapsed_ms = 8 [(buf.validate.field).double = {
+    gte: 0
+    finite: true
+  }];
+
+  // delta_only is true when the gate ran on the subjects touched by the patch only.
+  bool delta_only = 9;
+
+  // over_budget is true when the gate exceeded budget_ms (status is then GATE_ERROR).
+  bool over_budget = 10;
+
+  // sparql_sha256 is the sha256 of the SPARQL evaluated, for replay (absent for a gate that did not run).
+  optional string sparql_sha256 = 11 [(buf.validate.field).string.pattern = "^[0-9a-f]{64}$"];
+
+  // scope_class is the effective class of the gate.
+  GateScopeClass scope_class = 12 [(buf.validate.field).enum.defined_only = true];
+}
+
+// GateReport is the verdict receipt of one write or audit, stored with the version. The server
+// keeps a report under 256 KiB: offending rows are dropped first, then the verdicts that passed,
+// and `truncated` is set; Validate with gate_ids recomputes the full detail of chosen gates.
+message GateReport {
+  // passed is true when no blocking gate failed.
+  bool passed = 1;
+
+  // verdicts are the verdicts of every gate evaluated, in canonical order.
+  repeated GateVerdict verdicts = 2 [(buf.validate.field).repeated.max_items = 512];
+
+  // gate_set_sha256 is the sha256 of the effective gate set (built-ins + bound set + call gates).
+  string gate_set_sha256 = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[0-9a-f]{64}$"
+  ];
+
+  // hints are corrective suggestions for the whole write.
+  repeated string hints = 4 [(buf.validate.field).repeated = {
+    max_items: 5
+    items: {
+      string: {max_len: 1024}
+    }
+  }];
+
+  // evaluated_at is the evaluation time; time-dependent functions (NOW) use it, so a verdict
+  // replays identically.
+  google.protobuf.Timestamp evaluated_at = 5 [(buf.validate.field).required = true];
+
+  // ontology_sha256 is the pinned ontology the gates ran against (absent for an open graph).
+  optional string ontology_sha256 = 6 [(buf.validate.field).string.pattern = "^[0-9a-f]{64}$"];
+
+  // truncated is true when rows or passing verdicts were dropped to fit the size bound.
+  bool truncated = 7;
+
+  // call_gates are the call-level gates of the write, stored so the verdict can be replayed
+  // (built-in and registered gates are found by sparql_sha256 through ListGates).
+  repeated GateDefinition call_gates = 8 [(buf.validate.field).repeated.max_items = 10];
+}
+
+// ═════════════════════════════════════ Named queries ════════════════════════════════════ //
+
+// QueryParameter is one typed parameter of a named query. Values are bound, never interpolated
+// into the query text.
+message QueryParameter {
+  // name is the SPARQL variable bound by the parameter, without '?'.
+  string name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 64
+      pattern: "^[A-Za-z_][A-Za-z0-9_]*$"
+    }
+  ];
+
+  // kind is the kind of value accepted.
+  QueryParameterKind kind = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // datatype is the literal datatype IRI for PARAMETER_LITERAL (absent = xsd:string).
+  optional string datatype = 3 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 2048
+  }];
+
+  // required makes the parameter mandatory; an absent optional parameter stays unbound.
+  bool required = 4;
+
+  // description says what the parameter means, shown to agents.
+  string description = 5 [(buf.validate.field).string.max_len = 1024];
+}
+
+// NamedQuery is a SPARQL query registered once (guard, budget and parameter types checked at
+// registration) and run by id with bound parameters.
+message NamedQuery {
+  option (buf.validate.message).cel = {
+    id: "named_query.unique_parameters"
+    message: "parameter names must be unique"
+    expression: "this.parameters.map(p, p.name).unique()"
+  };
+
+  // query_id identifies the query within its set.
+  string query_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 128
+      pattern: "^[A-Za-z][A-Za-z0-9_.-]*$"
+    }
+  ];
+
+  // version is the version of the query.
+  string version = 2 [(buf.validate.field).string.max_len = 128];
+
+  // sparql is a SELECT, ASK, CONSTRUCT or DESCRIBE whose parameters are variables.
+  string sparql = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 16384
+    }
+  ];
+
+  // parameters are the typed parameters of the query.
+  repeated QueryParameter parameters = 4 [(buf.validate.field).repeated.max_items = 32];
+
+  // description says what the query answers, shown to agents.
+  string description = 5 [(buf.validate.field).string.max_len = 2048];
+
+  // budget_ms is the default timeout of the query (absent = server default).
+  optional uint32 budget_ms = 6 [(buf.validate.field).uint32 = {
+    gte: 1
+    lte: 30000
+  }];
+
+  // form is the query form (output only, found at registration).
+  QueryForm form = 7 [(buf.validate.field).enum.defined_only = true];
+
+  // sparql_sha256 is the sha256 of the normalized SPARQL (output only).
+  optional string sparql_sha256 = 8 [(buf.validate.field).string.pattern = "^[0-9a-f]{64}$"];
+}
+
+// ═════════════════════════════════════ Graph metadata, ACL, versions ════════════════════════════════════ //
+
+// GraphInfo describes one graph.
+message GraphInfo {
+  option (buf.validate.message).cel = {
+    id: "graph_info.chronology"
+    message: "created_at must not be after updated_at"
+    expression: "this.created_at <= this.updated_at"
+  };
+
+  // ref is the graph as the caller names it.
+  GraphRef ref = 1 [(buf.validate.field).required = true];
+
+  // graph_uid is the registry record id, e.g. "graph:01JD…".
+  string graph_uid = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "graph:"
+      min_len: 7
+      max_len: 256
+    }
+  ];
+
+  // graph_iri is the server-minted IRI of the named graph, "urn:dk:graph:<uid>"; stable for the
+  // graph's life, including a rename.
+  string graph_iri = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "urn:dk:graph:"
+      min_len: 14
+      max_len: 256
+    }
+  ];
+
+  // status is the lifecycle status.
+  GraphStatus status = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // version is the head version (0 while PROVISIONING).
+  int64 version = 5 [(buf.validate.field).int64.gte = 0];
+
+  // triple_count is the number of triples at the head.
+  int64 triple_count = 6 [(buf.validate.field).int64.gte = 0];
+
+  // stored_bytes is the storage used by the graph.
+  int64 stored_bytes = 7 [(buf.validate.field).int64.gte = 0];
+
+  // visibility is the read rule. ORGANIZATIONS graphs are INTERNAL; SETUP_VERSIONS graphs follow
+  // the visibility of their setup; USERS graphs are PRIVATE or INTERNAL, never PUBLIC.
+  agentic_mesh_protocol.common.v1.Visibility visibility = 8 [(buf.validate.field).enum.defined_only = true];
+
+  // schema_mode is the governance mode.
+  SchemaMode schema_mode = 9 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // ontology_sha256 is the pinned ontology (STRICT).
+  optional string ontology_sha256 = 10 [(buf.validate.field).string.pattern = "^[0-9a-f]{64}$"];
+
+  // context_id is the resolved context, e.g. "users:abc" or "organizations:xyz".
+  string context_id = 11 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 256
+      pattern: "^(setup_versions|users|organizations):.+$"
+    }
+  ];
+
+  // responsible_user_id is the single user answerable for the graph; the access matrix reads it
+  // where it says "owner". For USERS graphs it is the user of the scope.
+  string responsible_user_id = 12 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "users:"
+      min_len: 7
+      max_len: 256
+    }
+  ];
+
+  // organization_id is the organization of the graph.
+  string organization_id = 13 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "organizations:"
+      min_len: 15
+      max_len: 256
+    }
+  ];
+
+  // created_by is the creator (pseudonymized on account deletion); history only, it grants nothing.
+  string created_by = 14 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 256
+  ];
+
+  // updated_by is the author of the head version (pseudonymized on account deletion).
+  string updated_by = 15 [(buf.validate.field).string.max_len = 256];
+
+  // created_at is the creation date.
+  google.protobuf.Timestamp created_at = 16 [(buf.validate.field).required = true];
+
+  // updated_at is the date of the head version.
+  google.protobuf.Timestamp updated_at = 17 [(buf.validate.field).required = true];
+
+  // caller_actions are the actions the CALLER holds on the graph (computed per call).
+  repeated GraphAction caller_actions = 18 [(buf.validate.field).repeated = {
+    max_items: 7
+    unique: true
+    items: {
+      enum: {
+        defined_only: true
+        not_in: [0]
+      }
+    }
+  }];
+
+  // last_gate_report was removed: the receipt of the head is in GraphDetails.
+  reserved 19;
+  reserved "last_gate_report";
+
+  // gate_set_sha256 is the gate set bound to the graph (absent = built-ins only).
+  optional string gate_set_sha256 = 20 [(buf.validate.field).string.pattern = "^[0-9a-f]{64}$"];
+
+  // stats summarize the content without sending it (ListGraphs / GetGraph with include_stats).
+  GraphStats stats = 21;
+}
+
+// TermCount is one term of a graph and how often it occurs.
+message TermCount {
+  // iri is the class or predicate IRI.
+  string iri = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 4096
+  ];
+
+  // count is the number of instances (class) or triples (predicate).
+  int64 count = 2 [(buf.validate.field).int64.gte = 0];
+}
+
+// GraphStats summarize a graph for the graph map: what it is about, without its triples.
+message GraphStats {
+  // top_classes are the most used classes, most used first.
+  repeated TermCount top_classes = 1 [(buf.validate.field).repeated.max_items = 20];
+
+  // top_predicates are the most used predicates, most used first.
+  repeated TermCount top_predicates = 2 [(buf.validate.field).repeated.max_items = 20];
+
+  // computed_at is when the stats were computed (they may lag the head by a few versions).
+  google.protobuf.Timestamp computed_at = 3 [(buf.validate.field).required = true];
+}
+
+// AclEntry is one grant. Input: subject + action. Output: the server also fills entry_id,
+// granted_by, granted_at, state, revoked_by, revoked_at, origin and origin_id, which are ignored
+// on input. Only the server turns entries into a decision (per action): clients never recompute
+// rights. What a scope allows is in GraphScope; a `role` matches exactly (ORG_MEMBER does not
+// cover admins), and `org_id` is always the graph's own organization.
+message AclEntry {
+  // subject is who the entry grants.
+  oneof subject {
+    option (buf.validate.oneof).required = true;
+    // user_id is one user.
+    string user_id = 1 [(buf.validate.field).string = {
+      prefix: "users:"
+      min_len: 7
+      max_len: 256
+    }];
+    // org_id is the whole organization of the graph (never another one).
+    string org_id = 2 [(buf.validate.field).string = {
+      prefix: "organizations:"
+      min_len: 15
+      max_len: 256
+    }];
+    // role is every member of the graph's organization holding that org role.
+    agentic_mesh_protocol.common.v1.OrgRole role = 3 [(buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }];
+  }
+
+  // action is what the entry grants.
+  GraphAction action = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // entry_id identifies the entry (output only).
+  optional string entry_id = 5 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 256
+  }];
+
+  // granted_by is the user who granted the entry (output only, pseudonymized on account deletion).
+  optional string granted_by = 6 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 256
+  }];
+
+  // granted_at is the grant date (output only).
+  google.protobuf.Timestamp granted_at = 7;
+
+  // state is ENTRY_ACTIVE or ENTRY_REVOKED (output only).
+  AclEntryState state = 8 [(buf.validate.field).enum.defined_only = true];
+
+  // revoked_by is the user who revoked the entry (output only, pseudonymized on account deletion).
+  optional string revoked_by = 9 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 256
+  }];
+
+  // revoked_at is the revocation date (output only).
+  google.protobuf.Timestamp revoked_at = 10;
+
+  // origin is what created the entry (output only).
+  AclEntryOrigin origin = 11 [(buf.validate.field).enum.defined_only = true];
+
+  // origin_id identifies the origin instance, e.g. the delegation (output only).
+  optional string origin_id = 12 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 256
+  }];
+}
+
+// ResponsibleChange records one change of the responsible user of a graph (kept forever,
+// pseudonymized with the users on account deletion).
+message ResponsibleChange {
+  // previous_user_id is the former responsible user.
+  string previous_user_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 256
+  ];
+
+  // responsible_user_id is the new responsible user.
+  string responsible_user_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 256
+  ];
+
+  // reason is why the responsible user changed.
+  ResponsibleChangeReason reason = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // changed_by is the user who made the change; absent for an automatic change (departure rule).
+  optional string changed_by = 4 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 256
+  }];
+
+  // changed_at is the date of the change.
+  google.protobuf.Timestamp changed_at = 5 [(buf.validate.field).required = true];
+
+  // previous_graph_id is the graph_id before the change when the departure rule renamed the graph
+  // (USERS INTERNAL graph turned ORGANIZATIONS). The new name carries a random suffix, so this
+  // history is the only link between the graph and the person.
+  optional string previous_graph_id = 6 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 255
+  }];
+}
+
+// GraphAcl is the access control of one graph. Revoked entries and responsible changes are kept
+// forever; the message carries the most recent ones and their totals, and ListAclHistory pages
+// through all of them.
+message GraphAcl {
+  // ref is the graph.
+  GraphRef ref = 1 [(buf.validate.field).required = true];
+
+  // visibility is the read rule (see GraphInfo.visibility).
+  agentic_mesh_protocol.common.v1.Visibility visibility = 2 [(buf.validate.field).enum.defined_only = true];
+
+  // entries are the ENTRY_ACTIVE entries.
+  repeated AclEntry entries = 3 [(buf.validate.field).repeated.max_items = 64];
+
+  // acl_version is the compare-and-set token of SetGraphAcl and SetGraphResponsible; 1 at creation.
+  int64 acl_version = 4 [(buf.validate.field).int64.gte = 1];
+
+  // updated_by is the author of the last ACL change (pseudonymized on account deletion).
+  string updated_by = 5 [(buf.validate.field).string.max_len = 256];
+
+  // updated_at is the date of the last ACL change.
+  google.protobuf.Timestamp updated_at = 6;
+
+  // responsible_user_id is the single responsible user: exactly one, never empty, the creator by default.
+  string responsible_user_id = 7 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "users:"
+      min_len: 7
+      max_len: 256
+    }
+  ];
+
+  // responsible_history lists the most recent changes of responsible user, newest first.
+  repeated ResponsibleChange responsible_history = 8 [(buf.validate.field).repeated.max_items = 64];
+
+  // revoked_entries are the most recent ENTRY_REVOKED entries, newest first.
+  repeated AclEntry revoked_entries = 9 [(buf.validate.field).repeated.max_items = 64];
+
+  // revoked_total is the number of revoked entries ever recorded.
+  int64 revoked_total = 10 [(buf.validate.field).int64.gte = 0];
+
+  // responsible_changes_total is the number of responsible changes ever recorded.
+  int64 responsible_changes_total = 11 [(buf.validate.field).int64.gte = 0];
+}
+
+// AclHistoryEvent is one change of a graph's access control.
+message AclHistoryEvent {
+  // occurred_at is the date of the change.
+  google.protobuf.Timestamp occurred_at = 1 [(buf.validate.field).required = true];
+
+  // change is what changed.
+  oneof change {
+    option (buf.validate.oneof).required = true;
+    // entry is an entry granted or revoked (its state says which; a revoked entry carries
+    // revoked_by and revoked_at).
+    AclEntry entry = 2;
+    // responsible_change is a change of responsible user.
+    ResponsibleChange responsible_change = 3;
+    // visibility_change is the new visibility of the graph.
+    agentic_mesh_protocol.common.v1.Visibility visibility_change = 4 [(buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }];
+  }
+
+  // changed_by is the user who made the change (pseudonymized on account deletion); absent for
+  // an automatic change (departure rule).
+  optional string changed_by = 5 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 256
+  }];
+
+  // acl_version is the ACL version the change produced.
+  int64 acl_version = 6 [(buf.validate.field).int64.gte = 1];
+}
+
+// GraphLimits are the limits that apply to a graph.
+message GraphLimits {
+  // max_triples_per_graph caps one graph.
+  int64 max_triples_per_graph = 1 [(buf.validate.field).int64.gte = 0];
+
+  // max_triples_per_organization caps one organization.
+  int64 max_triples_per_organization = 2 [(buf.validate.field).int64.gte = 0];
+
+  // max_graphs_per_scope caps the graphs of one context.
+  int64 max_graphs_per_scope = 3 [(buf.validate.field).int64.gte = 0];
+
+  // max_operations_per_patch caps one patch.
+  int64 max_operations_per_patch = 4 [(buf.validate.field).int64.gte = 0];
+
+  // max_request_bytes caps one request.
+  int64 max_request_bytes = 5 [(buf.validate.field).int64.gte = 0];
+
+  // max_query_timeout_ms caps a query deadline.
+  int32 max_query_timeout_ms = 6 [(buf.validate.field).int32.gte = 0];
+
+  // max_query_rows caps the rows of a query.
+  int32 max_query_rows = 7 [(buf.validate.field).int32.gte = 0];
+
+  // max_query_bytes caps the bytes of a query result.
+  int64 max_query_bytes = 8 [(buf.validate.field).int64.gte = 0];
+
+  // max_import_bytes caps one import.
+  int64 max_import_bytes = 9 [(buf.validate.field).int64.gte = 0];
+
+  // chunk_bytes is the maximum payload of a DataChunk.
+  int32 chunk_bytes = 10 [(buf.validate.field).int32.gte = 0];
+
+  // versions_retained is the number of versions RestoreVersion and at_version can reach.
+  int32 versions_retained = 11 [(buf.validate.field).int32.gte = 0];
+
+  // max_at_version_triples caps the graph rebuilt for Query.at_version.
+  int64 max_at_version_triples = 12 [(buf.validate.field).int64.gte = 0];
+
+  // max_dataset_graphs caps the graphs of one query dataset (GraphFilter included). Never above
+  // 100: QueryHeader.graphs_read and GraphFilter.graph_uids hold at most 100 graphs.
+  int32 max_dataset_graphs = 13 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 100
+  }];
+
+  // max_dataset_triples caps the triples of one query dataset (GraphFilter included).
+  int64 max_dataset_triples = 14 [(buf.validate.field).int64.gte = 0];
+}
+
+// VersionInfo describes one version of a graph: its delta counters, provenance and verdict receipt.
+message VersionInfo {
+  // version is the version number.
+  int64 version = 1 [(buf.validate.field).int64.gte = 1];
+
+  // kind is what produced the version.
+  VersionKind kind = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // patch_id is the journal row id, e.g. "graph_patch:…".
+  string patch_id = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "graph_patch:"
+      min_len: 13
+      max_len: 256
+    }
+  ];
+
+  // author_user_id is the author (pseudonymized on account deletion).
+  string author_user_id = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 256
+  ];
+
+  // author_role is the author's org role at the time of the write.
+  agentic_mesh_protocol.common.v1.OrgRole author_role = 5 [(buf.validate.field).enum.defined_only = true];
+
+  // mission_id is the mission the write came from (absent for an admin write: adoption, departure).
+  optional string mission_id = 6 [(buf.validate.field).string = {
+    prefix: "missions:"
+    min_len: 10
+    max_len: 256
+  }];
+
+  // setup_version_id is the setup version the write came from.
+  optional string setup_version_id = 7 [(buf.validate.field).string = {
+    prefix: "setup_versions:"
+    min_len: 16
+    max_len: 256
+  }];
+
+  // task_id is the task the write came from.
+  optional string task_id = 8 [(buf.validate.field).string = {
+    max_len: 256
+    pattern: "^[A-Za-z0-9_:.-]+$"
+  }];
+
+  // triples_added is the number of triples added.
+  int64 triples_added = 9 [(buf.validate.field).int64.gte = 0];
+
+  // triples_removed is the number of triples removed.
+  int64 triples_removed = 10 [(buf.validate.field).int64.gte = 0];
+
+  // triple_count_after is the triple count after the version.
+  int64 triple_count_after = 11 [(buf.validate.field).int64.gte = 0];
+
+  // content_sha256 is the sha256 of the canonical N-Triples after the version (when computed).
+  optional string content_sha256 = 12 [(buf.validate.field).string.pattern = "^[0-9a-f]{64}$"];
+
+  // idempotency_key is the key of the write.
+  optional string idempotency_key = 13 [(buf.validate.field).string = {
+    min_len: 16
+    max_len: 128
+  }];
+
+  // committed_at is the commit date.
+  google.protobuf.Timestamp committed_at = 14 [(buf.validate.field).required = true];
+
+  // snapshot is true when a snapshot materializes this exact version.
+  bool snapshot = 15;
+
+  // label is the snapshot label.
+  optional string label = 16 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 128
+  }];
+
+  // commit_id is shared by every version an ApplyBatch committed together; absent otherwise.
+  optional string commit_id = 17 [(buf.validate.field).string = {
+    prefix: "graph_commit:"
+    min_len: 14
+    max_len: 256
+  }];
+
+  // provenance is what the caller declared about the write.
+  WriteProvenance provenance = 18;
+
+  // receipt is the verdict receipt of the write (ontology sha, gate set sha, every verdict,
+  // evaluated_at); set when ListVersionsRequest.include_receipts is true.
+  GateReport receipt = 19;
+}
+
+// OntologyRef describes a pinned ontology.
+message OntologyRef {
+  // sha256 is the canonical sha256 of the ontology (RDFC-1.0 + xsd normalization).
+  string sha256 = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[0-9a-f]{64}$"
+  ];
+
+  // ontology_iri is the content-addressed named graph "urn:dk:onto:<sha256>".
+  string ontology_iri = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "urn:dk:onto:"
+      min_len: 13
+      max_len: 256
+    }
+  ];
+
+  // triple_count is the number of triples, subClassOf closure included.
+  int64 triple_count = 3 [(buf.validate.field).int64.gte = 0];
+
+  // organization_id is the organization the ontology is pinned in.
+  string organization_id = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "organizations:"
+      min_len: 15
+      max_len: 256
+    }
+  ];
+
+  // pinned_at is the pin date.
+  google.protobuf.Timestamp pinned_at = 5 [(buf.validate.field).required = true];
+}
+
+// ServerTiming are the server-side timings, mirrored by the tool in its call.summary line.
+message ServerTiming {
+  // total_ms is the total server time.
+  double total_ms = 1 [(buf.validate.field).double = {
+    gte: 0
+    finite: true
+  }];
+
+  // auth_ms is the time spent on authentication and ACL.
+  double auth_ms = 2 [(buf.validate.field).double = {
+    gte: 0
+    finite: true
+  }];
+
+  // queue_ms is the time spent waiting for the graph lock.
+  double queue_ms = 3 [(buf.validate.field).double = {
+    gte: 0
+    finite: true
+  }];
+
+  // exec_ms is the engine time.
+  double exec_ms = 4 [(buf.validate.field).double = {
+    gte: 0
+    finite: true
+  }];
+
+  // gates_ms is the time spent on gates.
+  double gates_ms = 5 [(buf.validate.field).double = {
+    gte: 0
+    finite: true
+  }];
+
+  // journal_ms is the time spent committing the journal.
+  double journal_ms = 6 [(buf.validate.field).double = {
+    gte: 0
+    finite: true
+  }];
+
+  // shard_id is the shard that served the call.
+  string shard_id = 7 [(buf.validate.field).string.max_len = 64];
+}
+
+// WriteResult is the result of every committed (or dry-run) write on one graph.
+message WriteResult {
+  // graph is the graph after the write.
+  GraphInfo graph = 1 [(buf.validate.field).required = true];
+
+  // triples_added is the number of triples added.
+  int64 triples_added = 2 [(buf.validate.field).int64.gte = 0];
+
+  // triples_removed is the number of triples removed.
+  int64 triples_removed = 3 [(buf.validate.field).int64.gte = 0];
+
+  // operations_skipped counts operations with no effect (adding a present triple…).
+  int64 operations_skipped = 4 [(buf.validate.field).int64.gte = 0];
+
+  // unchanged is true when nothing changed: no version was minted.
+  bool unchanged = 5;
+
+  // dry_run is true when nothing was written on purpose.
+  bool dry_run = 6;
+
+  // next_version is the version a commit would produce (dry run) or produced.
+  int64 next_version = 7 [(buf.validate.field).int64.gte = 1];
+
+  // gate_report is the verdict receipt.
+  GateReport gate_report = 8;
+
+  // version is set when a version was committed; its receipt is left unset (it is gate_report).
+  VersionInfo version = 9;
+
+  // idempotent_replay is true when the idempotency key matched an earlier commit: this is its
+  // stored result and nothing was applied again.
+  bool idempotent_replay = 10;
+
+  // created is true when the write created the graph.
+  bool created = 11;
+
+  // timing are the server timings.
+  ServerTiming timing = 12;
+}
+
+// ═════════════════════════════════════ Streaming ════════════════════════════════════ //
+
+// DataChunk carries raw bytes of an RDF or results document. The payload is at most 1 MiB so
+// every hop stays under the 4 MiB gRPC default receive limit.
+message DataChunk {
+  // seq is the chunk number, strictly increasing from 0.
+  int64 seq = 1 [(buf.validate.field).int64.gte = 0];
+
+  // data is the payload.
+  bytes data = 2 [(buf.validate.field).bytes.max_len = 1048576];
+}
+
+// Suggestion proposes declared terms close to an unknown one.
+message Suggestion {
+  // term is the unknown term.
+  string term = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 4096
+  ];
+
+  // candidates are the closest declared terms, best first.
+  repeated string candidates = 2 [(buf.validate.field).repeated = {
+    max_items: 5
+    items: {
+      string: {max_len: 4096}
+    }
+  }];
+}
+
+// ═════════════════════════════════════ Errors ════════════════════════════════════ //
+
+// GraphError is the rich refusal returned in-band, as the `error` branch of a response outcome
+// (or the last frame of a stream), with an OK gRPC status. The SDK maps `reason` to its client
+// exception. Transport and infrastructure failures stay gRPC statuses (UNAVAILABLE, including
+// SHARD_UNAVAILABLE and GRAPH_SUSPECT, DEADLINE_EXCEEDED, UNAUTHENTICATED, INTERNAL,
+// INVALID_ARGUMENT for a request that fails its validation rules). An error never leaves a
+// partial write.
+message GraphError {
+  reserved 2, 11, 12;
+  reserved "tool_error_kind", "details", "written";
+
+  // reason is the machine-readable reason.
+  GraphErrorReason reason = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // message is a human-readable explanation.
+  string message = 3 [(buf.validate.field).string.max_len = 4096];
+
+  // hints are corrective suggestions.
+  repeated string hints = 4 [(buf.validate.field).repeated = {
+    max_items: 10
+    items: {
+      string: {max_len: 1024}
+    }
+  }];
+
+  // did_you_mean proposes declared terms for unknown ones.
+  repeated Suggestion did_you_mean = 5 [(buf.validate.field).repeated.max_items = 20];
+
+  // ref is the graph concerned.
+  GraphRef ref = 6;
+
+  // expected_version is the version the caller expected (VERSION_CONFLICT).
+  optional int64 expected_version = 7 [(buf.validate.field).int64.gte = 0];
+
+  // actual_version is the head version (VERSION_CONFLICT).
+  optional int64 actual_version = 8 [(buf.validate.field).int64.gte = 0];
+
+  // gate_report is the verdict receipt (GATE_VIOLATION).
+  GateReport gate_report = 9;
+
+  // operation_problems are the problems per operation.
+  repeated OperationProblem operation_problems = 10 [(buf.validate.field).repeated.max_items = 100];
+
+  // batch_item_index is the index of the ApplyBatch item that caused the refusal.
+  optional int32 batch_item_index = 13 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 15
+  }];
+}
