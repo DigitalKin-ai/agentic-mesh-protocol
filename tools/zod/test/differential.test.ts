@@ -74,6 +74,14 @@ const PATTERN_SAMPLES: Record<string, string> = {
   "^([a-z][a-z0-9_]*)?$": "name",
   "^[a-z][a-z0-9_]*$": "google_drive",
   "(?i)^abc$": "AbC",
+  "^(setup_versions|users|organizations):.+$": "users:u1",
+  "^[^\\x00-\\x1F/]+$": "graph_1",
+  "^[0-9a-f]{64}$": "0123456789abcdef".repeat(4),
+  "^[A-Z0-9][A-Z0-9_-]*(:[A-Za-z0-9_.-]+)?$": "ACYCLIC:dependsOn",
+  "^([A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*)?$": "en-US",
+  "^[A-Za-z_][A-Za-z0-9_]*$": "focus",
+  "^[A-Za-z][A-Za-z0-9_.-]*$": "byType",
+  "^[A-Z][A-Za-z]*Error$": "GateViolationError",
 };
 
 const EMOJI = "\u{1F600}";
@@ -109,8 +117,68 @@ const GENERIC_STRINGS = ["xylophone", "x".repeat(70), "main", "bad", "abc", "1",
 
 const TIMESTAMP_BASE = 1_700_000_000;
 
+/** graph.v1 terms and patches reused by the overrides below. */
+const IRI = (value: string): Init => ({ value: { case: "iri", value } });
+const TRIPLE = (): Init => ({ subject: IRI("urn:s"), predicate: IRI("urn:p"), object: IRI("urn:o") });
+const BATCH_ITEM = (graphId: string): Init => ({
+  ref: { scope: 4, graphId },
+  expectedVersion: 1n,
+  patch: { operations: [{ op: { case: "add", value: TRIPLE() } }] },
+});
+
+const USERS_PUBLIC = (init: Init): void => {
+  init.ref = { scope: 3, graphId: "graph_1" };
+  init.visibility = 1;
+};
+
 /** Base values a rule spanning several fields needs, which the field-by-field synthesis cannot find. */
 const BASE_OVERRIDES: Record<string, (init: Init) => void> = {
+  // Visibility can only be chosen for a USERS graph (the base ref is a SETUP_VERSIONS one)
+  ...Object.fromEntries(
+    ["CreateGraphRequest", "ApplyPatchRequest", "ImportHeader", "SetGraphAclRequest", "AdoptStorageGraphRequest"].map(
+      (m) => [`agentic_mesh_protocol.graph.v1.${m}`, (init: Init) => { init.visibility = 0; }],
+    ),
+  ),
+  // A setup target is only allowed with scope SETUP_VERSIONS
+  "agentic_mesh_protocol.graph.v1.GraphRef": (init) => {
+    init.scope = 2;
+  },
+  "agentic_mesh_protocol.graph.v1.ListGraphsRequest": (init) => {
+    init.scopes = [2];
+    init.includeStats = false;
+  },
+  // Term bases are cut by the recursion depth when a Triple is first reached deep in a patch
+  "agentic_mesh_protocol.graph.v1.Triple": (init) => {
+    Object.assign(init, TRIPLE());
+  },
+  "agentic_mesh_protocol.graph.v1.TriplePattern": (init) => {
+    Object.assign(init, TRIPLE());
+  },
+  "agentic_mesh_protocol.graph.v1.ReplaceValues": (init) => {
+    init.subject = IRI("urn:s");
+    init.predicate = IRI("urn:p");
+    init.values = [IRI("urn:o")];
+  },
+  "agentic_mesh_protocol.graph.v1.Binding": (init) => {
+    init.value = IRI("urn:v");
+  },
+  // Operations or a SPARQL Update, not both
+  "agentic_mesh_protocol.graph.v1.PatchBody": (init) => {
+    init.operations = [{ op: { case: "add", value: TRIPLE() } }];
+    delete init.sparqlUpdate;
+  },
+  "agentic_mesh_protocol.graph.v1.DiffVersionsRequest": (init) => {
+    init.fromVersion = 1n;
+    init.toVersion = 2n;
+  },
+  // A new gate set or clear_gate_set, not both
+  "agentic_mesh_protocol.graph.v1.SetGraphRulesRequest": (init) => {
+    init.clearGateSet = false;
+  },
+  // 2 to 16 items on distinct graphs
+  "agentic_mesh_protocol.graph.v1.ApplyBatchRequest": (init) => {
+    init.items = [BATCH_ITEM("graph_1"), BATCH_ITEM("graph_2")];
+  },
   "zodtest.v1.CelCases": (init) => {
     init.tags = ["main", "xy"];
     init.inner = { label: "abc" };
@@ -126,6 +194,20 @@ const BASE_OVERRIDES: Record<string, (init: Init) => void> = {
 
 /** Mutations of the rules no single-field mutation breaks. */
 const RULE_MUTATIONS: Record<string, (init: Init) => void> = {
+  "agentic_mesh_protocol.graph.v1.ListGraphsRequest": (init) => {
+    init.includeStats = true;
+    delete init.pagination;
+  },
+  // A USERS graph cannot be PUBLIC (the base ref is a SETUP_VERSIONS one)
+  "agentic_mesh_protocol.graph.v1.CreateGraphRequest": USERS_PUBLIC,
+  "agentic_mesh_protocol.graph.v1.ApplyPatchRequest": USERS_PUBLIC,
+  "agentic_mesh_protocol.graph.v1.ImportHeader": USERS_PUBLIC,
+  "agentic_mesh_protocol.graph.v1.SetGraphAclRequest": USERS_PUBLIC,
+  "agentic_mesh_protocol.graph.v1.AdoptStorageGraphRequest": USERS_PUBLIC,
+  "agentic_mesh_protocol.graph.v1.Literal": (init) => {
+    init.direction = "ltr";
+    init.language = "";
+  },
   "zodtest.v1.CelCases": (init) => {
     init.blob = new Uint8Array([1]);
     init.tags = [];

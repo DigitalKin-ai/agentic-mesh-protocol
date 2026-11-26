@@ -1,0 +1,117 @@
+// Copyright 2026 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.graph.v1;
+
+import "agentic_mesh_protocol/graph/v1/graph_dto.proto";
+
+// GraphService serves named RDF graphs with server-side ACL, compare-and-set versions, gates
+// and bounded SPARQL.
+//
+// Served to modules by the services provider (x-task-id authentication, context resolution,
+// ACL, quotas, billing), which proxies to the graph microservice over mTLS.
+//
+// Sizes: every response fits an LLM's context. Listings are paginated (at most 50 to 100 items a
+// page), gate reports stay under 256 KiB, streams use frames of at most 1 MiB. The SDK refuses a
+// request larger than GraphLimits.max_request_bytes (at most 3.5 MiB, under the 4 MiB gRPC
+// receive limit) before sending it, with PATCH_TOO_LARGE; bulk data goes through Import.
+//
+// Rights: each RPC needs one GraphAction (see GraphAction), checked by the server alone.
+//
+// Idempotency: a key is recorded once a commit is attempted (its outcome known or not); a write
+// refused before that does not record it, so it can be sent again with the same key once fixed.
+//
+// Responses: every unary response is `oneof outcome { <result>; GraphError error }`, and every
+// stream ends with a trailer or a GraphError frame. A refusal (CAS conflict, gate violation,
+// not found, query refused, quota…) is returned in-band with an OK status; gRPC statuses are
+// kept for transport and infrastructure failures, which the SDK retries and counts in its circuit
+// breaker. Mutations carry an idempotency_key: a client retry after UNAVAILABLE or a lost response
+// returns the stored outcome instead of applying twice.
+service GraphService {
+  // CreateGraph creates an empty graph (GRAPH_ALREADY_EXISTS when (context, organization,
+  // graph_id) is taken).
+  rpc CreateGraph(CreateGraphRequest) returns (CreateGraphResponse);
+  // GetGraph describes one graph (metadata, limits, ACL, stats, and the verdict receipt of the head
+  // in GraphDetails.last_gate_report).
+  rpc GetGraph(GetGraphRequest) returns (GetGraphResponse);
+  // ListGraphs returns the graph map: every graph the caller can read, with metadata and optional
+  // stats, never the triples; then a Query with a GraphFilter reads the chosen ones.
+  rpc ListGraphs(ListGraphsRequest) returns (ListGraphsResponse);
+  // DropGraph makes a graph unreachable now (status PURGING); the physical purge is asynchronous.
+  rpc DropGraph(DropGraphRequest) returns (DropGraphResponse);
+
+  // ApplyPatch applies an atomic patch to one graph: CAS on expected_version, delta gates, one
+  // journal row = one version.
+  rpc ApplyPatch(ApplyPatchRequest) returns (ApplyPatchResponse);
+  // ApplyBatch writes 2 to 16 distinct, unrelated graphs of one organization, all or nothing,
+  // each with its own CAS and gates; the versions share one commit_id.
+  rpc ApplyBatch(ApplyBatchRequest) returns (ApplyBatchResponse);
+  // Validate dry-runs a patch (WOULD_PASS / WOULD_FAIL) or audits a whole graph
+  // (AUDIT_PASS / AUDIT_FAIL).
+  rpc Validate(ValidateRequest) returns (ValidateResponse);
+
+  // Query runs read-only SPARQL over a closed dataset (named graphs, or a GraphFilter over the
+  // readable ones), paged by page_token: header, data frames, trailer.
+  rpc Query(QueryRequest) returns (stream QueryResponse);
+  // RegisterQueries registers a named query set in the caller's organization; returns its
+  // query_set_sha256.
+  rpc RegisterQueries(RegisterQueriesRequest) returns (RegisterQueriesResponse);
+  // RunNamedQuery runs one registered query with bound parameters: same frames as Query.
+  rpc RunNamedQuery(RunNamedQueryRequest) returns (stream RunNamedQueryResponse);
+  // DiffVersions streams the triples added and removed between two versions, from the journal.
+  rpc DiffVersions(DiffVersionsRequest) returns (stream DiffVersionsResponse);
+
+  // Import bulk-loads a document: header, chunks, commit. Gated like a patch (full-graph gates
+  // on REPLACE).
+  rpc Import(stream ImportRequest) returns (ImportResponse);
+  // Export dumps the head (or a past version) as chunks or into a Filesystem file.
+  rpc Export(ExportRequest) returns (stream ExportResponse);
+
+  // Snapshot materializes the head as a restorable snapshot (optionally exported to Filesystem).
+  rpc Snapshot(SnapshotRequest) returns (SnapshotResponse);
+  // ListVersions returns the version history (journal) with provenance and verdict receipts,
+  // newest first.
+  rpc ListVersions(ListVersionsRequest) returns (ListVersionsResponse);
+  // RestoreVersion mints head + 1 equal to target_version (gated, CAS).
+  rpc RestoreVersion(RestoreVersionRequest) returns (RestoreVersionResponse);
+
+  // PinOntology stores a strict ontology in the caller's organization, content-addressed by its
+  // canonical sha256 (refused if it differs from expected_sha256 or breaks the strict OWL profile).
+  rpc PinOntology(PinOntologyRequest) returns (PinOntologyResponse);
+  // GetOntology reads a pinned ontology.
+  rpc GetOntology(GetOntologyRequest) returns (GetOntologyResponse);
+  // RegisterGates registers a custom gate set in the caller's organization; returns its
+  // gate_set_sha256.
+  rpc RegisterGates(RegisterGatesRequest) returns (RegisterGatesResponse);
+  // ListGates lists built-in gates and/or the gates of one registered set.
+  rpc ListGates(ListGatesRequest) returns (ListGatesResponse);
+  // GetQuerySet reads a registered named query set (queries, parameters, forms).
+  rpc GetQuerySet(GetQuerySetRequest) returns (GetQuerySetResponse);
+  // SetGraphRules binds another ontology and/or gate set to a graph (SET_RULES): the whole graph
+  // is audited against the new rules, then a RULES version is minted.
+  rpc SetGraphRules(SetGraphRulesRequest) returns (SetGraphRulesResponse);
+
+  // GetGraphAcl reads the ACL of a graph (VIEW).
+  rpc GetGraphAcl(GetGraphAclRequest) returns (GetGraphAclResponse);
+  // SetGraphAcl replaces the active entries (GRANT). The server stamps granted_by / granted_at
+  // and marks removed entries ENTRY_REVOKED (never deleted).
+  rpc SetGraphAcl(SetGraphAclRequest) returns (SetGraphAclResponse);
+  // SetGraphResponsible changes the single responsible user (GRANT).
+  rpc SetGraphResponsible(SetGraphResponsibleRequest) returns (SetGraphResponsibleResponse);
+  // ListAclHistory pages through every ACL change of a graph (grants, revocations, responsible
+  // and visibility changes), newest first (VIEW).
+  rpc ListAclHistory(ListAclHistoryRequest) returns (ListAclHistoryResponse);
+}

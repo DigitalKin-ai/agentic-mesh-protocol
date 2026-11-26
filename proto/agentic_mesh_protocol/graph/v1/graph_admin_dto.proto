@@ -1,0 +1,309 @@
+// Copyright 2026 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.graph.v1;
+
+import "agentic_mesh_protocol/common/v1/common_enums.proto";
+import "agentic_mesh_protocol/graph/v1/graph_enums.proto";
+import "agentic_mesh_protocol/graph/v1/graph_messages.proto";
+import "buf/validate/validate.proto";
+
+// Internal: services provider and back jobs -> graph microservice. Never exposed to modules.
+
+// ════════════════════════════════════ PurgeContext ════════════════════════════════════ //
+
+// PurgeContextRequest purges every graph of one context.
+message PurgeContextRequest {
+  // context_id is setup_versions:…, users:… or organizations:…
+  string context_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      max_len: 256
+      pattern: "^(setup_versions|users|organizations):.+$"
+    }
+  ];
+
+  // reason is recorded with the purge.
+  optional string reason = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 256
+  }];
+}
+
+// PurgeContextResponse reports the purge.
+message PurgeContextResponse {
+  // graphs_purged is the number of graphs purged.
+  int64 graphs_purged = 1 [(buf.validate.field).int64.gte = 0];
+
+  // graphs_remaining is the number of graphs still being purged.
+  int64 graphs_remaining = 2 [(buf.validate.field).int64.gte = 0];
+}
+
+// ════════════════════════════════════ PurgeOrganization ════════════════════════════════════ //
+
+// PurgeOrganizationRequest purges every graph of one organization.
+message PurgeOrganizationRequest {
+  // organization_id is the organization.
+  string organization_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "organizations:"
+      min_len: 15
+      max_len: 256
+    }
+  ];
+}
+
+// PurgeOrganizationResponse reports the purge.
+message PurgeOrganizationResponse {
+  // graphs_purged is the number of graphs purged.
+  int64 graphs_purged = 1 [(buf.validate.field).int64.gte = 0];
+
+  // store_removed is true when the organization's store was removed.
+  bool store_removed = 2;
+}
+
+// ════════════════════════════════════ ReleaseUserGraphs ════════════════════════════════════ //
+
+// ReleaseUserGraphsRequest applies the departure rule.
+//
+// Leaving an organization (clerk.organizationMembership.deleted): nothing is pseudonymized (what
+// was done in the organization stays with it).
+//   - USERS graphs with visibility PRIVATE are purged;
+//   - USERS graphs with visibility INTERNAL become ORGANIZATIONS graphs renamed
+//     "<graph_id truncated to 241 characters>.from.<8 random characters [a-z0-9]>" (255 at most;
+//     content and history untouched). The suffix is random, never derived from the user id (an
+//     unsalted hash could be reversed by hashing every id); a new suffix is drawn when the
+//     uniqueness constraint refuses the name;
+//   - ORGANIZATIONS and SETUP_VERSIONS graphs the user is responsible for get the oldest org
+//     admin as responsible user, or the oldest remaining member when no admin is left; an
+//     organization left with no member is purged (PurgeOrganization);
+//   - the ACL entries whose subject is the user become ENTRY_REVOKED (origin DEPARTURE_RULE);
+//   - every change is recorded in GraphAcl.responsible_history.
+// Account deletion (purgeUser, step Graphs): the same rule in every organization of the user, then
+// every trace of the user is pseudonymized (authors, granted_by, revoked_by, history) (D9).
+message ReleaseUserGraphsRequest {
+  // user_id is the departing user.
+  string user_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "users:"
+      min_len: 7
+      max_len: 256
+    }
+  ];
+
+  // organization_id is the organization the user leaves (every organization of the user on
+  // account deletion: one call per organization).
+  string organization_id = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "organizations:"
+      min_len: 15
+      max_len: 256
+    }
+  ];
+
+  // reason is ACCOUNT_DELETED or LEFT_ORGANIZATION.
+  ResponsibleChangeReason reason = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      in: [
+        2,
+        3
+      ]
+    }
+  ];
+}
+
+// ReleaseUserGraphsResponse reports what the departure rule did.
+message ReleaseUserGraphsResponse {
+  // graphs_purged is the number of PRIVATE personal graphs purged.
+  int64 graphs_purged = 1 [(buf.validate.field).int64.gte = 0];
+
+  // graphs_converted is the number of INTERNAL personal graphs turned into organization graphs.
+  int64 graphs_converted = 2 [(buf.validate.field).int64.gte = 0];
+
+  // graphs_reassigned is the number of graphs whose responsible user changed.
+  int64 graphs_reassigned = 3 [(buf.validate.field).int64.gte = 0];
+
+  // new_responsible_user_id is who took over: the oldest org admin, or the oldest remaining member
+  // when no admin is left (absent when no graph moved).
+  optional string new_responsible_user_id = 4 [(buf.validate.field).string = {
+    prefix: "users:"
+    min_len: 7
+    max_len: 256
+  }];
+}
+
+// ════════════════════════════════════ RebuildIndex ════════════════════════════════════ //
+
+// RebuildIndexRequest rebuilds the engine index from snapshots and the journal.
+message RebuildIndexRequest {
+  // organization_id restricts to one organization; absent = every graph of the shard.
+  optional string organization_id = 1 [(buf.validate.field).string = {
+    prefix: "organizations:"
+    min_len: 15
+    max_len: 256
+  }];
+
+  // graph_uid restricts to one graph.
+  optional string graph_uid = 2 [(buf.validate.field).string = {
+    prefix: "graph:"
+    min_len: 7
+    max_len: 256
+  }];
+}
+
+// RebuildIndexResponse reports the rebuild.
+message RebuildIndexResponse {
+  // graphs_rebuilt is the number of graphs rebuilt.
+  int64 graphs_rebuilt = 1 [(buf.validate.field).int64.gte = 0];
+
+  // versions_replayed is the number of journal versions replayed.
+  int64 versions_replayed = 2 [(buf.validate.field).int64.gte = 0];
+
+  // elapsed_ms is the rebuild time.
+  double elapsed_ms = 3 [(buf.validate.field).double = {
+    gte: 0
+    finite: true
+  }];
+}
+
+// ════════════════════════════════════ GetShardHealth ════════════════════════════════════ //
+
+// GetShardHealthRequest reads the health of every shard.
+message GetShardHealthRequest {}
+
+// ShardHealth is the health of one shard.
+message ShardHealth {
+  // shard_id identifies the shard.
+  string shard_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 64
+  ];
+
+  // open_stores is the number of open stores.
+  int32 open_stores = 2 [(buf.validate.field).int32.gte = 0];
+
+  // store_bytes is the storage used.
+  int64 store_bytes = 3 [(buf.validate.field).int64.gte = 0];
+
+  // journal_lag_versions is the number of journal versions not yet applied to the index.
+  int64 journal_lag_versions = 4 [(buf.validate.field).int64.gte = 0];
+
+  // kills_last_hour is the number of queries killed in the last hour.
+  int32 kills_last_hour = 5 [(buf.validate.field).int32.gte = 0];
+
+  // purge_backlog is the number of graphs waiting for purge.
+  int64 purge_backlog = 6 [(buf.validate.field).int64.gte = 0];
+}
+
+// GetShardHealthResponse returns the health of every shard.
+message GetShardHealthResponse {
+  // shards are the shards.
+  repeated ShardHealth shards = 1 [(buf.validate.field).repeated.max_items = 64];
+}
+
+// ════════════════════════════════════ AdoptStorageGraph ════════════════════════════════════ //
+
+// AdoptStorageGraphRequest migrates one tool-rdf-kg Storage record (collection rdf_graphs) into
+// the service. Run by the migration script, which reads the record from SurrealDB and builds
+// the Principal from the record's owner, organization and context.
+message AdoptStorageGraphRequest {
+  option (buf.validate.message).cel = {
+    id: "adopt_storage_graph_request.visibility_users_only"
+    message: "visibility can only be chosen for a USERS graph"
+    expression: "this.ref.scope == 3 || this.visibility == 0"
+  };
+  option (buf.validate.message).cel = {
+    id: "adopt_storage_graph_request.users_not_public"
+    message: "a USERS graph cannot be PUBLIC"
+    expression: "this.ref.scope != 3 || this.visibility != 1"
+  };
+  option (buf.validate.message).cel = {
+    id: "adopt_storage_graph_request.strict_needs_ontology"
+    message: "a STRICT graph needs ontology_sha256"
+    expression: "this.schema_mode != 1 || has(this.ontology_sha256)"
+  };
+
+  // principal is the identity the graph is adopted for.
+  Principal principal = 1 [(buf.validate.field).required = true];
+
+  // ref names the new graph.
+  GraphRef ref = 2 [(buf.validate.field).required = true];
+
+  // storage_id is the source record, kept on the graph row for audit and rollback.
+  string storage_id = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      prefix: "storage:"
+      min_len: 9
+      max_len: 256
+    }
+  ];
+
+  // format is the serialization of content.
+  RdfFormat format = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // content is the record's serialized graph, at most 3.5 MiB so the request stays under the
+  // 4 MiB gRPC receive limit.
+  bytes content = 5 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).bytes.max_len = 3670016
+  ];
+
+  // adopt_version is the head version of the adopted graph: the `version` the tool stored in the
+  // record's data, + 1 (the tool counts from 0), so the counter never resets and a CAS can always
+  // address the head.
+  int64 adopt_version = 6 [(buf.validate.field).int64.gte = 1];
+
+  // visibility is the read rule of the new graph.
+  agentic_mesh_protocol.common.v1.Visibility visibility = 7 [(buf.validate.field).enum.defined_only = true];
+
+  // schema_mode is the governance mode of the new graph.
+  SchemaMode schema_mode = 8 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // ontology_sha256 is bound for a STRICT graph.
+  optional string ontology_sha256 = 9 [(buf.validate.field).string.pattern = "^[0-9a-f]{64}$"];
+
+  // content_sha256 is the sha256 of the record content as stored, checked before adoption.
+  string content_sha256 = 10 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[0-9a-f]{64}$"
+  ];
+}
+
+// AdoptStorageGraphResponse returns the adopted graph.
+message AdoptStorageGraphResponse {
+  // graph is the adopted graph.
+  GraphInfo graph = 1 [(buf.validate.field).required = true];
+
+  // already_adopted is true when the graph already existed with the same storage_id.
+  bool already_adopted = 2;
+}

@@ -191,6 +191,91 @@ on the conventions above:
   most 254 characters) returns `ChangeOwnershipResponse` (`SetupResult result` holding the Setup
   with its new owner, or an `OperationError`).
 
+### Added — graph service (`graph/v1`)
+
+New package `agentic_mesh_protocol.graph.v1` (DEV-986): named RDF graphs with server-side ACL,
+compare-and-set versions, SPARQL gates and bounded SPARQL. Files: `graph_enums`, `graph_messages`,
+`graph_dto`, `graph_service`, `graph_admin_dto`, `graph_admin_service`.
+
+- `GraphService` (26 RPCs): `CreateGraph`, `GetGraph`, `ListGraphs`, `DropGraph`; `ApplyPatch`,
+  `ApplyBatch`, `Validate`; `Query` (server stream), `RegisterQueries`, `RunNamedQuery` (server
+  stream), `GetQuerySet`, `DiffVersions` (server stream); `Import` (client stream), `Export`
+  (server stream); `Snapshot`, `ListVersions`, `RestoreVersion`; `PinOntology`, `GetOntology`,
+  `RegisterGates`, `ListGates`, `SetGraphRules`; `GetGraphAcl`, `SetGraphAcl`,
+  `SetGraphResponsible`, `ListAclHistory`.
+- `GraphAdminService` (internal, never registered in the services provider, gRPC-status errors):
+  `PurgeContext`, `PurgeOrganization`, `ReleaseUserGraphs` (departure rule), `RebuildIndex`,
+  `GetShardHealth`, `AdoptStorageGraph`.
+- Responses: every `GraphService` response is `oneof outcome { <result>; GraphError error }`, the
+  response pattern of the other packages with `GraphError` in place of `OperationError`. Refusals
+  come back in-band with an OK status; gRPC statuses stay for transport and infrastructure
+  failures (including `SHARD_UNAVAILABLE` and `GRAPH_SUSPECT`, sent as `UNAVAILABLE` so the SDK
+  retries them and counts them in its circuit breaker) and for invalid requests. Streams end with a
+  trailer or a `GraphError` frame. The SDK maps `GraphError.reason` to its client exceptions
+  (`GraphError` and `OperationProblem` carry no tool-specific field). Result messages: `CreateGraphResult`,
+  `GraphDetails`, `GraphPage`, `DropResult`, `BatchResult`, `ValidationResult`, `QuerySet`,
+  `SnapshotResult`, `VersionPage`, `PinOntologyResult`, `OntologyDocument`, `GateSet`,
+  `AclHistoryPage`.
+- Scopes: `USERS` (the user-organization pair), `ORGANIZATIONS`, `SETUP_VERSIONS`. No `MISSIONS`
+  scope (tag 1 reserved): a graph is never tied to a mission, what a kin writes for a mission goes
+  into the user's personal graph. A graph is named by (context, organization, `graph_id`).
+  `SETUP_VERSIONS` graphs are written by the setup owner into the current version (`setup_id`);
+  past versions are read-only (`setup_version_id`).
+- Rights are checked **per action** (`GraphAction`: `VIEW`, `VIEW_CURRENT`, `EDIT`,
+  `SET_CURRENT_VERSION`, `ARCHIVE`, `GRANT`, `SET_RULES`; `USE` removed, tag 2 reserved), never per
+  level; holding one action implies no other. The matrix per scope is in the `GraphScope` comments:
+  `VIEW_CURRENT` (current state only) is what another organization holds on a PUBLIC or shared
+  setup; ACL entries never grant `GRANT`, `ARCHIVE`, `SET_CURRENT_VERSION` or `SET_RULES`; a
+  `role` subject matches exactly; `org_id` is always the graph's organization.
+  `GraphInfo.caller_actions` lists the caller's actions. Visibility can only be chosen for a
+  `USERS` graph (CEL `*.visibility_users_only`), never `PUBLIC` (CEL `*.users_not_public`).
+- ACL: single `responsible_user_id`; `AclEntry` with `subject` as `oneof { user_id, org_id, role }`,
+  server-stamped `granted_by` / `granted_at` / `state` (`ENTRY_ACTIVE` / `ENTRY_REVOKED`, never
+  deleted) / `origin` (`MANUAL`, `DEPARTURE_RULE`, `DELEGATION`) / `origin_id`. `GraphAcl` carries
+  the active entries plus the most recent history; `ListAclHistory` pages through all of it.
+  `SetGraphAcl` and `SetGraphResponsible` take an `idempotency_key`.
+- Departure rule (`ReleaseUserGraphs`): leaving an organization pseudonymizes nothing; PRIVATE
+  personal graphs are purged; INTERNAL ones become organization graphs named
+  `<graph_id truncated to 241>.from.<8 random [a-z0-9]>` (random, never a hash of the user id, a new
+  draw on collision); graphs the user was responsible for go to the oldest admin, or the oldest
+  remaining member; entries naming the user are revoked (`DEPARTURE_RULE`). Account deletion
+  applies the same rule, then pseudonymizes every trace (D9).
+- Reads: `ListGraphs` returns the **graph map** (every readable graph of every responsible user,
+  metadata and optional `GraphStats` with the top classes and predicates, never the triples).
+  `Query` / `RunNamedQuery` read a closed dataset: named graphs (`DatasetGraphs`, at most 16,
+  optional per-graph `at_version`) or a `GraphFilter` over the readable graphs (at least one scope,
+  narrowed by `graph_uids` from the map, current versions, capped by
+  `GraphLimits.max_dataset_graphs` (at most 100) / `max_dataset_triples`, else `DATASET_TOO_LARGE`,
+  never a partial result). `GRAPH ?g`
+  binds the `graph_iri` listed in `QueryHeader.graphs_read`. `page_token` freezes the versions
+  read across pages. `DiffVersions` streams the net difference between two versions.
+- Writes: `ApplyBatch` writes 2 to 16 distinct, unrelated graphs all or nothing (CEL
+  `apply_batch.distinct_graphs`), with a shared `commit_id` and at most 1 000 operations for the
+  whole batch. Every write carries an optional `WriteProvenance`. An idempotency key is recorded
+  once a commit is attempted; a write refused before that can be sent again with the same key.
+  `GraphStatus.SUSPECT`: commit outcome unknown, writes refused until reconciled.
+- Gates: `severity`, `scope_class` (`LOCAL` / `PATH` / `GLOBAL`), `budget_ms`, `sparql_sha256`; the
+  receipt (`evaluated_at`, ontology and gate-set shas, stored `call_gates`) makes a verdict
+  replayable; `ListGates` is paged, lists the gates in effect on a graph and fetches gates by
+  `sparql_sha256`. `SetGraphRules` binds another ontology and/or gate set (or `clear_gate_set`)
+  after a whole-graph audit and mints a `RULES` version; the schema mode never changes in place.
+- Sizes, so that every response fits an LLM's context: listings paginated (`ListGates`,
+  `GetQuerySet` and `ListGraphs` with stats at most 50 a page, `ListVersions` with receipts at most
+  10); SPARQL texts at most 16 KiB; a literal at most 64 KiB; a patch at most 1 000 operations or
+  256 KiB of SPARQL Update (bulk through `Import`); gate reports under 256 KiB
+  (`GateReport.truncated`). The SDK refuses a request over `GraphLimits.max_request_bytes` (at most
+  3.5 MiB) with `PATCH_TOO_LARGE` before sending it.
+- No `map` fields; no RDF 1.2 triple term (`Term` tag 4 reserved, so `Term` is not recursive); an
+  empty `Term{}` never acts as a bound term (CEL `triple.*`, `triple_pattern.*`, `replace_values.*`,
+  `binding.value_bound`).
+- Validation follows the conventions of every package: prefixed ids with `min_len`, bounds on every
+  output field, `optional` for every absent-able scalar.
+
+### Added — organization role
+
+- common: `OrgRole` (`ORG_ROLE_UNSPECIFIED`, `ORG_ADMIN`, `ORG_MEMBER`).
+- user_profile: `UserProfile.org_role` (12), server-derived.
+
 ### Added — validation
 
 Every field carries `buf.validate` rules, checked by protovalidate (Python) and by the generated
@@ -223,6 +308,13 @@ Zod schemas (TypeScript). The conventions are documented in `CLAUDE.md` (Validat
 
 ### Changed — tooling
 
+- `tools/zod/test` (differential test): samples for the graph patterns, base overrides for the
+  graph messages whose rules span several fields (`GraphRef`, `ListGraphsRequest`, `Triple`,
+  `TriplePattern`, `ReplaceValues`, `Binding`, `PatchBody`, `DiffVersionsRequest`,
+  `ApplyBatchRequest`, `SetGraphRulesRequest`, and `visibility = 0` for the five messages with a
+  visibility), mutations for `literal.direction_needs_language` and `list_graphs_request.stats_page_size`,
+  and mutations for `*.users_not_public` (`CreateGraphRequest`, `ApplyPatchRequest`,
+  `ImportHeader`, `SetGraphAclRequest`, `AdoptStorageGraphRequest`).
 - `tools/zod` (Zod generator): supports `ignore` (`IGNORE_IF_ZERO_VALUE`, `IGNORE_ALWAYS`),
   applies `defined_only` canonically (every declared value, UNSPECIFIED included, on fields and
   repeated items), and translates `has(this.a) || has(this.b)` CEL field rules into a real refine

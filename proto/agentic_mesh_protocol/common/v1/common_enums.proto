@@ -27,3 +27,14 @@ enum Visibility {
   // INTERNAL: visible within the owner's organization.
   INTERNAL = 3;
 }
+
+// OrgRole is the Clerk organization role of the calling user, frozen on the message row when
+// the run starts and derived server-side, never from input.
+enum OrgRole {
+  // ORG_ROLE_UNSPECIFIED (no human session, scheduled run, unknown claim) is treated as ORG_MEMBER.
+  ORG_ROLE_UNSPECIFIED = 0;
+  // ORG_ADMIN: Clerk org:admin.
+  ORG_ADMIN = 1;
+  // ORG_MEMBER: Clerk org:member.
+  ORG_MEMBER = 2;
+}

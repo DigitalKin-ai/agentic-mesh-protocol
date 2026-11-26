@@ -1,0 +1,445 @@
+// Copyright 2026 DigitalKin Inc.
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//       https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package agentic_mesh_protocol.graph.v1;
+
+// GraphScope is the kind of context a graph belongs to. The wire carries the KIND only: the
+// concrete id (setup_versions:…, users:…, organizations:…) is resolved by the services provider
+// from the authenticated task (x-task-id), like StorageContext. A graph is named by
+// (context, organization, graph_id). Rights are decided by the server only, per action (see
+// GraphAction), never recomputed by clients. A graph is never tied to a mission: what a kin writes
+// for a mission goes into the user's personal graph (mission_id stays in the provenance only).
+enum GraphScope {
+  reserved 1;
+  reserved "MISSIONS";
+
+  // GRAPH_SCOPE_UNSPECIFIED is refused.
+  GRAPH_SCOPE_UNSPECIFIED = 0;
+  // SETUP_VERSIONS: a reference graph attached to a setup version, created by the setup owner or
+  // an admin of the setup's organization, written into the CURRENT version (GraphRef.setup_id);
+  // a new version starts with no graph. Rights: the setup owner (while a member of the setup's
+  // organization) and the org admins hold every action; members hold VIEW; another organization
+  // holds VIEW_CURRENT when the setup is PUBLIC or shared with it (producer_grant). No ACL entries.
+  // Past versions carry the rights of the current one but never change.
+  SETUP_VERSIONS = 2;
+  // USERS: the calling user IN the calling task's organization; the owner is the pair
+  // (user_id, organization_id) and holds every action. PRIVATE: nobody else, no ACL entries.
+  // INTERNAL: switching to INTERNAL creates the entry "whole organization: VIEW", which the user
+  // may narrow; entries name a role or the whole organization, never a person, and grant VIEW
+  // only. Never PUBLIC (refused at creation and at every visibility change); UNSPECIFIED = PRIVATE.
+  // A personal graph never crosses organizations.
+  USERS = 3;
+  // ORGANIZATIONS: the calling task's organization; any member may create one and becomes its
+  // responsible user. The responsible user and the org admins hold every action; members hold
+  // VIEW; entries name a role or a person and grant VIEW or EDIT only. Always INTERNAL.
+  ORGANIZATIONS = 4;
+}
+
+// GraphStatus is the lifecycle of a graph in the registry.
+enum GraphStatus {
+  // GRAPH_STATUS_UNSPECIFIED is never returned.
+  GRAPH_STATUS_UNSPECIFIED = 0;
+  // PROVISIONING: registry row written, journal head not yet committed.
+  PROVISIONING = 1;
+  // ACTIVE: readable and writable according to the ACL.
+  ACTIVE = 2;
+  // READ_ONLY: writes refused (quota freeze, organization suspended, migration in progress).
+  READ_ONLY = 3;
+  // PURGING: dropped or owner context archived; unreachable, physical purge pending.
+  PURGING = 4;
+  // SUSPECT: the outcome of the last commit is unknown (lost answer from the journal). Reads see
+  // the last confirmed version; writes fail with the gRPC status UNAVAILABLE (reason
+  // GRAPH_SUSPECT) until the server reconciles the graph, then the status returns to ACTIVE.
+  SUSPECT = 5;
+}
+
+// RdfFormat is a serialization accepted by Import or produced by Export and CONSTRUCT.
+enum RdfFormat {
+  // RDF_FORMAT_UNSPECIFIED is refused where a format is required.
+  RDF_FORMAT_UNSPECIFIED = 0;
+  // TURTLE: text/turtle.
+  TURTLE = 1;
+  // N_TRIPLES: application/n-triples.
+  N_TRIPLES = 2;
+  // N_QUADS: application/n-quads (named graphs kept).
+  N_QUADS = 3;
+  // TRIG: application/trig (named graphs kept).
+  TRIG = 4;
+  // JSON_LD: application/ld+json.
+  JSON_LD = 5;
+  // RDF_XML: application/rdf+xml.
+  RDF_XML = 6;
+}
+
+// ChunkCompression is the compression of a DataChunk stream (whole stream, not per chunk).
+enum ChunkCompression {
+  // CHUNK_COMPRESSION_UNSPECIFIED means UNCOMPRESSED.
+  CHUNK_COMPRESSION_UNSPECIFIED = 0;
+  // UNCOMPRESSED: raw bytes.
+  UNCOMPRESSED = 1;
+  // GZIP: gzip stream.
+  GZIP = 2;
+  // ZSTD: zstandard stream.
+  ZSTD = 3;
+}
+
+// SchemaMode is the governance mode of a graph.
+enum SchemaMode {
+  // SCHEMA_MODE_UNSPECIFIED is refused where a mode is required.
+  SCHEMA_MODE_UNSPECIFIED = 0;
+  // STRICT: frozen ontology pinned by sha256, strict built-in gates, expected_version mandatory
+  // on every write to an existing graph.
+  STRICT = 1;
+  // OPEN: any vocabulary; only the gates bound to the graph run.
+  OPEN = 2;
+}
+
+// QueryForm is the SPARQL query form, reported in the query header.
+enum QueryForm {
+  // QUERY_FORM_UNSPECIFIED is never returned.
+  QUERY_FORM_UNSPECIFIED = 0;
+  // SELECT: solutions.
+  SELECT = 1;
+  // ASK: one boolean.
+  ASK = 2;
+  // CONSTRUCT: an RDF document.
+  CONSTRUCT = 3;
+  // DESCRIBE: an RDF document.
+  DESCRIBE = 4;
+}
+
+// SolutionEncoding is how SELECT solutions are encoded on the wire.
+enum SolutionEncoding {
+  // SOLUTION_ENCODING_UNSPECIFIED means TERMS.
+  SOLUTION_ENCODING_UNSPECIFIED = 0;
+  // TERMS: typed rows of Term.
+  TERMS = 1;
+  // SPARQL_JSON: SPARQL 1.1 Query Results JSON, as raw bytes split in DataChunk frames.
+  SPARQL_JSON = 2;
+  // SPARQL_TSV: SPARQL 1.1 Query Results TSV, as raw bytes split in DataChunk frames.
+  SPARQL_TSV = 3;
+}
+
+// TruncationReason is why a query result stopped early.
+enum TruncationReason {
+  // TRUNCATION_REASON_UNSPECIFIED is never returned.
+  TRUNCATION_REASON_UNSPECIFIED = 0;
+  // NOT_TRUNCATED: the result is complete.
+  NOT_TRUNCATED = 1;
+  // MAX_ROWS: the row limit was reached.
+  MAX_ROWS = 2;
+  // MAX_BYTES: the byte limit was reached.
+  MAX_BYTES = 3;
+}
+
+// ImportMode is the semantics of an import.
+enum ImportMode {
+  // IMPORT_MODE_UNSPECIFIED is refused.
+  IMPORT_MODE_UNSPECIFIED = 0;
+  // MERGE: add the parsed triples to the graph.
+  MERGE = 1;
+  // REPLACE: replace the whole graph content (one new version).
+  REPLACE = 2;
+}
+
+// ExportDestination is where Export writes.
+enum ExportDestination {
+  // EXPORT_DESTINATION_UNSPECIFIED means STREAM.
+  EXPORT_DESTINATION_UNSPECIFIED = 0;
+  // STREAM: DataChunk frames on the response stream.
+  STREAM = 1;
+  // FILESYSTEM: a file in the Filesystem service; the trailer carries its file id.
+  FILESYSTEM = 2;
+}
+
+// GateStage is the pipeline stage a gate applies to.
+enum GateStage {
+  // GATE_STAGE_UNSPECIFIED is refused.
+  GATE_STAGE_UNSPECIFIED = 0;
+  // STAGE_SCHEMA: ontology changes (open graphs only).
+  STAGE_SCHEMA = 1;
+  // STAGE_EDIT: ApplyPatch, ApplyBatch, RestoreVersion.
+  STAGE_EDIT = 2;
+  // STAGE_IMPORT: Import.
+  STAGE_IMPORT = 3;
+  // STAGE_AUDIT: Validate on the whole graph.
+  STAGE_AUDIT = 4;
+}
+
+// GatePassRule is the PASS rule of a gate query.
+enum GatePassRule {
+  // GATE_PASS_RULE_UNSPECIFIED is refused for a custom gate.
+  GATE_PASS_RULE_UNSPECIFIED = 0;
+  // EMPTY: the SELECT returns no row.
+  EMPTY = 1;
+  // ASK_FALSE: the ASK answers false.
+  ASK_FALSE = 2;
+  // ASK_TRUE: the ASK answers true.
+  ASK_TRUE = 3;
+}
+
+// GateSeverity is what a FAIL does to the write.
+enum GateSeverity {
+  // GATE_SEVERITY_UNSPECIFIED means BLOCKING.
+  GATE_SEVERITY_UNSPECIFIED = 0;
+  // BLOCKING: a FAIL halts the write (sh:Violation).
+  BLOCKING = 1;
+  // WARNING: a FAIL is reported and the write proceeds (sh:Warning).
+  WARNING = 2;
+}
+
+// GateScopeClass is how much of the graph a gate reads, which decides how it is evaluated on a
+// patch and which budget applies.
+enum GateScopeClass {
+  // GATE_SCOPE_CLASS_UNSPECIFIED lets the server classify the gate from its query form.
+  GATE_SCOPE_CLASS_UNSPECIFIED = 0;
+  // LOCAL: one focus node and its direct neighbours ($focus bound); evaluated on the subjects
+  // touched by the patch only.
+  LOCAL = 1;
+  // PATH: property paths from the touched subjects (e.g. ACYCLIC); evaluated from the delta.
+  PATH = 2;
+  // GLOBAL: aggregates over the whole graph; evaluated on the full graph.
+  GLOBAL = 3;
+}
+
+// GateStatus is the outcome of one gate.
+enum GateStatus {
+  // GATE_STATUS_UNSPECIFIED is never returned.
+  GATE_STATUS_UNSPECIFIED = 0;
+  // PASS: the pass rule holds.
+  PASS = 1;
+  // FAIL: the pass rule does not hold.
+  FAIL = 2;
+  // GATE_ERROR: exception or deadline; fails closed (never PASS).
+  GATE_ERROR = 3;
+}
+
+// ValidationVerdict is the outcome of Validate (same vocabulary as the tool's validate protocol).
+enum ValidationVerdict {
+  // VALIDATION_VERDICT_UNSPECIFIED is never returned.
+  VALIDATION_VERDICT_UNSPECIFIED = 0;
+  // WOULD_PASS: the patch would be committed.
+  WOULD_PASS = 1;
+  // WOULD_FAIL: the patch would be refused.
+  WOULD_FAIL = 2;
+  // AUDIT_PASS: the whole graph passes its gates.
+  AUDIT_PASS = 3;
+  // AUDIT_FAIL: the whole graph fails at least one blocking gate.
+  AUDIT_FAIL = 4;
+}
+
+// VersionKind is what produced a version.
+enum VersionKind {
+  // VERSION_KIND_UNSPECIFIED is never returned.
+  VERSION_KIND_UNSPECIFIED = 0;
+  // CREATE: CreateGraph (or a write with create_if_missing).
+  CREATE = 1;
+  // PATCH: ApplyPatch or one item of ApplyBatch.
+  PATCH = 2;
+  // IMPORT_MERGE: Import in MERGE mode.
+  IMPORT_MERGE = 3;
+  // IMPORT_REPLACE: Import in REPLACE mode.
+  IMPORT_REPLACE = 4;
+  // RESTORE: RestoreVersion.
+  RESTORE = 5;
+  // DROP: DropGraph.
+  DROP = 6;
+  // RULES: SetGraphRules (new ontology and/or gate set; the content is unchanged).
+  RULES = 7;
+}
+
+// GraphAction is one right on a graph. Rights are checked per action, never per level: each RPC
+// needs exactly the action listed below, and holding one action implies no other. Who holds what
+// is the matrix of GraphScope. No escalation: an ACL entry never grants GRANT, ARCHIVE,
+// SET_CURRENT_VERSION or SET_RULES; only the responsible user and the org admins call SetGraphAcl
+// and SetGraphResponsible. Rights are evaluated at call time, for every version. A scheduled run
+// counts as a member.
+enum GraphAction {
+  reserved 2;
+  reserved "USE";
+
+  // GRAPH_ACTION_UNSPECIFIED is refused.
+  GRAPH_ACTION_UNSPECIFIED = 0;
+  // VIEW: the current state and the whole history: GetGraph, Query and RunNamedQuery (at_version
+  // included), Export, DiffVersions, ListVersions, GetGraphAcl, ListAclHistory.
+  VIEW = 1;
+  // EDIT: ApplyPatch, ApplyBatch, Import, Snapshot.
+  EDIT = 3;
+  // SET_CURRENT_VERSION: RestoreVersion.
+  SET_CURRENT_VERSION = 4;
+  // ARCHIVE: DropGraph.
+  ARCHIVE = 5;
+  // GRANT: SetGraphAcl and SetGraphResponsible.
+  GRANT = 6;
+  // SET_RULES: SetGraphRules.
+  SET_RULES = 7;
+  // VIEW_CURRENT: the current state only: GetGraph, Query and RunNamedQuery, without at_version,
+  // Export, DiffVersions, ListVersions, GetGraphAcl or ListAclHistory. What another organization
+  // holds on a PUBLIC or shared setup graph.
+  VIEW_CURRENT = 8;
+}
+
+// AclEntryOrigin is what created an ACL entry, so that the entries of one origin can be revoked
+// together (e.g. when a delegation ends). Filled by the server.
+enum AclEntryOrigin {
+  // ACL_ENTRY_ORIGIN_UNSPECIFIED is never returned.
+  ACL_ENTRY_ORIGIN_UNSPECIFIED = 0;
+  // MANUAL: SetGraphAcl, or the "whole organization: VIEW" entry created when a personal graph
+  // turns INTERNAL.
+  MANUAL = 1;
+  // DEPARTURE_RULE: the departure rule (ReleaseUserGraphs).
+  DEPARTURE_RULE = 2;
+  // DELEGATION: a delegation (after v1).
+  DELEGATION = 3;
+}
+
+// AclEntryState is the lifecycle of an ACL entry. Entries are never deleted: a revocation keeps
+// the row.
+enum AclEntryState {
+  // ACL_ENTRY_STATE_UNSPECIFIED is never returned.
+  ACL_ENTRY_STATE_UNSPECIFIED = 0;
+  // ENTRY_ACTIVE: the entry grants its action.
+  ENTRY_ACTIVE = 1;
+  // ENTRY_REVOKED: the entry no longer grants anything; kept for history.
+  ENTRY_REVOKED = 2;
+}
+
+// ResponsibleChangeReason is why the responsible user of a graph changed.
+enum ResponsibleChangeReason {
+  // RESPONSIBLE_CHANGE_REASON_UNSPECIFIED is never returned.
+  RESPONSIBLE_CHANGE_REASON_UNSPECIFIED = 0;
+  // REASSIGNED: SetGraphResponsible by a holder of GRANT.
+  REASSIGNED = 1;
+  // ACCOUNT_DELETED: the responsible user deleted their account; the oldest org admin takes over,
+  // or the oldest remaining member when no admin is left.
+  ACCOUNT_DELETED = 2;
+  // LEFT_ORGANIZATION: the responsible user left the organization; the oldest org admin takes over,
+  // or the oldest remaining member when no admin is left.
+  LEFT_ORGANIZATION = 3;
+}
+
+// QueryParameterKind is the kind of value a named-query parameter accepts.
+enum QueryParameterKind {
+  // QUERY_PARAMETER_KIND_UNSPECIFIED is refused.
+  QUERY_PARAMETER_KIND_UNSPECIFIED = 0;
+  // PARAMETER_IRI: an IRI (declared in the ontology for a strict query set).
+  PARAMETER_IRI = 1;
+  // PARAMETER_LITERAL: a literal of QueryParameter.datatype.
+  PARAMETER_LITERAL = 2;
+  // PARAMETER_TERM: any IRI or literal.
+  PARAMETER_TERM = 3;
+}
+
+// GraphErrorReason is the machine-readable reason of a refusal, carried in GraphError with an OK
+// gRPC status; the SDK maps each value to its client exception. The gRPC code in parentheses is an
+// indicative equivalent only. Exceptions: SHARD_UNAVAILABLE and GRAPH_SUSPECT are never in a
+// GraphError; they come as the gRPC status UNAVAILABLE (google.rpc.ErrorInfo.reason = the name),
+// so that the SDK retries them and counts them in its circuit breaker.
+enum GraphErrorReason {
+  // GRAPH_ERROR_REASON_UNSPECIFIED is never returned.
+  GRAPH_ERROR_REASON_UNSPECIFIED = 0;
+  // GRAPH_NOT_FOUND: absent, or not readable by the caller (NOT_FOUND).
+  GRAPH_NOT_FOUND = 1;
+  // GRAPH_ALREADY_EXISTS: (context, organization, graph_id) is taken (ALREADY_EXISTS).
+  GRAPH_ALREADY_EXISTS = 2;
+  // VERSION_CONFLICT: expected_version differs from the head (ABORTED).
+  VERSION_CONFLICT = 3;
+  // EXPECTED_VERSION_REQUIRED: a strict graph was written without expected_version (FAILED_PRECONDITION).
+  EXPECTED_VERSION_REQUIRED = 4;
+  // GATE_VIOLATION: a blocking gate failed (FAILED_PRECONDITION).
+  GATE_VIOLATION = 5;
+  // GATE_DEFINITION_INVALID: a gate does not parse, has the wrong form or breaks its budget (INVALID_ARGUMENT).
+  GATE_DEFINITION_INVALID = 6;
+  // QUERY_REJECTED: forbidden query feature (SERVICE, FROM, LOAD, update…) (INVALID_ARGUMENT).
+  QUERY_REJECTED = 7;
+  // QUERY_SYNTAX: the query does not parse (INVALID_ARGUMENT).
+  QUERY_SYNTAX = 8;
+  // QUERY_TIMEOUT: the query exceeded its deadline (DEADLINE_EXCEEDED).
+  QUERY_TIMEOUT = 9;
+  // QUERY_RESULT_TOO_LARGE: the result exceeded a hard cap (RESOURCE_EXHAUSTED).
+  QUERY_RESULT_TOO_LARGE = 10;
+  // QUOTA_TRIPLES: triple quota exceeded (RESOURCE_EXHAUSTED).
+  QUOTA_TRIPLES = 11;
+  // QUOTA_GRAPHS: graph count quota exceeded (RESOURCE_EXHAUSTED).
+  QUOTA_GRAPHS = 12;
+  // QUOTA_BYTES: storage quota exceeded (RESOURCE_EXHAUSTED).
+  QUOTA_BYTES = 13;
+  // PATCH_TOO_LARGE: too many operations or bytes in one write (RESOURCE_EXHAUSTED).
+  PATCH_TOO_LARGE = 14;
+  // READ_ONLY_SCOPE: the scope or graph is read-only for the caller (PERMISSION_DENIED).
+  READ_ONLY_SCOPE = 15;
+  // ROLE_DENIED: the caller's org role does not allow the action under the scope rules (PERMISSION_DENIED).
+  ROLE_DENIED = 16;
+  // NOT_RESPONSIBLE: the action is reserved to the responsible user (PERMISSION_DENIED).
+  NOT_RESPONSIBLE = 17;
+  // SCHEMA_LOCKED: schema change on a strict graph (FAILED_PRECONDITION).
+  SCHEMA_LOCKED = 18;
+  // ONTOLOGY_NOT_PINNED: the ontology sha is not pinned in the organization (FAILED_PRECONDITION).
+  ONTOLOGY_NOT_PINNED = 19;
+  // ONTOLOGY_MISMATCH: content does not hash to the expected sha (FAILED_PRECONDITION).
+  ONTOLOGY_MISMATCH = 20;
+  // ONTOLOGY_PROFILE_VIOLATION: the ontology breaks the strict OWL profile (INVALID_ARGUMENT).
+  ONTOLOGY_PROFILE_VIOLATION = 21;
+  // LITERAL_FORMAT: ill-typed or out-of-range literal (INVALID_ARGUMENT).
+  LITERAL_FORMAT = 22;
+  // IRI_CONVENTION: IRI breaks the naming policy (INVALID_ARGUMENT).
+  IRI_CONVENTION = 23;
+  // UNKNOWN_PREFIX: undeclared prefix (INVALID_ARGUMENT).
+  UNKNOWN_PREFIX = 24;
+  // FUNCTIONAL_PROPERTY: second value for a functional property (FAILED_PRECONDITION).
+  FUNCTIONAL_PROPERTY = 25;
+  // RDF_PARSE: the RDF document does not parse (INVALID_ARGUMENT).
+  RDF_PARSE = 26;
+  // EMPTY_IMPORT: the import holds no triple (INVALID_ARGUMENT).
+  EMPTY_IMPORT = 27;
+  // IDEMPOTENCY_KEY_REUSED: same key, different request digest (ALREADY_EXISTS).
+  IDEMPOTENCY_KEY_REUSED = 28;
+  // GRAPH_PURGING: the graph is being purged (NOT_FOUND).
+  GRAPH_PURGING = 29;
+  // VERSION_NOT_RESTORABLE: the version is older than the retention window (FAILED_PRECONDITION).
+  VERSION_NOT_RESTORABLE = 30;
+  // SHARD_UNAVAILABLE: the graph's shard cannot serve; gRPC status UNAVAILABLE, never in a GraphError.
+  SHARD_UNAVAILABLE = 31;
+  // ACL_SUBJECT_REJECTED: an ACL entry the scope does not allow: a subject outside the graph's
+  // organization, a person on a USERS graph, any entry on a SETUP_VERSIONS graph, or an action
+  // beyond VIEW / EDIT (INVALID_ARGUMENT).
+  ACL_SUBJECT_REJECTED = 32;
+  // BATCH_DUPLICATE_GRAPH: the same graph appears twice in one ApplyBatch (INVALID_ARGUMENT).
+  BATCH_DUPLICATE_GRAPH = 33;
+  // SETUP_VERSION_READ_ONLY: write to a past setup version, or by a caller who is neither the
+  // setup owner nor an admin of the setup's organization (PERMISSION_DENIED).
+  SETUP_VERSION_READ_ONLY = 34;
+  // AT_VERSION_TOO_LARGE: rebuilding a past version exceeds the triple or time cap (RESOURCE_EXHAUSTED).
+  AT_VERSION_TOO_LARGE = 35;
+  // NAMED_QUERY_NOT_FOUND: unknown query set or query id (NOT_FOUND).
+  NAMED_QUERY_NOT_FOUND = 36;
+  // QUERY_PARAMETER_INVALID: missing, unknown or ill-typed named-query parameter (INVALID_ARGUMENT).
+  QUERY_PARAMETER_INVALID = 37;
+  // QUERY_FUNCTION_UNSUPPORTED: a SPARQL function missing from one of the two engines, refused at
+  // registration so a verdict never depends on the engine (INVALID_ARGUMENT).
+  QUERY_FUNCTION_UNSUPPORTED = 38;
+  // GRAPH_SUSPECT: the graph is reconciling an unknown commit outcome; gRPC status UNAVAILABLE,
+  // never in a GraphError.
+  GRAPH_SUSPECT = 39;
+  // SCHEMA_MODE_MISMATCH: the call does not fit the graph's mode, e.g. an ontology bound to an
+  // OPEN graph or a STRICT graph left without ontology (FAILED_PRECONDITION).
+  SCHEMA_MODE_MISMATCH = 40;
+  // ACTION_DENIED: the caller does not hold the action the RPC needs (PERMISSION_DENIED).
+  ACTION_DENIED = 41;
+  // DATASET_TOO_LARGE: the graphs a GraphFilter selects exceed GraphLimits.max_dataset_graphs or
+  // max_dataset_triples; narrow the filter (graph_uids from ListGraphs) (RESOURCE_EXHAUSTED).
+  DATASET_TOO_LARGE = 42;
+}
